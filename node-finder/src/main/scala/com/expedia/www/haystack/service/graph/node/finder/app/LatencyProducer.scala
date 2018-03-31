@@ -1,6 +1,21 @@
+/*
+ *
+ *     Copyright 2018 Expedia, Inc.
+ *
+ *      Licensed under the Apache License, Version 2.0 (the "License");
+ *      you may not use this file except in compliance with the License.
+ *      You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *      Unless required by applicable law or agreed to in writing, software
+ *      distributed under the License is distributed on an "AS IS" BASIS,
+ *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *      See the License for the specific language governing permissions and
+ *      limitations under the License.
+ *
+ */
 package com.expedia.www.haystack.service.graph.node.finder.app
-
-import java.util.function.Supplier
 
 import com.expedia.www.haystack.service.graph.node.finder.model.SpanLite
 import org.apache.kafka.streams.processor.{Processor, ProcessorContext, ProcessorSupplier}
@@ -10,11 +25,22 @@ class LatencyProducerSupplier extends ProcessorSupplier[String, SpanLite] {
 }
 
 class LatencyProducer extends Processor[String, SpanLite] {
-  override def init(context: ProcessorContext): Unit = ???
+  private var context: ProcessorContext = _
 
-  override def process(key: String, value: SpanLite): Unit = ???
+  override def init(context: ProcessorContext): Unit = {
+    this.context = context
+  }
 
-  override def punctuate(timestamp: Long): Unit = ???
+  override def process(key: String, spanLite: SpanLite): Unit = {
+    spanLite.getLatency match {
+      case Some(metricPoints) =>
+        metricPoints.foreach(metricPoint => context.forward(metricPoint.metric, metricPoint))
+      case None =>
+    }
+    context.commit()
+  }
 
-  override def close(): Unit = ???
+  override def punctuate(timestamp: Long): Unit = {}
+
+  override def close(): Unit = {}
 }
