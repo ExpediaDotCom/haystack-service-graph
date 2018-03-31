@@ -3,18 +3,24 @@ package com.expedia.www.haystack
 import java.util.UUID
 
 import com.expedia.open.tracing.{Log, Span, Tag}
-import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
-import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType.SpanType
-import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
+import com.expedia.www.haystack.service.graph.node.finder.utils.SpanUtils
 import org.scalatest.easymock.EasyMockSugar
+import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
 
 trait UnitTestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar {
   def newSpan(serviceName: String, operation: String, duration: Long, client: Boolean, server: Boolean) : Span = {
-    val ts = System.currentTimeMillis() - (10 * 1000)
+    newSpan(UUID.randomUUID().toString, serviceName, operation, duration, client, server)
+  }
 
+  def newSpan(spanId: String, serviceName: String, operation: String, duration: Long, client: Boolean, server: Boolean) : Span = {
+    val ts = System.currentTimeMillis() - (10 * 1000)
+    newSpan(spanId, ts, serviceName, operation, duration, client, server)
+  }
+
+  def newSpan(spanId: String, ts: Long, serviceName: String, operation: String, duration: Long, client: Boolean, server: Boolean) : Span = {
     val spanBuilder = Span.newBuilder()
     spanBuilder.setTraceId(UUID.randomUUID().toString)
-    spanBuilder.setSpanId(UUID.randomUUID().toString)
+    spanBuilder.setSpanId(spanId)
     spanBuilder.setServiceName(serviceName)
     spanBuilder.setOperationName(operation)
     spanBuilder.setStartTime(ts)

@@ -21,8 +21,11 @@ import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.commons.entities.{MetricPoint, MetricType}
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType.SpanType
 import com.expedia.www.haystack.service.graph.node.finder.utils.{Flag, SpanType, SpanUtils}
+import org.slf4j.LoggerFactory
 
 class SpanLite(val spanId: String) {
+
+  private val LOGGER = LoggerFactory.getLogger(classOf[SpanLite])
 
   require(spanId != null)
 
@@ -37,19 +40,29 @@ class SpanLite(val spanId: String) {
 
   def isComplete: Boolean = flag.equals(Flag(3))
 
-  def merge(span: Span, spanType: SpanType): Unit = {
-    spanType match {
-      case SpanType.CLIENT =>
-        sourceServiceName = span.getServiceName
-        operationName = span.getOperationName
-        clientSend = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_SEND_EVENT).getOrElse(0)
-        clientReceive = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_RECV_EVENT).getOrElse(0)
-        flag = flag | Flag(1)
-      case SpanType.SERVER =>
-        destinationServiceName = span.getServiceName
-        serverReceive = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_RECV_EVENT).getOrElse(0)
-        serverSend = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_SEND_EVENT).getOrElse(0)
-        flag = flag | Flag(2)
+  def merge(span: Span, spanType: SpanType): Boolean = {
+    if (span.getSpanId.equals(spanId)) {
+      LOGGER.debug(s"received a matching span of type $spanType")
+      spanType match {
+        case SpanType.CLIENT =>
+          sourceServiceName = span.getServiceName
+          operationName = span.getOperationName
+          clientSend = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_SEND_EVENT).getOrElse(0)
+          clientReceive = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_RECV_EVENT).getOrElse(0)
+          flag = flag | Flag(1)
+          true
+        case SpanType.SERVER =>
+          destinationServiceName = span.getServiceName
+          serverReceive = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_RECV_EVENT).getOrElse(0)
+          serverSend = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_SEND_EVENT).getOrElse(0)
+          flag = flag | Flag(2)
+          true
+        case _ => false
+      }
+    }
+    else {
+      LOGGER.debug(s"received a span with spanId ${span.getSpanId} to be merged with $spanId - Ignored")
+      false
     }
   }
 
@@ -70,7 +83,7 @@ class SpanLite(val spanId: String) {
       None
   }
 
-  private def getMetricKey : String = {
+  private def getMetricKey: String = {
     s"$sourceServiceName.$operationName.latency"
   }
 }

@@ -17,9 +17,16 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.model
 
+import org.apache.commons.lang3.StringUtils
+
 case class GraphEdge(source: String,
                      destination: String,
                      operation: String)  {
+
+  require(StringUtils.isNotBlank(source))
+  require(StringUtils.isNotBlank(destination))
+  require(StringUtils.isNoneBlank(operation))
+
   def toJson : String = {
     "{\"source\":\"" + source + "\",\"destination\":\"" + destination + "\",\"operation\":\"" + operation + "\"}"
   }

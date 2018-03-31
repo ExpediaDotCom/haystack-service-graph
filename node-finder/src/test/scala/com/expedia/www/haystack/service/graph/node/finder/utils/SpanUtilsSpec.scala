@@ -56,7 +56,7 @@ class SpanUtilsSpec extends UnitTestSpec {
       When("getEventTime is called")
       val eventTime = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_SEND_EVENT)
       Then("it is marked as OTHER")
-      eventTime should be (None)
+      (eventTime.get > 0) should be (true)
     }
   }
 
