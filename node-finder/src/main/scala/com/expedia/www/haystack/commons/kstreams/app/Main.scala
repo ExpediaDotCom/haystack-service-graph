@@ -26,7 +26,8 @@ trait Main extends MetricsSupport {
 
   def main(args: Array[String]): Unit = {
     //create an instance of the application
-    val app = new Application(createStreamsRunner())
+    val jmxReporter: JmxReporter = JmxReporter.forRegistry(metricRegistry).build()
+    val app = new Application(createStreamsRunner(), jmxReporter)
 
     //start the application
     app.start()
@@ -46,10 +47,9 @@ trait Main extends MetricsSupport {
   *
   * @param topologyRunner instance of TopologyRunner to start and stop
   */
-class Application(topologyRunner: StreamsRunner) extends MetricsSupport {
+class Application(topologyRunner: StreamsRunner, jmxReporter: JmxReporter) extends MetricsSupport {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[Application])
-  private val jmxReporter: JmxReporter = JmxReporter.forRegistry(metricRegistry).build()
 
   def start(): Unit = {
     //start JMX reporter for metricRegistry

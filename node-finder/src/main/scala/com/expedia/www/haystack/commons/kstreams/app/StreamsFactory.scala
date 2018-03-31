@@ -40,9 +40,7 @@ class StreamsFactory(streamsSupplier: Supplier[Topology], streamsConfig: Streams
   private val LOGGER = LoggerFactory.getLogger(classOf[StreamsFactory])
 
   def create(runner: StreamsRunner): ManagedLifeCycle = {
-    if (consumerTopicName.nonEmpty) {
-      checkConsumerTopic()
-    }
+    checkConsumerTopic()
 
     val streams = new KafkaStreams(streamsSupplier.get(), streamsConfig)
     streams.setStateListener(runner)
@@ -61,17 +59,19 @@ class StreamsFactory(streamsSupplier: Supplier[Topology], streamsConfig: Streams
   }
   */
 
-  def checkConsumerTopic(): Boolean = {
-    val adminClient = AdminClient.create(getBootstrapProperties)
-    try {
-      val present = adminClient.listTopics().names().get().contains(consumerTopicName.get)
-      if (!present) {
-        throw new ConsumerTopicNotPresentException(s"Topic $consumerTopicName is not present")
+  def checkConsumerTopic(): Unit = {
+    if (consumerTopicName.nonEmpty) {
+      LOGGER.info(s"checking for the consumer topic ${consumerTopicName.get}")
+      val adminClient = AdminClient.create(getBootstrapProperties)
+      try {
+        val present = adminClient.listTopics().names().get().contains(consumerTopicName.get)
+        if (!present) {
+          throw new ConsumerTopicNotPresentException(s"Topic $consumerTopicName is not present")
+        }
       }
-      present
-    }
-    finally {
-      Try(adminClient.close(5, TimeUnit.SECONDS))
+      finally {
+        Try(adminClient.close(5, TimeUnit.SECONDS))
+      }
     }
   }
 

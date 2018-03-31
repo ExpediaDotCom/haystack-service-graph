@@ -22,6 +22,7 @@ import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfigurat
 import com.expedia.www.haystack.service.graph.node.finder.model.SpanLite
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
 import org.apache.kafka.streams.processor._
+import org.slf4j.LoggerFactory
 
 class SpanAggregatorSupplier(kafkaConfig: KafkaConfiguration) extends ProcessorSupplier[String, Span] {
   override def get() : Processor[String, Span] = new SpanAggregator(kafkaConfig)
@@ -29,16 +30,20 @@ class SpanAggregatorSupplier(kafkaConfig: KafkaConfiguration) extends ProcessorS
 
 class SpanAggregator(kafkaConfig: KafkaConfiguration) extends Processor[String, Span] with Punctuator {
 
+  private val LOGGER = LoggerFactory.getLogger(classOf[SpanAggregator])
   private var context: ProcessorContext = _
   private var map : Map[String, SpanLite] = Map.empty
 
   override def init(context: ProcessorContext): Unit =  {
     this.context = context
     this.context.schedule(kafkaConfig.aggregatorInterval, PunctuationType.STREAM_TIME, this)
+    LOGGER.info(s"${this.getClass.getSimpleName} initialized")
   }
 
   override def process(key: String, span: Span): Unit = {
     val spanType = SpanUtils.getSpanType(span)
+    LOGGER.info(s"Received $spanType span : ${span.getTraceId} :: ${span.getSpanId}")
+
     if (spanType != SpanType.OTHER) {
       val spanLite = map.getOrElse(span.getSpanId, {
         val s = new SpanLite(span.getSpanId)
@@ -46,6 +51,7 @@ class SpanAggregator(kafkaConfig: KafkaConfiguration) extends Processor[String, 
         s
       })
       spanLite.merge(span, spanType)
+      LOGGER.info(s"Received $spanType span : $spanLite")
     }
   }
 
