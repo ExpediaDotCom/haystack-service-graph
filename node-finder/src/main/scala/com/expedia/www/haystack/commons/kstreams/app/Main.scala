@@ -17,6 +17,8 @@
  */
 package com.expedia.www.haystack.commons.kstreams.app
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import com.codahale.metrics.JmxReporter
 import com.expedia.www.haystack.commons.logger.LoggerUtils
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
@@ -45,29 +47,39 @@ trait Main extends MetricsSupport {
   * This is the main application class. This controls the application
   * start and shutdown actions
   *
-  * @param topologyRunner instance of TopologyRunner to start and stop
+  * @param streamsRunner instance of StreamsRunner to start and stop the
+  *                      streams application
   */
-class Application(topologyRunner: StreamsRunner, jmxReporter: JmxReporter) extends MetricsSupport {
+class Application(streamsRunner: StreamsRunner, jmxReporter: JmxReporter) extends MetricsSupport {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[Application])
+  private val running = new AtomicBoolean(false)
+
+  require(streamsRunner != null)
+  require(jmxReporter != null)
 
   def start(): Unit = {
     //start JMX reporter for metricRegistry
     jmxReporter.start()
 
     //start the topology
-    topologyRunner.start()
+    streamsRunner.start()
+
+    //initialized
+    running.set(true)
   }
 
   def stop(): Unit = {
-    LOGGER.info("Shutting down topology")
-    topologyRunner.close()
+    if (running.getAndSet(false)) {
+      LOGGER.info("Shutting down topology")
+      streamsRunner.close()
 
-    LOGGER.info("Shutting down jmxReporter")
-    jmxReporter.close()
+      LOGGER.info("Shutting down jmxReporter")
+      jmxReporter.close()
 
-    LOGGER.info("Shutting down logger. Bye!")
-    LoggerUtils.shutdownLogger()
+      LOGGER.info("Shutting down logger. Bye!")
+      LoggerUtils.shutdownLogger()
+    }
   }
 }
 

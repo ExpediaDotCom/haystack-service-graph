@@ -30,21 +30,21 @@ import org.slf4j.LoggerFactory
 
 import scala.util.Try
 
-class StreamsFactory(streamsSupplier: Supplier[Topology], streamsConfig: StreamsConfig, consumerTopicName: Option[String]) {
+class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: StreamsConfig, consumerTopicName: Option[String]) {
 
-  require(streamsSupplier != null, "streamsBuilder is required")
+  require(topologySupplier != null, "streamsBuilder is required")
   require(streamsConfig != null, "streamsConfig is required")
 
   def this(streamsSupplier: Supplier[Topology], streamsConfig: StreamsConfig) = this(streamsSupplier, streamsConfig, None)
 
   private val LOGGER = LoggerFactory.getLogger(classOf[StreamsFactory])
 
-  def create(runner: StreamsRunner): ManagedLifeCycle = {
+  def create(listener: StateChangeListener): ManagedLifeCycle = {
     checkConsumerTopic()
 
-    val streams = new KafkaStreams(streamsSupplier.get(), streamsConfig)
-    streams.setStateListener(runner)
-    streams.setUncaughtExceptionHandler(runner)
+    val streams = new KafkaStreams(topologySupplier.get(), streamsConfig)
+    streams.setStateListener(listener)
+    streams.setUncaughtExceptionHandler(listener)
     streams.cleanUp()
     new ManagedKafkaStreams(streams)
   }

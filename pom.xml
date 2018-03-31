@@ -332,6 +332,20 @@
                 </plugin>
 
                 <plugin>
+                    <groupId>org.scoverage</groupId>
+                    <artifactId>scoverage-maven-plugin</artifactId>
+                    <version>${scoverage.plugin.version}</version>
+                    <configuration>
+                        <!-- need to update this as improve the coverage -->
+                        <minimumCoverage>80</minimumCoverage>
+                        <failOnMinimumCoverage>true</failOnMinimumCoverage>
+                        <highlighting>true</highlighting>
+                        <scalaVersion>${scala-library.version}</scalaVersion>
+                        <aggregate>true</aggregate>
+                    </configuration>
+                </plugin>
+                
+                <plugin>
                     <groupId>com.github.os72</groupId>
                     <artifactId>protoc-jar-maven-plugin</artifactId>
                     <version>3.3.0.1</version>
