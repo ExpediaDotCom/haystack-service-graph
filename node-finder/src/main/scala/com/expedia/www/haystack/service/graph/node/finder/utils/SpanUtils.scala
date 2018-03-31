@@ -48,15 +48,15 @@ object SpanUtils {
     SPAN_TYPE_MAP.getOrElse(flag, SpanType.OTHER)
   }
 
-  def getEventTimestamp(span: Span, event: String): Long =
+  def getEventTimestamp(span: Span, event: String): Option[Long] =
     span.getLogsList.find(log => {
       log.getFieldsList.exists(tag => {
         tag.getKey.equalsIgnoreCase("event") && StringUtils.isNotEmpty(tag.getVStr) &&
           tag.getVStr.equalsIgnoreCase(event)
       })
     }) match {
-      case Some(log) => log.getTimestamp
-      case _ => 0
+      case Some(log) => Option(log.getTimestamp)
+      case _ => None
     }
 }
 

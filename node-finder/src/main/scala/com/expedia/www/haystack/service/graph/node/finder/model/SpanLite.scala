@@ -42,13 +42,13 @@ class SpanLite(val spanId: String) {
       case SpanType.CLIENT =>
         sourceServiceName = span.getServiceName
         operationName = span.getOperationName
-        clientSend = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_SEND_EVENT)
-        clientReceive = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_RECV_EVENT)
+        clientSend = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_SEND_EVENT).getOrElse(0)
+        clientReceive = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_RECV_EVENT).getOrElse(0)
         flag = flag | Flag(1)
       case SpanType.SERVER =>
         destinationServiceName = span.getServiceName
-        serverReceive = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_RECV_EVENT)
-        serverSend = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_SEND_EVENT)
+        serverReceive = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_RECV_EVENT).getOrElse(0)
+        serverSend = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_SEND_EVENT).getOrElse(0)
         flag = flag | Flag(2)
     }
   }
