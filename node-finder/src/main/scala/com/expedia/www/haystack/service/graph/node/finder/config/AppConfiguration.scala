@@ -22,15 +22,20 @@ import java.util.Properties
 import com.expedia.www.haystack.commons.config.ConfigurationLoader
 import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.typesafe.config.Config
+import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.Topology.AutoOffsetReset
 import org.apache.kafka.streams.processor.TimestampExtractor
 
 import scala.collection.JavaConverters._
 
-class AppConfiguration {
+class AppConfiguration(resourceName: String) {
 
-  private val config = ConfigurationLoader.loadConfigFileWithEnvOverrides(resourceName = "app.conf")
+  require(StringUtils.isNotBlank(resourceName))
+
+  def this() = this("app.conf")
+
+  private val config = ConfigurationLoader.loadConfigFileWithEnvOverrides(resourceName = this.resourceName)
 
   val healthStatusFilePath: String = config.getString("health.status.path")
 
@@ -38,8 +43,8 @@ class AppConfiguration {
 
     // verify if the applicationId and bootstrap server config are non empty
     def verifyRequiredProps(props: Properties): Unit = {
-      require(props.getProperty(StreamsConfig.APPLICATION_ID_CONFIG).nonEmpty)
-      require(props.getProperty(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG).nonEmpty)
+      require(StringUtils.isNotBlank(props.getProperty(StreamsConfig.APPLICATION_ID_CONFIG)))
+      require(StringUtils.isNotBlank(props.getProperty(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG)))
     }
 
     def addProps(config: Config, props: Properties, prefix: (String) => String = identity): Unit = {
