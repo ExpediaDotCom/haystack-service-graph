@@ -16,3 +16,6 @@ buildNumber.properties
 *.ipr
 *.iws
 *.iml
+
+#app
+*/logs/
