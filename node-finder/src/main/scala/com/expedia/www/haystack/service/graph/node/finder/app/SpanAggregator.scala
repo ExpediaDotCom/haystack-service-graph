@@ -43,7 +43,7 @@ class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] w
 
   override def process(key: String, span: Span): Unit = {
     val spanType = SpanUtils.getSpanType(span)
-    LOGGER.info(s"Received $spanType span : ${span.getTraceId} :: ${span.getSpanId}")
+    LOGGER.debug(s"Received $spanType span : ${span.getTraceId} :: ${span.getSpanId}")
 
     if (spanType != SpanType.OTHER) {
       val spanLite = map.getOrElse(span.getSpanId, {
@@ -57,11 +57,14 @@ class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] w
   }
 
   override def punctuate(timestamp: Long): Unit = {
+    LOGGER.info(s"Punctuate called with $timestamp")
+
     //time to emit. Swap the map here
     val mapToEmit = map
     map = Map.empty
 
     //iterate and forward
+    LOGGER.info(s"Punctuate processing ${mapToEmit.size} spans")
     mapToEmit.values.filter(s => s.isComplete).foreach(s => context.forward(s.spanId, s))
 
     // commit the current processing progress
