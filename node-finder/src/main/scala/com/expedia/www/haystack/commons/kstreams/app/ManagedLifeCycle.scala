@@ -22,5 +22,5 @@ trait ManagedLifeCycle {
 
   def stop()
 
-  def isRunning : Boolean
+  def hasStarted : Boolean
 }

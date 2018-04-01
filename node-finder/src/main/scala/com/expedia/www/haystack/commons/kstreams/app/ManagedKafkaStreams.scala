@@ -23,18 +23,18 @@ import org.apache.kafka.streams.KafkaStreams
 
 class ManagedKafkaStreams(kafkaStreams: KafkaStreams) extends ManagedLifeCycle {
   require(kafkaStreams != null)
-  private val hasStarted: AtomicBoolean = new AtomicBoolean(false)
+  private val isRunning: AtomicBoolean = new AtomicBoolean(false)
 
   override def start(): Unit = {
     kafkaStreams.start()
-    hasStarted.set(true)
+    isRunning.set(true)
   }
 
   override def stop(): Unit = {
-    if (hasStarted.getAndSet(false)) {
+    if (isRunning.getAndSet(false)) {
       kafkaStreams.close()
     }
   }
 
-  override def isRunning: Boolean = hasStarted.get()
+  override def hasStarted: Boolean = isRunning.get()
 }
