@@ -44,6 +44,11 @@ class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: Stream
 
   private val LOGGER = LoggerFactory.getLogger(classOf[StreamsFactory])
 
+  /**
+    *
+    * @param listener
+    * @return
+    */
   def create(listener: StateChangeListener): ManagedService = {
     checkConsumerTopic()
 
@@ -54,7 +59,7 @@ class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: Stream
     new ManagedKafkaStreams(streams)
   }
 
-  def checkConsumerTopic(): Unit = {
+  private def checkConsumerTopic(): Unit = {
     if (consumerTopicName.nonEmpty) {
       val topicName = consumerTopicName.get
       LOGGER.info(s"checking for the consumer topic $topicName")
@@ -62,7 +67,8 @@ class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: Stream
       try {
         val present = adminClient.listTopics().names().get().contains(topicName)
         if (!present) {
-          throw new ConsumerTopicNotPresentException(topicName, s"Topic '$topicName' is not present")
+          throw new TopicNotPresentException(topicName,
+            s"Topic '$topicName' is configured as a consumer and it is not present")
         }
       }
       finally {
@@ -79,11 +85,11 @@ class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: Stream
   }
 
   /**
-    * Custom RuntimeException that represents
-    * @param message
+    * Custom RuntimeException that represents required Kafka topic not present
+    * @param topic Name of the topic that is missing
+    * @param message Reason why the exception was raised
     */
-  class ConsumerTopicNotPresentException(topic: String, message: String) extends RuntimeException(message) {
+  class TopicNotPresentException(topic: String, message: String) extends RuntimeException(message) {
   }
-
 }
 
