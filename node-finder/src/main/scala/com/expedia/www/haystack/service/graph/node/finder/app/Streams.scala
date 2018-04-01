@@ -26,43 +26,46 @@ import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.Topology
 
+object Streams {
+  val PROTO_SPANS = "proto-spans"
+  val SPAN_AGGREGATOR = "span-aggregator"
+  val LATENCY_PRODUCER = "latency-producer"
+  val GRAPH_NODE_PRODUCER = "node-n-edges-producer"
+  val METRIC_SINK = "metricSink"
+  val GRAPH_NODE_SINK = "graphNodeSink"
+}
 class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
 
+  import Streams._
+  
   override def get(): Topology = addSteps(new Topology)
 
   @VisibleForTesting
   def addSteps(topology: Topology) : Topology = {
-    val sourceName = "proto-spans"
-    val aggregatorName = "span-aggregator"
-    val latencyProducerName = "latency-producer"
-    val graphNodeProducerName = "node-n-edges-producer"
-    val meticSinkName = "metricSink"
-    val graphNodeSinkName = "graphNodeSink"
-
     //add source
-    addSource(sourceName, topology)
+    addSource(PROTO_SPANS, topology)
 
     //add span aggregator. This step will aggregate spans
     //by message id. This will emit spans with client-server
     //relationship after specified number of seconds
-    addAggregator(aggregatorName, topology, sourceName)
+    addAggregator(SPAN_AGGREGATOR, topology, PROTO_SPANS)
 
     //add latency producer. This is downstream of aggregator
     //this will parse a span with client-server relationship and
     //emit a metric point on the latency for that service-operation pair
-    addLatencyProducer(latencyProducerName, topology, aggregatorName)
+    addLatencyProducer(LATENCY_PRODUCER, topology, SPAN_AGGREGATOR)
 
     //add graph node producer. This is downstream of aggregator
     //for each client-server span emitted by the aggregator, this will
     //produce a service - operation - service data point for building
     //the edges between the nodes in a graph
-    addGraphNodeProducer(graphNodeProducerName, topology, aggregatorName)
+    addGraphNodeProducer(GRAPH_NODE_PRODUCER, topology, SPAN_AGGREGATOR)
 
     //add sink for latency producer
-    addMetricSink(meticSinkName, kafkaConfiguration.metricsTopic, topology, latencyProducerName)
+    addMetricSink(METRIC_SINK, kafkaConfiguration.metricsTopic, topology, LATENCY_PRODUCER)
 
     //add sink for graph node producer
-    addGraphNodeSink(graphNodeSinkName, kafkaConfiguration.serviceCallTopic, topology, graphNodeProducerName)
+    addGraphNodeSink(GRAPH_NODE_SINK, kafkaConfiguration.serviceCallTopic, topology, GRAPH_NODE_PRODUCER)
 
     //return the topology built
     topology
@@ -82,7 +85,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
   private def addAggregator(aggregatorName: String, topology: Topology, sourceName: String) : Unit = {
     topology.addProcessor(
       aggregatorName,
-      new SpanAggregatorSupplier(kafkaConfiguration),
+      new SpanAggregatorSupplier(kafkaConfiguration.aggregatorInterval),
       sourceName
     )
   }

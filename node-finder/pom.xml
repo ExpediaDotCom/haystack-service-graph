@@ -107,6 +107,11 @@
             <plugin>
                 <groupId>org.scoverage</groupId>
                 <artifactId>scoverage-maven-plugin</artifactId>
+                <configuration>
+                    <highlighting>true</highlighting>
+                    <excludedPackages>com.expedia.www.haystack.service.graph.node.finder</excludedPackages>
+                    <!--<excludedFiles>.*?routes_(routing|reverseRouting)</excludedFiles>-->
+                </configuration>
             </plugin>
             
             <plugin>

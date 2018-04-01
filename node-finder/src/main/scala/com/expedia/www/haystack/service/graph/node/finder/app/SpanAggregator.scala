@@ -21,14 +21,15 @@ import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
 import com.expedia.www.haystack.service.graph.node.finder.model.SpanLite
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
+import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.streams.processor._
 import org.slf4j.LoggerFactory
 
-class SpanAggregatorSupplier(kafkaConfig: KafkaConfiguration) extends ProcessorSupplier[String, Span] {
-  override def get() : Processor[String, Span] = new SpanAggregator(kafkaConfig)
+class SpanAggregatorSupplier(aggregatorInterval : Int) extends ProcessorSupplier[String, Span] {
+  override def get() : Processor[String, Span] = new SpanAggregator(aggregatorInterval)
 }
 
-class SpanAggregator(kafkaConfig: KafkaConfiguration) extends Processor[String, Span] with Punctuator {
+class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] with Punctuator {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[SpanAggregator])
   private var context: ProcessorContext = _
@@ -36,7 +37,7 @@ class SpanAggregator(kafkaConfig: KafkaConfiguration) extends Processor[String, 
 
   override def init(context: ProcessorContext): Unit =  {
     this.context = context
-    this.context.schedule(kafkaConfig.aggregatorInterval, PunctuationType.STREAM_TIME, this)
+    this.context.schedule(aggregatorInterval, PunctuationType.STREAM_TIME, this)
     LOGGER.info(s"${this.getClass.getSimpleName} initialized")
   }
 
@@ -68,4 +69,7 @@ class SpanAggregator(kafkaConfig: KafkaConfiguration) extends Processor[String, 
   }
 
   override def close(): Unit = {}
+
+  @VisibleForTesting
+  def spanCount : Int = map.size
 }

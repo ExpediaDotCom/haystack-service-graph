@@ -25,8 +25,6 @@ import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 
 class SpanSerde extends Serde[Span] with MetricsSupport {
 
-  private val spanSerdeMeter = metricRegistry.meter("span.serde.failure")
-
   override def configure(configs: util.Map[String, _], b: Boolean): Unit = ()
 
   override def close(): Unit = ()
@@ -43,29 +41,33 @@ class SpanSerde extends Serde[Span] with MetricsSupport {
   }
 
   def deserializer: Deserializer[Span] = {
-    new Deserializer[Span] {
-      override def configure(configs: util.Map[String, _], b: Boolean): Unit = ()
+    new SpanDeserializer
+  }
+}
 
-      override def close(): Unit = ()
+class SpanDeserializer extends Deserializer[Span] with MetricsSupport  {
+  private val spanSerdeMeter = metricRegistry.meter("span.serde.failure")
 
-      override def deserialize(topic: String, data: Array[Byte]): Span = performDeserialize(data)
+  override def configure(configs: util.Map[String, _], b: Boolean): Unit = ()
 
-      /**
-        * converts the binary protobuf bytes into Span object
-        *
-        * @param data serialized bytes of Span
-        * @return
-        */
-      private def performDeserialize(data: Array[Byte]): Span = {
-        try {
-          if (data == null || data.length == 0) null else Span.parseFrom(data)
-        } catch {
-          case _: Exception =>
-            /* may be log and add metric */
-            spanSerdeMeter.mark()
-            null
-        }
-      }
+  override def close(): Unit = ()
+
+  override def deserialize(topic: String, data: Array[Byte]): Span = performDeserialize(data)
+
+  /**
+    * converts the binary protobuf bytes into Span object
+    *
+    * @param data serialized bytes of Span
+    * @return
+    */
+  private def performDeserialize(data: Array[Byte]): Span = {
+    try {
+      if (data == null || data.length == 0) null else Span.parseFrom(data)
+    } catch {
+      case _: Exception =>
+        /* may be log and add metric */
+        spanSerdeMeter.mark()
+        null
     }
   }
 }

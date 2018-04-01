@@ -1,8 +1,5 @@
 package com.expedia.www.haystack.service.graph.node.finder.utils
 
-import java.util.UUID
-
-import com.expedia.open.tracing.{Log, Span, Tag}
 import com.expedia.www.haystack.UnitTestSpec
 
 class SpanUtilsSpec extends UnitTestSpec {
