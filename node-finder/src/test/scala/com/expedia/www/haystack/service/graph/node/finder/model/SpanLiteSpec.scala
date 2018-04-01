@@ -86,12 +86,10 @@ class SpanLiteSpec extends UnitTestSpec {
       spanLite.merge(clientSpan, SpanType.CLIENT)
       spanLite.merge(serverSpan, SpanType.SERVER)
       When("get Latency is called")
-      val latencies = spanLite.getLatency.get
+      val metricPoint = spanLite.getLatency.get
       Then("it should return a valid latency pairs")
       spanLite.isComplete should be (true)
-      latencies.length should be (2)
-      latencies.head should be (MetricPoint("foo-service.bar.latency", MetricType.Gauge, Map.empty, 500, clientSend))
-      latencies(1) should be (MetricPoint("foo-service.bar.latency", MetricType.Gauge, Map.empty, 500, serverReceive + 500))
+      metricPoint should be (MetricPoint("foo-service.bar.latency", MetricType.Gauge, Map.empty, 1000, clientSend))
     }
   }
 

@@ -18,6 +18,7 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.open.tracing.Span
+import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
 import com.expedia.www.haystack.service.graph.node.finder.model.SpanLite
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
@@ -29,9 +30,14 @@ class SpanAggregatorSupplier(aggregatorInterval : Int) extends ProcessorSupplier
   override def get() : Processor[String, Span] = new SpanAggregator(aggregatorInterval)
 }
 
-class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] with Punctuator {
+class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] with Punctuator with MetricsSupport {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[SpanAggregator])
+  private val processMeter = metricRegistry.meter("span.aggregator.process")
+  private val aggregateMeter = metricRegistry.meter("span.aggregator.aggregate")
+  private val forwardMeter = metricRegistry.meter("span.aggregator.emit")
+  private val aggregateHistogram = metricRegistry.histogram("span.aggregator.buffered.spans")
+
   private var context: ProcessorContext = _
   private var map : Map[String, SpanLite] = Map.empty
 
@@ -42,15 +48,20 @@ class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] w
   }
 
   override def process(key: String, span: Span): Unit = {
+    processMeter.mark()
+
     val spanType = SpanUtils.getSpanType(span)
+
     LOGGER.debug(s"Received $spanType span : ${span.getTraceId} :: ${span.getSpanId}")
 
     if (spanType != SpanType.OTHER) {
       val spanLite = map.getOrElse(span.getSpanId, {
         val s = new SpanLite(span.getSpanId)
         map = map.updated(span.getSpanId, s)
+        aggregateMeter.mark()
         s
       })
+
       spanLite.merge(span, spanType)
       LOGGER.info(s"Received $spanType span : $spanLite")
     }
@@ -65,10 +76,16 @@ class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] w
 
     //iterate and forward
     LOGGER.info(s"Punctuate processing ${mapToEmit.size} spans")
-    mapToEmit.values.filter(s => s.isComplete).foreach(s => context.forward(s.spanId, s))
+    mapToEmit.values.filter(s => s.isComplete).foreach(s => {
+      context.forward(s.spanId, s)
+      forwardMeter.mark()
+    })
 
     // commit the current processing progress
     context.commit()
+
+    //add gauge
+    aggregateHistogram.update(mapToEmit.size)
   }
 
   override def close(): Unit = {}

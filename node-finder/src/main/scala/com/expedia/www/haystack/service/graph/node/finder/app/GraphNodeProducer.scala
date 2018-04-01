@@ -17,26 +17,42 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.app
 
+import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.node.finder.model.SpanLite
 import org.apache.kafka.streams.processor.{Processor, ProcessorContext, ProcessorSupplier}
+import org.slf4j.LoggerFactory
 
 class GraphNodeProducerSupplier extends ProcessorSupplier[String, SpanLite] {
   override def get(): Processor[String, SpanLite] = new GraphNodeProducer
 }
 
-class GraphNodeProducer extends Processor[String, SpanLite] {
+class GraphNodeProducer extends Processor[String, SpanLite] with MetricsSupport {
   private var context: ProcessorContext = _
+  private val processMeter = metricRegistry.meter("graph.node.producer.process")
+  private val forwardMeter = metricRegistry.meter("graph.node.producer.emit")
+  private val LOGGER = LoggerFactory.getLogger(classOf[GraphNodeProducer])
 
   override def init(context: ProcessorContext): Unit = {
     this.context = context
   }
 
   override def process(key: String, spanLite: SpanLite): Unit = {
+    processMeter.mark()
+
+    if (LOGGER.isDebugEnabled) {
+      LOGGER.debug(s"Received message ($key, $spanLite)")
+    }
+
     spanLite.getGraphEdge match {
       case Some(graphEdge) =>
         context.forward(spanLite.spanId, graphEdge.toJson)
+        forwardMeter.mark()
+        if (LOGGER.isDebugEnabled) {
+          LOGGER.debug(s"Graph edge : (${spanLite.spanId}, ${graphEdge.toJson}")
+        }
       case None =>
     }
+
     context.commit()
   }
 
