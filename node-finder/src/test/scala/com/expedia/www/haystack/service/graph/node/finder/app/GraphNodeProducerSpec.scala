@@ -41,4 +41,14 @@ class GraphNodeProducerSpec extends UnitTestSpec {
       verify(context)
     }
   }
+  describe("graph node producer supplier") {
+    it("should supply a valid producer") {
+      Given("a supplier instance")
+      val supplier = new GraphNodeProducerSupplier
+      When("a producer is request")
+      val producer = supplier.get()
+      Then("should yield a valid producer")
+      producer should not be null
+    }
+  }
 }

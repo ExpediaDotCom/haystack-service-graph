@@ -109,8 +109,8 @@
                 <artifactId>scoverage-maven-plugin</artifactId>
                 <configuration>
                     <highlighting>true</highlighting>
-                    <excludedPackages>com.expedia.www.haystack.service.graph.node.finder</excludedPackages>
-                    <!--<excludedFiles>.*?routes_(routing|reverseRouting)</excludedFiles>-->
+                    <excludedPackages> com.expedia.www.haystack.service.graph.node.finder;com.expedia.www.haystack.commons.kstreams.app.Main;com.expedia.www.haystack.commons.kstreams.app.StreamsFactory </excludedPackages>
+                    <!--<excludedFiles> </excludedFiles>-->
                 </configuration>
             </plugin>
             

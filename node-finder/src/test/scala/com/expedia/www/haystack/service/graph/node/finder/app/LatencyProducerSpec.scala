@@ -39,4 +39,14 @@ class LatencyProducerSpec extends UnitTestSpec {
       verify(context)
     }
   }
+  describe("latency producer supplier") {
+    it("should supply a valid producer") {
+      Given("a supplier instance")
+      val supplier = new LatencyProducerSupplier
+      When("a producer is request")
+      val producer = supplier.get()
+      Then("should yield a valid producer")
+      producer should not be null
+    }
+  }
 }

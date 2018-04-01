@@ -59,4 +59,14 @@ class SpanAggregatorSpec extends UnitTestSpec {
       aggregator.spanCount should be (0)
     }
   }
+  describe("span aggregator supplier") {
+    it("should supply a valid aggregator") {
+      Given("a supplier instance")
+      val supplier = new SpanAggregatorSupplier(1000)
+      When("an aggregator instance is request")
+      val producer = supplier.get()
+      Then("should yield a valid producer")
+      producer should not be null
+    }
+  }
 }
