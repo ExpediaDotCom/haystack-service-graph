@@ -21,20 +21,36 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import org.apache.kafka.streams.KafkaStreams
 
+/**
+  * Simple service wrapper over `KafkaStreams` to manage the life cycle of the
+  * instance.
+  * @param kafkaStreams underlying KafkaStreams instance that needs to be
+  *                     managed
+  */
 class ManagedKafkaStreams(kafkaStreams: KafkaStreams) extends ManagedService {
   require(kafkaStreams != null)
   private val isRunning: AtomicBoolean = new AtomicBoolean(false)
 
+  /**
+    * @see ManagedService.start
+    */
   override def start(): Unit = {
     kafkaStreams.start()
     isRunning.set(true)
   }
 
+  /**
+    * @see ManagedService.stop
+    */
   override def stop(): Unit = {
     if (isRunning.getAndSet(false)) {
       kafkaStreams.close()
     }
   }
 
+  /**
+    * @see ManagedService.hasStarted
+    * @return
+    */
   override def hasStarted: Boolean = isRunning.get()
 }

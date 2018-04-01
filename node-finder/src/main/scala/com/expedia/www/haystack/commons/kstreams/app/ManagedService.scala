@@ -17,10 +17,28 @@
  */
 package com.expedia.www.haystack.commons.kstreams.app
 
+/**
+  * A simple trait for managing a service
+  */
 trait ManagedService {
+  /**
+    * This method is called when the service needs to be started
+    * <p>Any exception thrown by this method is propagated up the calling chain
+    * <p>After a successful start, `hasStarted` should return true
+    */
   def start()
 
+  /**
+    * This method is called when the service needs to be stopped.
+    * <p>If the service has not been started, this method should do nothing or
+    * should have no side effect
+    * <p>After successfully stopping, `hasStarted` should return false
+    */
   def stop()
 
+  /**
+    * Indicates the state of the service
+    * @return
+    */
   def hasStarted : Boolean
 }

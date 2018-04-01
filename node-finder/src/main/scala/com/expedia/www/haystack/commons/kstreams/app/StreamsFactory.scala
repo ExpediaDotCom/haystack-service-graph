@@ -4,7 +4,6 @@ import java.util.Properties
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 
-import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig, Topology}
 
@@ -30,6 +29,12 @@ import org.slf4j.LoggerFactory
 
 import scala.util.Try
 
+/**
+  * 
+  * @param topologySupplier
+  * @param streamsConfig
+  * @param consumerTopicName
+  */
 class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: StreamsConfig, consumerTopicName: Option[String]) {
 
   require(topologySupplier != null, "streamsBuilder is required")
@@ -49,24 +54,15 @@ class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: Stream
     new ManagedKafkaStreams(streams)
   }
 
-  /*
-  def create(runner: StreamsRunner): ManagedLifeCycle = {
-    new ManagedLifeCycle {
-      override def start(): Unit = {}
-      override def stop(): Unit = {}
-      override def isRunning: Boolean = true
-    }
-  }
-  */
-
   def checkConsumerTopic(): Unit = {
     if (consumerTopicName.nonEmpty) {
-      LOGGER.info(s"checking for the consumer topic ${consumerTopicName.get}")
+      val topicName = consumerTopicName.get
+      LOGGER.info(s"checking for the consumer topic $topicName")
       val adminClient = AdminClient.create(getBootstrapProperties)
       try {
-        val present = adminClient.listTopics().names().get().contains(consumerTopicName.get)
+        val present = adminClient.listTopics().names().get().contains(topicName)
         if (!present) {
-          throw new ConsumerTopicNotPresentException(s"Topic $consumerTopicName is not present")
+          throw new ConsumerTopicNotPresentException(topicName, s"Topic '$topicName' is not present")
         }
       }
       finally {
@@ -75,14 +71,18 @@ class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: Stream
     }
   }
 
-  def getBootstrapProperties: Properties = {
+  private def getBootstrapProperties: Properties = {
     val properties = new Properties()
     properties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG,
       streamsConfig.getList(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG))
     properties
   }
 
-  class ConsumerTopicNotPresentException(message: String) extends RuntimeException(message) {
+  /**
+    * Custom RuntimeException that represents
+    * @param message
+    */
+  class ConsumerTopicNotPresentException(topic: String, message: String) extends RuntimeException(message) {
   }
 
 }

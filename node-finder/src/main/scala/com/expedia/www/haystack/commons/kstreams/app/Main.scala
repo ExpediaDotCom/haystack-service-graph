@@ -24,6 +24,11 @@ import com.expedia.www.haystack.commons.logger.LoggerUtils
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import org.slf4j.LoggerFactory
 
+/**
+  * Starting point of a Kafka Streams application. One should extend this
+  * trait and provide a valid instance of `StreamsRunner` by overriding
+  * createStreamsRunner method to create and start a Kafka Streams application
+  */
 trait Main extends MetricsSupport {
 
   def main(args: Array[String]): Unit = {
@@ -40,6 +45,11 @@ trait Main extends MetricsSupport {
     })
   }
 
+  /**
+    * This method should create and return a new instance of the `StreamsRunner` class
+    * <p>That instance will be started and stopped as part of the application lifecycle
+    * @return Instance of `StreamsRunner` to be managed
+    */
   def createStreamsRunner(): StreamsRunner
 }
 
@@ -58,6 +68,9 @@ class Application(streamsRunner: StreamsRunner, jmxReporter: JmxReporter) extend
   require(streamsRunner != null)
   require(jmxReporter != null)
 
+  /**
+    * Starts the given `StreamsRunner` and `JmxReporter` instances
+    */
   def start(): Unit = {
     //start JMX reporter for metricRegistry
     jmxReporter.start()
@@ -69,6 +82,10 @@ class Application(streamsRunner: StreamsRunner, jmxReporter: JmxReporter) extend
     running.set(true)
   }
 
+  /**
+    * This method stops the given `StreamsRunner` and `JmxReporter` is they have been
+    * previously started. If not, this method does nothing
+    */
   def stop(): Unit = {
     if (running.getAndSet(false)) {
       LOGGER.info("Shutting down topology")
