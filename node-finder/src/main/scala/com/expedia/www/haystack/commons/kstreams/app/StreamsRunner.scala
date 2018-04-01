@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 class StreamsRunner(streamsFactory: StreamsFactory, stateChangeListener: StateChangeListener) extends AutoCloseable {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[StreamsRunner])
-  private var managedStreams : ManagedLifeCycle = _
+  private var managedStreams : ManagedService = _
 
   require(streamsFactory != null, "valid streamsFactory is required")
   require(stateChangeListener != null, "valid stateChangeListener is required")

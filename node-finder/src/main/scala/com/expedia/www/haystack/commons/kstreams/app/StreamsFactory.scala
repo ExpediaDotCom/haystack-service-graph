@@ -39,7 +39,7 @@ class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: Stream
 
   private val LOGGER = LoggerFactory.getLogger(classOf[StreamsFactory])
 
-  def create(listener: StateChangeListener): ManagedLifeCycle = {
+  def create(listener: StateChangeListener): ManagedService = {
     checkConsumerTopic()
 
     val streams = new KafkaStreams(topologySupplier.get(), streamsConfig)

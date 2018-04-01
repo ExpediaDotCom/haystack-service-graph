@@ -17,7 +17,7 @@
  */
 package com.expedia.www.haystack.commons.kstreams.app
 
-trait ManagedLifeCycle {
+trait ManagedService {
   def start()
 
   def stop()

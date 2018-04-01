@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import org.apache.kafka.streams.KafkaStreams
 
-class ManagedKafkaStreams(kafkaStreams: KafkaStreams) extends ManagedLifeCycle {
+class ManagedKafkaStreams(kafkaStreams: KafkaStreams) extends ManagedService {
   require(kafkaStreams != null)
   private val isRunning: AtomicBoolean = new AtomicBoolean(false)
 

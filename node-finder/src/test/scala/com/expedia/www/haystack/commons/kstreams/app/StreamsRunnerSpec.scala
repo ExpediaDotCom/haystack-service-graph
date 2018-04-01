@@ -10,37 +10,37 @@ class StreamsRunnerSpec extends UnitTestSpec {
       val factory = mock[StreamsFactory]
       And("a StateChangeListener")
       val stateChangeListener = mock[StateChangeListener]
-      val managedLifeCycle = mock[ManagedLifeCycle]
+      val managedService = mock[ManagedService]
       val streamsRunner = new StreamsRunner(factory, stateChangeListener)
       When("streamsRunner is asked to start the application")
       expecting {
-        factory.create(stateChangeListener).andReturn(managedLifeCycle).once()
-        managedLifeCycle.start().once()
+        factory.create(stateChangeListener).andReturn(managedService).once()
+        managedService.start().once()
         stateChangeListener.state(true).once()
       }
-      replay(factory, managedLifeCycle, stateChangeListener)
+      replay(factory, managedService, stateChangeListener)
       streamsRunner.start()
       Then("it should create an instance of managed streams from the given factory and start it. " +
         "It should also set the state to healthy")
-      verify(factory, managedLifeCycle, stateChangeListener)
+      verify(factory, managedService, stateChangeListener)
     }
     it("should set the state to unhealthy when the factory fails to create one") {
       Given("a StreamsFactory")
       val factory = mock[StreamsFactory]
       And("a StateChangeListener")
       val stateChangeListener = mock[StateChangeListener]
-      val managedLifeCycle = mock[ManagedLifeCycle]
+      val managedService = mock[ManagedService]
       val streamsRunner = new StreamsRunner(factory, stateChangeListener)
       When("streamsRunner is asked to start the application and factory fails")
       expecting {
         factory.create(stateChangeListener).andThrow(new RuntimeException).once()
         stateChangeListener.state(false).once()
       }
-      replay(factory, managedLifeCycle, stateChangeListener)
+      replay(factory, managedService, stateChangeListener)
       streamsRunner.start()
       Then("it should attempt tp create an instance of managed streams from the given factory. " +
         "It should also set the state to unhealthy")
-      verify(factory, managedLifeCycle, stateChangeListener)
+      verify(factory, managedService, stateChangeListener)
     }
   }
 }
