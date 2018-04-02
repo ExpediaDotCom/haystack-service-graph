@@ -30,10 +30,13 @@ import org.slf4j.LoggerFactory
 import scala.util.Try
 
 /**
-  * 
-  * @param topologySupplier
-  * @param streamsConfig
-  * @param consumerTopicName
+  * Factory class to create a KafkaStreams instance and wrap it as a simple service {@see ManagedKafkaStreams}
+  *
+  * Optionally this class can check the presence of consuming topic
+  *
+  * @param topologySupplier  A supplier that creates and returns a Kafka Stream Topology
+  * @param streamsConfig Configuration instance for KafkaStreams
+  * @param consumerTopicName Optional consuming topic name
   */
 class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: StreamsConfig, consumerTopicName: Option[String]) {
 
@@ -85,11 +88,12 @@ class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: Stream
   }
 
   /**
-    * Custom RuntimeException that represents required Kafka topic not present
+    * Custom RuntimeException that represents a required Kafka topic not being present
     * @param topic Name of the topic that is missing
-    * @param message Reason why the exception was raised
+    * @param message Message
     */
   class TopicNotPresentException(topic: String, message: String) extends RuntimeException(message) {
+    def getTopic : String = topic
   }
 }
 
