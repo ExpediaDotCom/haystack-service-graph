@@ -46,16 +46,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.expedia.www</groupId>
-            <artifactId>haystack-commons</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>io.searchbox</groupId>
             <artifactId>jest</artifactId>
         </dependency>

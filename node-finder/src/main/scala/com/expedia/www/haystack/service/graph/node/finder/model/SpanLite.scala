@@ -18,7 +18,7 @@
 package com.expedia.www.haystack.service.graph.node.finder.model
 
 import com.expedia.open.tracing.Span
-import com.expedia.www.haystack.commons.entities.{MetricPoint, MetricType}
+import com.expedia.www.haystack.commons.entities.{MetricPoint, MetricType, TagKeys}
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType.SpanType
 import com.expedia.www.haystack.service.graph.node.finder.utils.{Flag, SpanType, SpanUtils}
 import org.slf4j.LoggerFactory
@@ -79,12 +79,15 @@ class SpanLite(val spanId: String) {
 
   def getLatency: Option[MetricPoint] = {
     if (isComplete)
-      Some(MetricPoint(getMetricKey, MetricType.Gauge, Map.empty, clientDuration - serverDuration, clientSend))
+      Some(MetricPoint("latency", MetricType.Gauge, getTags, clientDuration - serverDuration, clientSend))
     else
       None
   }
 
-  private def getMetricKey: String = {
-    s"$sourceServiceName.$operationName.latency"
+  private def getTags: Map[String, String] = {
+    Map(
+      TagKeys.SERVICE_NAME_KEY -> sourceServiceName,
+      TagKeys.OPERATION_NAME_KEY -> operationName
+    )
   }
 }

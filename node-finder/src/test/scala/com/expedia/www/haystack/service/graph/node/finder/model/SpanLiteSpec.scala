@@ -3,7 +3,7 @@ package com.expedia.www.haystack.service.graph.node.finder.model
 import java.util.UUID
 
 import com.expedia.www.haystack.UnitTestSpec
-import com.expedia.www.haystack.commons.entities.{MetricPoint, MetricType}
+import com.expedia.www.haystack.commons.entities.{MetricPoint, MetricType, TagKeys}
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType
 
 class SpanLiteSpec extends UnitTestSpec {
@@ -14,7 +14,7 @@ class SpanLiteSpec extends UnitTestSpec {
       When("get graphEdge is invoked")
       val graphEdge = spanLite.getGraphEdge
       Then("it should return None")
-      graphEdge should be (None)
+      graphEdge should be(None)
     }
     it("should return no metric points") {
       Given("an incomplete spanlite")
@@ -22,7 +22,7 @@ class SpanLiteSpec extends UnitTestSpec {
       When("get latency is invoked")
       val latency = spanLite.getLatency
       Then("it should return None")
-      latency should be (None)
+      latency should be(None)
     }
     it("should still be incomplete when a span is merged with incorrect spanlite (non matching spanId)") {
       Given("an incomplete spanlite")
@@ -32,8 +32,8 @@ class SpanLiteSpec extends UnitTestSpec {
       When("a CLIENT span is merged")
       val merged = spanLite.merge(span, SpanType.CLIENT)
       Then("it should not be merged")
-      merged should be (false)
-      spanLite.isComplete should be (false)
+      merged should be(false)
+      spanLite.isComplete should be(false)
     }
     it("should still be incomplete when only CLIENT or SERVER span is merged with spanlite") {
       Given("an incomplete spanlite")
@@ -43,8 +43,8 @@ class SpanLiteSpec extends UnitTestSpec {
       When("a CLIENT span is merged")
       val merged = spanLite.merge(span, SpanType.CLIENT)
       Then("it should be merged yet stay incomplete")
-      merged should be (true)
-      spanLite.isComplete should be (false)
+      merged should be(true)
+      spanLite.isComplete should be(false)
     }
     it("should be complete when CLIENT and SERVER spans are merged with spanlite") {
       Given("an incomplete spanlite")
@@ -56,8 +56,8 @@ class SpanLiteSpec extends UnitTestSpec {
       val merged = spanLite.merge(clientSpan, SpanType.CLIENT)
       val merged2 = spanLite.merge(serverSpan, SpanType.SERVER)
       Then("it should be merged and turn complete")
-      merged should be (true)
-      spanLite.isComplete should be (true)
+      merged should be(true)
+      spanLite.isComplete should be(true)
     }
   }
   describe("a complete span") {
@@ -72,8 +72,8 @@ class SpanLiteSpec extends UnitTestSpec {
       When("get graphEdge is called")
       val graphEdge = spanLite.getGraphEdge
       Then("it should return a valid graphEdge")
-      spanLite.isComplete should be (true)
-      graphEdge.get should be (GraphEdge("foo-service", "baz-service", "bar"))
+      spanLite.isComplete should be(true)
+      graphEdge.get should be(GraphEdge("foo-service", "baz-service", "bar"))
     }
     it("should return valid metricPoints") {
       Given("a complete spanlite")
@@ -88,8 +88,8 @@ class SpanLiteSpec extends UnitTestSpec {
       When("get Latency is called")
       val metricPoint = spanLite.getLatency.get
       Then("it should return a valid latency pairs")
-      spanLite.isComplete should be (true)
-      metricPoint should be (MetricPoint("foo-service.bar.latency", MetricType.Gauge, Map.empty, 1000, clientSend))
+      spanLite.isComplete should be(true)
+      metricPoint should be(MetricPoint("latency", MetricType.Gauge, Map(TagKeys.SERVICE_NAME_KEY -> "foo-service", TagKeys.OPERATION_NAME_KEY -> "bar"), 1000, clientSend))
     }
   }
 
