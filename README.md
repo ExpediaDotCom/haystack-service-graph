@@ -7,5 +7,5 @@
 ## Building
 
 ```
-make all
+make all 
 ```
