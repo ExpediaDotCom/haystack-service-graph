@@ -19,6 +19,12 @@ package com.expedia.www.haystack.service.graph.node.finder.model
 
 import org.apache.commons.lang3.StringUtils
 
+/**
+  * Case class with enough information to build a relationship between to graph nodes
+  * @param source identifier for the source graph node
+  * @param destination identifier for the destination graph node
+  * @param operation identifier for the graph edge
+  */
 case class GraphEdge(source: String,
                      destination: String,
                      operation: String)  {
@@ -27,6 +33,11 @@ case class GraphEdge(source: String,
   require(StringUtils.isNotBlank(destination))
   require(StringUtils.isNoneBlank(operation))
 
+  /**
+    * Returns a simple JSON representation of the current GraphEdge instance with keys "source",
+    * "destination" and "operation"
+    * @return JSON string
+    */
   def toJson : String = {
     "{\"source\":\"" + source + "\",\"destination\":\"" + destination + "\",\"operation\":\"" + operation + "\"}"
   }

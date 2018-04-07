@@ -26,17 +26,14 @@ import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.Topology
 
-object Streams {
+class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
+
   val PROTO_SPANS = "proto-spans"
   val SPAN_AGGREGATOR = "span-aggregator"
   val LATENCY_PRODUCER = "latency-producer"
   val GRAPH_NODE_PRODUCER = "node-n-edges-producer"
   val METRIC_SINK = "metricSink"
   val GRAPH_NODE_SINK = "graphNodeSink"
-}
-class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
-
-  import Streams._
   
   override def get(): Topology = addSteps(new Topology)
 

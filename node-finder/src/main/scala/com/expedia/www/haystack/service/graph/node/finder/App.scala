@@ -22,8 +22,25 @@ import com.expedia.www.haystack.commons.kstreams.app.{Main, StateChangeListener,
 import com.expedia.www.haystack.service.graph.node.finder.app.Streams
 import com.expedia.www.haystack.service.graph.node.finder.config.AppConfiguration
 
+/**
+  * Starting point for node-finder application
+  */
 object App extends Main {
-  def createStreamsRunner() : StreamsRunner = {
+  /**
+    * Creates a valid instance of StreamsRunner.
+    *
+    * StreamsRunner is created with a valid StreamsFactory instance and a listener that observes
+    * state changes of the kstreams application.
+    *
+    * StreamsFactory in turn is created with a Topology Supplier and kafka.StreamsConfig. Any failure in
+    * StreamsFactory is gracefully handled by StreamsRunner to shut the application off
+    *
+    * Core logic of this application is in the `app.Streams` instance - which is a topology supplier. The
+    * topology of this application is built in this class.
+    *
+    * @return A valid instance of `StreamsRunner`
+    */
+  override def createStreamsRunner(): StreamsRunner = {
     val appConfiguration = new AppConfiguration()
 
     val healthStatusController = new HealthStatusController

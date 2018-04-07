@@ -23,6 +23,9 @@ import org.apache.commons.lang3.StringUtils
 
 import scala.collection.JavaConversions._
 
+/**
+  * Object with utility methods to process a Span
+  */
 object SpanUtils {
 
   val SERVER_SEND_EVENT = "ss"
@@ -30,12 +33,27 @@ object SpanUtils {
   val CLIENT_SEND_EVENT = "cs"
   val CLIENT_RECV_EVENT = "cr"
 
+  private val ONE = math.pow(2, 0).asInstanceOf[Int]
+  private val TWO = math.pow(2, 1).asInstanceOf[Int]
+  private val FOUR = math.pow(2, 2).asInstanceOf[Int]
+  private val EIGHT = math.pow(2, 3).asInstanceOf[Int]
+
+  private val THREE = ONE | TWO
+  private val TWELVE = FOUR | EIGHT
+
   private val SPAN_MARKERS = Map(
-    CLIENT_SEND_EVENT -> Flag(1), CLIENT_RECV_EVENT -> Flag(2),
-    SERVER_SEND_EVENT -> Flag(4), SERVER_RECV_EVENT -> Flag(8))
+    CLIENT_SEND_EVENT -> Flag(ONE), CLIENT_RECV_EVENT -> Flag(TWO),
+    SERVER_SEND_EVENT -> Flag(FOUR), SERVER_RECV_EVENT -> Flag(EIGHT))
 
-  private val SPAN_TYPE_MAP = Map(Flag(3) -> SpanType.CLIENT, Flag(12) -> SpanType.SERVER)
+  private val SPAN_TYPE_MAP = Map(Flag(THREE) -> SpanType.CLIENT, Flag(TWELVE) -> SpanType.SERVER)
 
+  /**
+    * Given a span, this method looks for ('cs', 'cr') and ('sr', 'ss') pairs in log fields with key as "event"
+    * to identify a span type. Presence of ('cs', 'cr') events will result in SpanType.CLIENT and presence of
+    * events ('sr', 'ss') events will result in SpanType.SERVER. All other spans will be identified as OTHER
+    * @param span Span to identify
+    * @return Some(SpanType) of the given span or None
+    */
   def getSpanType(span: Span): SpanType = {
     var flag = Flag(0)
     span.getLogsList.forEach(log => {
@@ -48,11 +66,18 @@ object SpanUtils {
     SPAN_TYPE_MAP.getOrElse(flag, SpanType.OTHER)
   }
 
-  def getEventTimestamp(span: Span, event: String): Option[Long] =
+  /**
+    * Finds the timestamp of the log entry in the given span that has a key named "event" with value that matches
+    * the given eventValue
+    * @param span Span from which event timestamp to be read
+    * @param eventValue value if the "event" field to match
+    * @return Some(Long) of the timestamp read or None
+    */
+  def getEventTimestamp(span: Span, eventValue: String): Option[Long] =
     span.getLogsList.find(log => {
       log.getFieldsList.exists(tag => {
         tag.getKey.equalsIgnoreCase("event") && StringUtils.isNotEmpty(tag.getVStr) &&
-          tag.getVStr.equalsIgnoreCase(event)
+          tag.getVStr.equalsIgnoreCase(eventValue)
       })
     }) match {
       case Some(log) => Option(log.getTimestamp)
@@ -60,11 +85,19 @@ object SpanUtils {
     }
 }
 
+/**
+  * Enum for different span types processed
+  * by the node finder application
+  */
 object SpanType extends Enumeration {
   type SpanType = Value
   val SERVER, CLIENT, OTHER = Value
 }
 
+/**
+  * Simple case class representing a flag
+  * @param value : value of the flag
+  */
 case class Flag(value: Int) {
   def | (that: Flag): Flag = Flag(this.value | that.value)
 

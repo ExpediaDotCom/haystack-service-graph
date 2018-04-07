@@ -17,10 +17,22 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.config
 
+import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.Topology.AutoOffsetReset
 import org.apache.kafka.streams.processor.TimestampExtractor
 
+/**
+  * Case class holding required configuration for the node finder kstreams app
+  * @param streamsConfig valid instance of StreamsConfig
+  * @param metricsTopic topic name for latency metrics
+  * @param serviceCallTopic topic name for service call relationship information
+  * @param protoSpanTopic topic from where Spans serialized in protobuf to be consumed
+  * @param autoOffsetReset Offset type for the kstreams app to start with
+  * @param timestampExtractor instance of timestamp extractor
+  * @param aggregatorInterval interval to aggregate spans to look for client and server spans
+  * @param closeTimeoutInMs time for closing a kafka topic
+  */
 case class KafkaConfiguration(streamsConfig: StreamsConfig,
                               metricsTopic: String,
                               serviceCallTopic: String,
@@ -28,4 +40,12 @@ case class KafkaConfiguration(streamsConfig: StreamsConfig,
                               autoOffsetReset: AutoOffsetReset,
                               timestampExtractor: TimestampExtractor,
                               aggregatorInterval: Int,
-                              closeTimeoutInMs: Long)
+                              closeTimeoutInMs: Long) {
+  require(streamsConfig != null)
+  require(StringUtils.isNotBlank(metricsTopic))
+  require(StringUtils.isNotBlank(serviceCallTopic))
+  require(StringUtils.isNotBlank(protoSpanTopic))
+  require(autoOffsetReset != null)
+  require(timestampExtractor != null)
+  require(closeTimeoutInMs > 0)
+}

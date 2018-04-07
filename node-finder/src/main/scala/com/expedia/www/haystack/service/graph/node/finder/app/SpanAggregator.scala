@@ -19,7 +19,6 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
 import com.expedia.www.haystack.service.graph.node.finder.model.SpanLite
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
 import com.netflix.servo.util.VisibleForTesting

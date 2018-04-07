@@ -29,16 +29,30 @@ import org.apache.kafka.streams.processor.TimestampExtractor
 
 import scala.collection.JavaConverters._
 
+/**
+  * This class reads the configuration from the given resource name using {@link ConfigurationLoader ConfigurationLoader}
+  *
+  * @param resourceName name of the resource file to load
+  */
 class AppConfiguration(resourceName: String) {
 
   require(StringUtils.isNotBlank(resourceName))
 
-  def this() = this("app.conf")
-
   private val config = ConfigurationLoader.loadConfigFileWithEnvOverrides(resourceName = this.resourceName)
 
+  /**
+    * default constructor. Loads config from resource name to "app.conf"
+    */
+  def this() = this("app.conf")
+
+  /**
+    * Location of the health status file
+    */
   val healthStatusFilePath: String = config.getString("health.status.path")
 
+  /**
+    * Instance of {@link KafkaConfiguration KafkaConfiguration} to be used by the kstreams application
+    */
   lazy val kafkaConfig: KafkaConfiguration = {
 
     // verify if the applicationId and bootstrap server config are non empty
@@ -81,10 +95,12 @@ class AppConfiguration(resourceName: String) {
       producerConfig.getString("metrics.topic"),
       producerConfig.getString("service.call.topic"),
       consumerConfig.getString("topic"),
-      if (streamsConfig.hasPath("auto.offset.reset"))
+      if (streamsConfig.hasPath("auto.offset.reset")) {
         AutoOffsetReset.valueOf(streamsConfig.getString("auto.offset.reset").toUpperCase)
-      else
-        AutoOffsetReset.LATEST,
+      }
+      else {
+        AutoOffsetReset.LATEST
+      },
       timestampExtractor,
       kafka.getInt("aggregator.interval"),
       kafka.getLong("close.timeout.ms")
