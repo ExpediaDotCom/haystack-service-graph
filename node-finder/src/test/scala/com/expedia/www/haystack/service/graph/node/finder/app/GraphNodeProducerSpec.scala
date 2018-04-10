@@ -1,10 +1,10 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
-import com.expedia.www.haystack.UnitTestSpec
+import com.expedia.www.haystack.TestSpec
 import org.apache.kafka.streams.processor.ProcessorContext
 import org.easymock.EasyMock._
 
-class GraphNodeProducerSpec extends UnitTestSpec {
+class GraphNodeProducerSpec extends TestSpec {
   describe("producing graph nodes") {
     it("should emit a valid graph node for a give complete SpanLite") {
       Given("a valid SpanLite instance")

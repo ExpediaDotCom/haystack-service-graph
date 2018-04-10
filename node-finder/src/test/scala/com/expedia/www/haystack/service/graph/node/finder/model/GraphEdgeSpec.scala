@@ -1,8 +1,8 @@
 package com.expedia.www.haystack.service.graph.node.finder.model
 
-import com.expedia.www.haystack.UnitTestSpec
+import com.expedia.www.haystack.TestSpec
 
-class GraphEdgeSpec extends UnitTestSpec {
+class GraphEdgeSpec extends TestSpec {
   describe("graphEdge object serialization") {
     it("should produce an expected json") {
       Given("a graph edge instance")

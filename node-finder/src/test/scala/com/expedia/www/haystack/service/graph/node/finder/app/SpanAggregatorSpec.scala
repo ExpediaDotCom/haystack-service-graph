@@ -1,12 +1,12 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.open.tracing.Span
-import com.expedia.www.haystack.UnitTestSpec
+import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.service.graph.node.finder.model.SpanLite
 import org.apache.kafka.streams.processor.{Cancellable, ProcessorContext, PunctuationType, Punctuator}
 import org.easymock.EasyMock._
 
-class SpanAggregatorSpec extends UnitTestSpec {
+class SpanAggregatorSpec extends TestSpec {
   describe("a span aggregator") {
     it("should schedule Punctuator on init") {
       Given("a processor context")

@@ -21,6 +21,7 @@ import com.expedia.www.haystack.commons.health.{HealthStatusController, UpdateHe
 import com.expedia.www.haystack.commons.kstreams.app.{Main, StateChangeListener, StreamsFactory, StreamsRunner}
 import com.expedia.www.haystack.service.graph.node.finder.app.Streams
 import com.expedia.www.haystack.service.graph.node.finder.config.AppConfiguration
+import com.netflix.servo.util.VisibleForTesting
 
 /**
   * Starting point for node-finder application
@@ -41,8 +42,11 @@ object App extends Main {
     * @return A valid instance of `StreamsRunner`
     */
   override def createStreamsRunner(): StreamsRunner = {
-    val appConfiguration = new AppConfiguration()
+    createStreamsRunner(new AppConfiguration())
+  }
 
+  @VisibleForTesting
+  def createStreamsRunner(appConfiguration: AppConfiguration): StreamsRunner = {
     val healthStatusController = new HealthStatusController
     healthStatusController.addListener(new UpdateHealthStatusFile(appConfiguration.healthStatusFilePath))
 

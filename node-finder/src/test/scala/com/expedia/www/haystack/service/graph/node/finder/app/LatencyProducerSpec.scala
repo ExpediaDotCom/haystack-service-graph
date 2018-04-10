@@ -1,11 +1,11 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
-import com.expedia.www.haystack.UnitTestSpec
+import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.commons.entities.MetricPoint
 import org.apache.kafka.streams.processor.ProcessorContext
 import org.easymock.EasyMock._
 
-class LatencyProducerSpec extends UnitTestSpec {
+class LatencyProducerSpec extends TestSpec {
   describe("latency producer") {
     it("should produce latency metric for complete SpanLite") {
       Given("a valid SpanLite instance")

@@ -1,8 +1,8 @@
 package com.expedia.www.haystack.service.graph.node.finder.utils
 
-import com.expedia.www.haystack.UnitTestSpec
+import com.expedia.www.haystack.TestSpec
 
-class SpanUtilsSpec extends UnitTestSpec {
+class SpanUtilsSpec extends TestSpec {
   describe("discovering a span type") {
     it("should return CLIENT when both 'cr' and 'cs' is present") {
       Given("a span with 'cr' and 'cs' event logs")

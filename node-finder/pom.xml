@@ -94,6 +94,27 @@
             <plugin>
                 <groupId>org.scalatest</groupId>
                 <artifactId>scalatest-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <tagsToExclude>org.expedia.www.haystack.commons.scalatest.IntegrationSuite</tagsToExclude>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>integration-test</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <tagsToInclude>org.expedia.www.haystack.commons.scalatest.IntegrationSuite</tagsToInclude>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

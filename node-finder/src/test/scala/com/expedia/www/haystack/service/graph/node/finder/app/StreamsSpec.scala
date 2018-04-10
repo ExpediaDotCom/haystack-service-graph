@@ -1,6 +1,6 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
-import com.expedia.www.haystack.UnitTestSpec
+import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.expedia.www.haystack.commons.kstreams.serde.SpanDeserializer
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
@@ -9,7 +9,7 @@ import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializ
 import org.apache.kafka.streams.{StreamsConfig, Topology}
 import org.easymock.EasyMock._
 
-class StreamsSpec extends UnitTestSpec {
+class StreamsSpec extends TestSpec {
   describe("configuring a topology should") {
     it("should add a source, three processors and two sinks with expected arguments") {
       Given("a configuration object of type KafkaConfiguration")

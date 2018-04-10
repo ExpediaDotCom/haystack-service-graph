@@ -8,7 +8,7 @@ import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanU
 import org.scalatest.easymock.EasyMockSugar
 import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
 
-trait UnitTestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar {
+trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar {
   def newSpan(serviceName: String, operation: String, duration: Long, client: Boolean, server: Boolean): Span = {
     newSpan(UUID.randomUUID().toString, serviceName, operation, duration, client, server)
   }

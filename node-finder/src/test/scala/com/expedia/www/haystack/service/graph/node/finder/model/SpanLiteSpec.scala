@@ -2,11 +2,11 @@ package com.expedia.www.haystack.service.graph.node.finder.model
 
 import java.util.UUID
 
-import com.expedia.www.haystack.UnitTestSpec
+import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.commons.entities.{MetricPoint, MetricType, TagKeys}
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType
 
-class SpanLiteSpec extends UnitTestSpec {
+class SpanLiteSpec extends TestSpec {
   describe("an incomplete SpanLite") {
     it("should return no graph edge") {
       Given("an incomplete spanlite")
