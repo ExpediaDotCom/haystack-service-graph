@@ -24,7 +24,7 @@ trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSug
     spanBuilder.setSpanId(spanId)
     spanBuilder.setServiceName(serviceName)
     spanBuilder.setOperationName(operation)
-    spanBuilder.setStartTime(ts)
+    spanBuilder.setStartTime(ts * 1000)  //microseconds
     spanBuilder.setDuration(duration)
 
     val logBuilder = Log.newBuilder()

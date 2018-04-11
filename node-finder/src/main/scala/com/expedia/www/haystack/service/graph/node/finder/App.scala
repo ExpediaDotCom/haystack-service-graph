@@ -42,18 +42,23 @@ object App extends Main {
     * @return A valid instance of `StreamsRunner`
     */
   override def createStreamsRunner(): StreamsRunner = {
-    createStreamsRunner(new AppConfiguration())
-  }
+    val appConfiguration = new AppConfiguration()
 
-  @VisibleForTesting
-  def createStreamsRunner(appConfiguration: AppConfiguration): StreamsRunner = {
     val healthStatusController = new HealthStatusController
     healthStatusController.addListener(new UpdateHealthStatusFile(appConfiguration.healthStatusFilePath))
 
+    val stateChangeListener = new StateChangeListener(healthStatusController)
+
+    createStreamsRunner(appConfiguration, stateChangeListener)
+  }
+
+  @VisibleForTesting
+  def createStreamsRunner(appConfiguration: AppConfiguration,
+                          stateChangeListener: StateChangeListener): StreamsRunner = {
     val streamsFactory = new StreamsFactory(new Streams(appConfiguration.kafkaConfig),
       appConfiguration.kafkaConfig.streamsConfig,
       Some(appConfiguration.kafkaConfig.protoSpanTopic))
 
-    new StreamsRunner(streamsFactory, new StateChangeListener(healthStatusController))
+    new StreamsRunner(streamsFactory, stateChangeListener)
   }
 }

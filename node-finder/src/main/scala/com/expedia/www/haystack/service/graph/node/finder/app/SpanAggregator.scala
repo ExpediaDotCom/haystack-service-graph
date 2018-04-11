@@ -51,7 +51,7 @@ class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] w
 
     val spanType = SpanUtils.getSpanType(span)
 
-    LOGGER.debug(s"Received $spanType span : ${span.getTraceId} :: ${span.getSpanId}")
+    LOGGER.info(s"Received $spanType span : ${span.getTraceId} :: ${span.getSpanId} :: ${span.getStartTime}")
 
     if (spanType != SpanType.OTHER) {
       val spanLite = map.getOrElse(span.getSpanId, {
@@ -62,7 +62,7 @@ class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] w
       })
 
       spanLite.merge(span, spanType)
-      LOGGER.info(s"Received $spanType span : $spanLite")
+      LOGGER.info(s"Processed $spanType span : $spanLite")
     }
   }
 
@@ -76,6 +76,9 @@ class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] w
     //iterate and forward
     LOGGER.info(s"Punctuate processing ${mapToEmit.size} spans")
     mapToEmit.values.filter(s => s.isComplete).foreach(s => {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(s"Forwarding complete SpanLite: $s")
+      }
       context.forward(s.spanId, s)
       forwardMeter.mark()
     })

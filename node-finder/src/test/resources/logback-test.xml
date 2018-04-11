@@ -15,6 +15,9 @@
         </layout>
     </appender>
 
+    <logger name="com.expedia.www.haystack.service.graph.node.finder.app" level="OFF"/>
+    <logger name="com.expedia.www.haystack.service.graph.node.finder.AppSpec" level="OFF"/>
+
     <root level="${HAYSTACK_LOG_LEVEL:-OFF}">
         <appender-ref ref="STDOUT"/>
     </root>

@@ -123,4 +123,7 @@ class SpanLite(val spanId: String) {
       TagKeys.OPERATION_NAME_KEY -> operationName
     )
   }
+
+
+  override def toString = s"SpanLite($flag, $spanId, $isComplete)"
 }

@@ -30,7 +30,7 @@ class LatencyProducer extends Processor[String, SpanLite] with MetricsSupport {
   private var context: ProcessorContext = _
   private val processMeter = metricRegistry.meter("latency.producer.process")
   private val forwardMeter = metricRegistry.meter("latency.producer.emit")
-  private val LOGGER = LoggerFactory.getLogger(classOf[GraphNodeProducer])
+  private val LOGGER = LoggerFactory.getLogger(classOf[LatencyProducer])
 
   override def init(context: ProcessorContext): Unit = {
     this.context = context
