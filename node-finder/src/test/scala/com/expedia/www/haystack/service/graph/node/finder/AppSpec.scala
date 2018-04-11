@@ -109,8 +109,9 @@ class AppSpec extends TestSpec with BeforeAndAfter {
     for (i <- 1 to count) produceSimpleSpan(5000, writer)
     producer.flush()
 
-    //sleep for 10 seconds for streams to process
-    Thread.sleep(10000)
+    //sleep for 30 seconds for streams to process. This is probably too much for local -
+    //but depending on the compute in build servers this time varies
+    Thread.sleep(30000)
   }
 
   class ExtendedStateChangeListener(healthStatusController: HealthStatusController)

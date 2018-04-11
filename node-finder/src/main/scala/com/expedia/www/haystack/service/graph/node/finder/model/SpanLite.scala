@@ -38,10 +38,7 @@ class SpanLite(val spanId: String) {
   private var sourceServiceName: String = _
   private var operationName: String = _
   private var clientSend: Long = _
-  private var clientReceive: Long = _
   private var clientDuration: Long = _
-  private var serverReceive: Long = _
-  private var serverSend: Long = _
   private var serverDuration: Long = _
   private var destinationServiceName: String = _
   private var flag = Flag(0)
@@ -69,14 +66,11 @@ class SpanLite(val spanId: String) {
           sourceServiceName = span.getServiceName
           operationName = span.getOperationName
           clientSend = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_SEND_EVENT).getOrElse(0)
-          clientReceive = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_RECV_EVENT).getOrElse(0)
           clientDuration = span.getDuration
           flag = flag | Flag(1)
           true
         case SpanType.SERVER =>
           destinationServiceName = span.getServiceName
-          serverReceive = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_RECV_EVENT).getOrElse(0)
-          serverSend = SpanUtils.getEventTimestamp(span, SpanUtils.SERVER_SEND_EVENT).getOrElse(0)
           serverDuration = span.getDuration
           flag = flag | Flag(2)
           true
