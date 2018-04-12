@@ -19,7 +19,7 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.expedia.www.haystack.service.graph.node.finder.model.SpanLite
+import com.expedia.www.haystack.service.graph.node.finder.model.SlimSpan
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.streams.processor._
@@ -38,7 +38,7 @@ class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] w
   private val aggregateHistogram = metricRegistry.histogram("span.aggregator.buffered.spans")
 
   private var context: ProcessorContext = _
-  private var map : Map[String, SpanLite] = Map.empty
+  private var map : Map[String, SlimSpan] = Map.empty
 
   override def init(context: ProcessorContext): Unit =  {
     this.context = context
@@ -55,7 +55,7 @@ class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] w
 
     if (spanType != SpanType.OTHER) {
       val spanLite = map.getOrElse(span.getSpanId, {
-        val s = new SpanLite(span.getSpanId)
+        val s = new SlimSpan(span.getSpanId)
         map = map.updated(span.getSpanId, s)
         aggregateMeter.mark()
         s
@@ -77,7 +77,7 @@ class SpanAggregator(aggregatorInterval : Int) extends Processor[String, Span] w
     LOGGER.info(s"Punctuate processing ${mapToEmit.size} spans")
     mapToEmit.values.filter(s => s.isComplete).foreach(s => {
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(s"Forwarding complete SpanLite: $s")
+        LOGGER.debug(s"Forwarding complete SlimSpan: $s")
       }
       context.forward(s.spanId, s)
       forwardMeter.mark()

@@ -24,13 +24,13 @@ import com.expedia.www.haystack.service.graph.node.finder.utils.{Flag, SpanType,
 import org.slf4j.LoggerFactory
 
 /**
-  * An instance of SpanLite can contain data from both server and client spans.
-  * SpanLite is considered "complete" if it has data fields from both server and client span of the same SpanId
+  * An instance of SlimSpan can contain data from both server and client spans.
+  * SlimSpan is considered "complete" if it has data fields from both server and client span of the same SpanId
   * @param spanId Unique identifier of a Span
   */
-class SpanLite(val spanId: String) {
+class SlimSpan(val spanId: String) {
 
-  private val LOGGER = LoggerFactory.getLogger(classOf[SpanLite])
+  private val LOGGER = LoggerFactory.getLogger(classOf[SlimSpan])
 
   require(spanId != null)
 
@@ -50,10 +50,10 @@ class SpanLite(val spanId: String) {
   def isComplete: Boolean = flag.equals(Flag(3))
 
   /**
-    * Merges the given span into the current instance of the SpanLite. If the spanId of
-    * the given span matches the spanId of the SpanLite, certain fields from the given span are
-    * read and held in the current SpanLite by mutating it's private fields.
-    * @param span Span to be merged with the current SpanLite
+    * Merges the given span into the current instance of the SlimSpan. If the spanId of
+    * the given span matches the spanId of the SlimSpan, certain fields from the given span are
+    * read and held in the current SlimSpan by mutating it's private fields.
+    * @param span Span to be merged with the current SlimSpan
     * @param spanType type of the Span provided
     * @return true if a merge is performed or false
     */
@@ -83,10 +83,10 @@ class SpanLite(val spanId: String) {
   }
 
   /**
-    * Returns an instance of GraphEdge if the current SpanLite is complete. A GraphEdge
+    * Returns an instance of GraphEdge if the current SlimSpan is complete. A GraphEdge
     * contains the client span's ServiceName, it's OperationName and the corresponding server
     * span's ServiceName. These three data points acts as the two nodes and edge of a graph relationship
-    * @return an instance of GraphEdge or None if the current SpanLite is inComplete
+    * @return an instance of GraphEdge or None if the current SlimSpan is inComplete
     */
   def getGraphEdge: Option[GraphEdge] = {
     if (isComplete) {
@@ -118,5 +118,5 @@ class SpanLite(val spanId: String) {
   }
 
 
-  override def toString = s"SpanLite($flag, $spanId, $isComplete)"
+  override def toString = s"SlimSpan($flag, $spanId, $isComplete)"
 }

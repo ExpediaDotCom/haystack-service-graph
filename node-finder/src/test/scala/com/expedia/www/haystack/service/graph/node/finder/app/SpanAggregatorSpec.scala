@@ -2,7 +2,7 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.TestSpec
-import com.expedia.www.haystack.service.graph.node.finder.model.SpanLite
+import com.expedia.www.haystack.service.graph.node.finder.model.SlimSpan
 import org.apache.kafka.streams.processor.{Cancellable, ProcessorContext, PunctuationType, Punctuator}
 import org.easymock.EasyMock._
 
@@ -35,14 +35,14 @@ class SpanAggregatorSpec extends TestSpec {
       aggregator.spanCount should be (20)
     }
 
-    it("should emit SpanLite instances only for pairs of server and client spans") {
+    it("should emit SlimSpan instances only for pairs of server and client spans") {
       Given("an aggregator and initialized with a processor context")
       val aggregator = new SpanAggregator(1000)
       val context = mock[ProcessorContext]
       expecting {
         context.schedule(anyLong(), isA(classOf[PunctuationType]), isA(classOf[Punctuator]))
           .andReturn(mock[Cancellable]).once()
-        context.forward(anyString(), isA(classOf[SpanLite])).times(10)
+        context.forward(anyString(), isA(classOf[SlimSpan])).times(10)
         context.commit().once()
       }
       replay(context)
@@ -53,7 +53,7 @@ class SpanAggregatorSpec extends TestSpec {
       producers.foreach(producer => writeSpans(10, 1000, producer, (span) => aggregator.process(span.getSpanId, span)))
       When("punctuate is called")
       aggregator.punctuate(System.currentTimeMillis())
-      Then("it should produce 10 SpanLite instances as expected")
+      Then("it should produce 10 SlimSpan instances as expected")
       verify(context)
       And("the aggregator's collection should be empty")
       aggregator.spanCount should be (0)

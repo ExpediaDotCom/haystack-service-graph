@@ -3,7 +3,7 @@ package com.expedia.www.haystack
 import java.util.UUID
 
 import com.expedia.open.tracing.{Log, Span, Tag}
-import com.expedia.www.haystack.service.graph.node.finder.model.SpanLite
+import com.expedia.www.haystack.service.graph.node.finder.model.SlimSpan
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
 import org.scalatest.easymock.EasyMockSugar
 import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
@@ -92,19 +92,19 @@ trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSug
     }
   }
 
-  def inCompleteSpanLite(): SpanLite = {
+  def inCompleteSlimSpan(): SlimSpan = {
     val spanId = UUID.randomUUID().toString
-    val spanLite = new SpanLite(spanId)
+    val spanLite = new SlimSpan(spanId)
     val span = newSpan(spanId, "foo-service", "bar", 1000, client = true, server = false)
     spanLite.merge(span, SpanType.CLIENT)
     spanLite
   }
 
-  def validSpanLite(): SpanLite = {
+  def validSlimSpan(): SlimSpan = {
     val clientSend = System.currentTimeMillis()
     val serverReceive = clientSend + 500
     val spanId = UUID.randomUUID().toString
-    val spanLite = new SpanLite(spanId)
+    val spanLite = new SlimSpan(spanId)
     val clientSpan = newSpan(spanId, clientSend, "foo-service", "bar", 1500, client = true, server = false)
     val serverSpan = newSpan(spanId, serverReceive, "baz-service", "bar", 500, client = false, server = true)
     spanLite.merge(clientSpan, SpanType.CLIENT)
