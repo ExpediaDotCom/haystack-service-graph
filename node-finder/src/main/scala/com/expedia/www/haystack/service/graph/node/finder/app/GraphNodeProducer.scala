@@ -18,15 +18,15 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.expedia.www.haystack.service.graph.node.finder.model.LightSpan
+import com.expedia.www.haystack.service.graph.node.finder.model.SpanPair
 import org.apache.kafka.streams.processor.{Processor, ProcessorContext, ProcessorSupplier}
 import org.slf4j.LoggerFactory
 
-class GraphNodeProducerSupplier extends ProcessorSupplier[String, LightSpan] {
-  override def get(): Processor[String, LightSpan] = new GraphNodeProducer
+class GraphNodeProducerSupplier extends ProcessorSupplier[String, SpanPair] {
+  override def get(): Processor[String, SpanPair] = new GraphNodeProducer
 }
 
-class GraphNodeProducer extends Processor[String, LightSpan] with MetricsSupport {
+class GraphNodeProducer extends Processor[String, SpanPair] with MetricsSupport {
   private var context: ProcessorContext = _
   private val processMeter = metricRegistry.meter("graph.node.producer.process")
   private val forwardMeter = metricRegistry.meter("graph.node.producer.emit")
@@ -36,19 +36,19 @@ class GraphNodeProducer extends Processor[String, LightSpan] with MetricsSupport
     this.context = context
   }
 
-  override def process(key: String, spanLite: LightSpan): Unit = {
+  override def process(key: String, spanPair: SpanPair): Unit = {
     processMeter.mark()
 
     if (LOGGER.isDebugEnabled) {
-      LOGGER.debug(s"Received message ($key, $spanLite)")
+      LOGGER.debug(s"Received message ($key, $spanPair)")
     }
 
-    spanLite.getGraphEdge match {
+    spanPair.getGraphEdge match {
       case Some(graphEdge) =>
-        context.forward(spanLite.spanId, graphEdge.toJson)
+        context.forward(spanPair.spanId, graphEdge.toJson)
         forwardMeter.mark()
         if (LOGGER.isDebugEnabled) {
-          LOGGER.debug(s"Graph edge : (${spanLite.spanId}, ${graphEdge.toJson}")
+          LOGGER.debug(s"Graph edge : (${spanPair.spanId}, ${graphEdge.toJson}")
         }
       case None =>
     }

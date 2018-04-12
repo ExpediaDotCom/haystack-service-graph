@@ -6,9 +6,9 @@ import org.easymock.EasyMock._
 
 class GraphNodeProducerSpec extends TestSpec {
   describe("producing graph nodes") {
-    it("should emit a valid graph node for a give complete LightSpan") {
-      Given("a valid LightSpan instance")
-      val spanLite = validLightSpan()
+    it("should emit a valid graph node for a give complete SpanPair") {
+      Given("a valid SpanPair instance")
+      val spanPair = validSpanPair()
       val context = mock[ProcessorContext]
       val graphNodeProducer = new GraphNodeProducer
       val captured = newCapture[String]()
@@ -19,15 +19,15 @@ class GraphNodeProducerSpec extends TestSpec {
       }
       replay(context)
       graphNodeProducer.init(context)
-      graphNodeProducer.process(spanLite.spanId, spanLite)
+      graphNodeProducer.process(spanPair.spanId, spanPair)
       val json = captured.getValue
       Then("it should produce a valid GraphNode object")
       verify(context)
       json should be ("{\"source\":\"foo-service\",\"destination\":\"baz-service\",\"operation\":\"bar\"}")
     }
     it("should emit no graph nodes for incomplete SpanLit") {
-      Given("an incomplete LightSpan instance")
-      val spanLite = inCompleteLightSpan()
+      Given("an incomplete SpanPair instance")
+      val spanPair = inCompleteSpanPair()
       val context = mock[ProcessorContext]
       val graphNodeProducer = new GraphNodeProducer
       When("process is called on GraphNodeProducer with it")
@@ -36,7 +36,7 @@ class GraphNodeProducerSpec extends TestSpec {
       }
       replay(context)
       graphNodeProducer.init(context)
-      graphNodeProducer.process(spanLite.spanId, spanLite)
+      graphNodeProducer.process(spanPair.spanId, spanPair)
       Then("it should produce no graph node in the context")
       verify(context)
     }

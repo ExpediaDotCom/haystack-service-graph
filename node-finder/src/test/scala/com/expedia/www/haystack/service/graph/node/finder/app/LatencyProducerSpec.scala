@@ -7,34 +7,34 @@ import org.easymock.EasyMock._
 
 class LatencyProducerSpec extends TestSpec {
   describe("latency producer") {
-    it("should produce latency metric for complete LightSpan") {
-      Given("a valid LightSpan instance")
-      val spanLite = validLightSpan()
+    it("should produce latency metric for complete SpanPair") {
+      Given("a valid SpanPair instance")
+      val spanPair = validSpanPair()
       val context = mock[ProcessorContext]
       val latencyProducer = new LatencyProducer
-      When("process is invoked with a complete LightSpan")
+      When("process is invoked with a complete SpanPair")
       expecting {
         context.forward(anyString(), isA(classOf[MetricPoint])).once()
         context.commit().once()
       }
       replay(context)
       latencyProducer.init(context)
-      latencyProducer.process(spanLite.spanId, spanLite)
+      latencyProducer.process(spanPair.spanId, spanPair)
       Then("it should produce a metric point in the context")
       verify(context)
     }
-    it("should produce no metrics for incomplete LightSpan") {
-      Given("an incomplete LightSpan instance")
-      val spanLite = inCompleteLightSpan()
+    it("should produce no metrics for incomplete SpanPair") {
+      Given("an incomplete SpanPair instance")
+      val spanPair = inCompleteSpanPair()
       val context = mock[ProcessorContext]
       val latencyProducer = new LatencyProducer
-      When("process is invoked with a complete LightSpan")
+      When("process is invoked with a complete SpanPair")
       expecting {
         context.commit().once()
       }
       replay(context)
       latencyProducer.init(context)
-      latencyProducer.process(spanLite.spanId, spanLite)
+      latencyProducer.process(spanPair.spanId, spanPair)
       Then("it should produce no metric points in the context")
       verify(context)
     }

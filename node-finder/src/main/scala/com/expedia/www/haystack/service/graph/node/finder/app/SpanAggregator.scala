@@ -19,7 +19,7 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.expedia.www.haystack.service.graph.node.finder.model.{BottomHeavyHeap, LightSpan, WeighableSpan}
+import com.expedia.www.haystack.service.graph.node.finder.model.{BottomHeavyHeap, SpanPair, WeighableSpan}
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.streams.processor._
@@ -75,30 +75,30 @@ class SpanAggregator(aggregatorInterval: Int) extends Processor[String, Span] wi
 
   override def close(): Unit = {}
 
-  private def forward(context: ProcessorContext, lightSpan: LightSpan): Unit = {
+  private def forward(context: ProcessorContext, spanPair: SpanPair): Unit = {
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(s"Forwarding complete LightSpan: $lightSpan")
+      LOGGER.debug(s"Forwarding complete SpanPair: $spanPair")
     }
-    context.forward(lightSpan.spanId, lightSpan)
+    context.forward(spanPair.spanId, spanPair)
     forwardMeter.mark()
   }
 
-  private def drainQueueAndMapAsSpanPairs() : Map[String, LightSpan] = {
-    var mapOfLightSpans : Map[String, LightSpan] = Map.empty
+  private def drainQueueAndMapAsSpanPairs() : Map[String, SpanPair] = {
+    var mapOfSpanPairs : Map[String, SpanPair] = Map.empty
 
     //dequeue everything and add to map. if the span is already there, then merge it.
     while (weightedQueue.nonEmpty) {
       val weighableSpan = weightedQueue.dequeue()
-      val spanLite = mapOfLightSpans.getOrElse(weighableSpan.spanId, {
-        val ls = new LightSpan(weighableSpan.spanId)
-        mapOfLightSpans = mapOfLightSpans.updated(weighableSpan.spanId, ls)
+      val spanPair = mapOfSpanPairs.getOrElse(weighableSpan.spanId, {
+        val ls = new SpanPair(weighableSpan.spanId)
+        mapOfSpanPairs = mapOfSpanPairs.updated(weighableSpan.spanId, ls)
         ls
       })
 
-      spanLite.merge(weighableSpan)
+      spanPair.merge(weighableSpan)
     }
 
-    mapOfLightSpans
+    mapOfSpanPairs
   }
 
   @VisibleForTesting
@@ -113,21 +113,21 @@ class SpanAggregator(aggregatorInterval: Int) extends Processor[String, Span] wi
 
       LOGGER.info(s"Punctuate called with $timestamp. CutOff is $cutOffTime. Queue size is ${weightedQueue.size} spans")
 
-      //dequeue weighableSpans and add to map of [spanId, LightSpan]
+      //dequeue weighableSpans and add to map of [spanId, SpanPair]
       //if a span is already there, then merge it
-      val mapOfLightSpans : Map[String, LightSpan] = drainQueueAndMapAsSpanPairs()
+      val mapOfSpanPairs : Map[String, SpanPair] = drainQueueAndMapAsSpanPairs()
 
       //iterate map values and forward all complete spans. If the incomplete one is within
       //the last few TimeUnits, we will retain it by enqueuing again to see if there is a matching
       //span in the next batch. If the incomplete one is over the time limit, we will discard them
       var count = 0
-      mapOfLightSpans.values.foreach(lightSpan => {
-        if (lightSpan.isComplete) {
-          forward(context, lightSpan)
+      mapOfSpanPairs.values.foreach(spanPair => {
+        if (spanPair.isComplete) {
+          forward(context, spanPair)
           count += 1
         }
         else {
-          lightSpan.getBackingSpans.foreach({
+          spanPair.getBackingSpans.foreach({
             weighableSpan => if (weighableSpan.isLaterThan(cutOffTime)) weightedQueue.enqueue(weighableSpan)
           })
         }

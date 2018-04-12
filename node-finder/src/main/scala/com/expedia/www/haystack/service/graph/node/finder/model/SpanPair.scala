@@ -17,20 +17,18 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.model
 
-import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.commons.entities.{MetricPoint, MetricType, TagKeys}
-import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType.SpanType
-import com.expedia.www.haystack.service.graph.node.finder.utils.{Flag, SpanType, SpanUtils}
+import com.expedia.www.haystack.service.graph.node.finder.utils.{Flag, SpanType}
 import org.slf4j.LoggerFactory
 
 /**
-  * An instance of LightSpan can contain data from both server and client spans.
-  * LightSpan is considered "complete" if it has data fields from both server and client span of the same SpanId
+  * An instance of SpanPair can contain data from both server and client spans.
+  * SpanPair is considered "complete" if it has data fields from both server and client span of the same SpanId
   * @param spanId Unique identifier of a Span
   */
-class LightSpan(val spanId: String) {
+class SpanPair(val spanId: String) {
 
-  private val LOGGER = LoggerFactory.getLogger(classOf[LightSpan])
+  private val LOGGER = LoggerFactory.getLogger(classOf[SpanPair])
 
   require(spanId != null)
 
@@ -54,10 +52,10 @@ class LightSpan(val spanId: String) {
   }
 
   /**
-    * Merges the given span into the current instance of the LightSpan. If the spanId of
-    * the given span matches the spanId of the LightSpan, then it is held by the LighSpan
+    * Merges the given span into the current instance of the SpanPair. If the spanId of
+    * the given span matches the spanId of the SpanPair, then it is held by the LighSpan
     * to produce {@link #getGraphEdge} and {@link #getLatency} data
-    * @param weighableSpan WeighableSpan to be merged with the current LightSpan
+    * @param weighableSpan WeighableSpan to be merged with the current SpanPair
     */
   def merge(weighableSpan: WeighableSpan): Unit = {
     if (weighableSpan.spanId.equals(spanId)) {
@@ -74,10 +72,10 @@ class LightSpan(val spanId: String) {
   }
 
   /**
-    * Returns an instance of GraphEdge if the current LightSpan is complete. A GraphEdge
+    * Returns an instance of GraphEdge if the current SpanPair is complete. A GraphEdge
     * contains the client span's ServiceName, it's OperationName and the corresponding server
     * span's ServiceName. These three data points acts as the two nodes and edge of a graph relationship
-    * @return an instance of GraphEdge or None if the current LightSpan is inComplete
+    * @return an instance of GraphEdge or None if the current SpanPair is inComplete
     */
   def getGraphEdge: Option[GraphEdge] = {
     if (isComplete) {
@@ -91,7 +89,7 @@ class LightSpan(val spanId: String) {
     * Returns an instance of MetricPoint that measures the latency of the current Span. Latency of the current
     * Span is computed as client span's duration minus it's corresponding server span's duration. MetricPoint instance
     * returned will be of type Gauge tagged with the current (client span's) service name and operation name.
-    * @return an instance of MetricPoint or None if the current spanLite instance is incomplete
+    * @return an instance of MetricPoint or None if the current spanPair instance is incomplete
     */
   def getLatency: Option[MetricPoint] = {
     if (isComplete) {
@@ -108,5 +106,5 @@ class LightSpan(val spanId: String) {
     }
   }
 
-  override def toString = s"LightSpan($flag, $spanId, $isComplete)"
+  override def toString = s"SpanPair($flag, $spanId, $isComplete)"
 }
