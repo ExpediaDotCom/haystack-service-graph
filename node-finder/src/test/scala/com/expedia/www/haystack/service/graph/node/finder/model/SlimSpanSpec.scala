@@ -6,11 +6,11 @@ import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.commons.entities.{MetricPoint, MetricType, TagKeys}
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType
 
-class SlimSpanSpec extends TestSpec {
-  describe("an incomplete SlimSpan") {
+class LightSpanSpec extends TestSpec {
+  describe("an incomplete LightSpan") {
     it("should return no graph edge") {
       Given("an incomplete spanlite")
-      val spanLite = new SlimSpan(UUID.randomUUID().toString)
+      val spanLite = new LightSpan(UUID.randomUUID().toString)
       When("get graphEdge is invoked")
       val graphEdge = spanLite.getGraphEdge
       Then("it should return None")
@@ -18,7 +18,7 @@ class SlimSpanSpec extends TestSpec {
     }
     it("should return no metric points") {
       Given("an incomplete spanlite")
-      val spanLite = new SlimSpan(UUID.randomUUID().toString)
+      val spanLite = new LightSpan(UUID.randomUUID().toString)
       When("get latency is invoked")
       val latency = spanLite.getLatency
       Then("it should return None")
@@ -27,7 +27,7 @@ class SlimSpanSpec extends TestSpec {
     it("should still be incomplete when a span is merged with incorrect spanlite (non matching spanId)") {
       Given("an incomplete spanlite")
       val spanId = UUID.randomUUID().toString
-      val spanLite = new SlimSpan(spanId)
+      val spanLite = new LightSpan(spanId)
       val span = newSpan("foo-service", "bar", 1000, client = true, server = false)
       When("a CLIENT span is merged")
       val merged = spanLite.merge(span, SpanType.CLIENT)
@@ -38,7 +38,7 @@ class SlimSpanSpec extends TestSpec {
     it("should still be incomplete when only CLIENT or SERVER span is merged with spanlite") {
       Given("an incomplete spanlite")
       val spanId = UUID.randomUUID().toString
-      val spanLite = new SlimSpan(spanId)
+      val spanLite = new LightSpan(spanId)
       val span = newSpan(spanId, "foo-service", "bar", 1000, client = true, server = false)
       When("a CLIENT span is merged")
       val merged = spanLite.merge(span, SpanType.CLIENT)
@@ -49,7 +49,7 @@ class SlimSpanSpec extends TestSpec {
     it("should be complete when CLIENT and SERVER spans are merged with spanlite") {
       Given("an incomplete spanlite")
       val spanId = UUID.randomUUID().toString
-      val spanLite = new SlimSpan(spanId)
+      val spanLite = new LightSpan(spanId)
       val clientSpan = newSpan(spanId, "foo-service", "bar", 1000, client = true, server = false)
       val serverSpan = newSpan(spanId, "foo-service", "bar", 1000, client = false, server = true)
       When("a CLIENT span is merged")
@@ -64,7 +64,7 @@ class SlimSpanSpec extends TestSpec {
     it("should return a valid graphEdge") {
       Given("a complete spanlite")
       val spanId = UUID.randomUUID().toString
-      val spanLite = new SlimSpan(spanId)
+      val spanLite = new LightSpan(spanId)
       val clientSpan = newSpan(spanId, "foo-service", "bar", 1000, client = true, server = false)
       val serverSpan = newSpan(spanId, "baz-service", "bar", 1000, client = false, server = true)
       spanLite.merge(clientSpan, SpanType.CLIENT)
@@ -80,7 +80,7 @@ class SlimSpanSpec extends TestSpec {
       val clientSend = System.currentTimeMillis()
       val serverReceive = clientSend + 500
       val spanId = UUID.randomUUID().toString
-      val spanLite = new SlimSpan(spanId)
+      val spanLite = new LightSpan(spanId)
       val clientSpan = newSpan(spanId, clientSend, "foo-service", "bar", 1500, client = true, server = false)
       val serverSpan = newSpan(spanId, serverReceive, "baz-service", "bar", 500, client = false, server = true)
       spanLite.merge(clientSpan, SpanType.CLIENT)

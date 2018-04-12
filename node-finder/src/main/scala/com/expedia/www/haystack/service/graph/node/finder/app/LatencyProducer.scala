@@ -18,15 +18,15 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.expedia.www.haystack.service.graph.node.finder.model.SlimSpan
+import com.expedia.www.haystack.service.graph.node.finder.model.LightSpan
 import org.apache.kafka.streams.processor.{Processor, ProcessorContext, ProcessorSupplier}
 import org.slf4j.LoggerFactory
 
-class LatencyProducerSupplier extends ProcessorSupplier[String, SlimSpan] {
-  override def get(): Processor[String, SlimSpan] = new LatencyProducer
+class LatencyProducerSupplier extends ProcessorSupplier[String, LightSpan] {
+  override def get(): Processor[String, LightSpan] = new LatencyProducer
 }
 
-class LatencyProducer extends Processor[String, SlimSpan] with MetricsSupport {
+class LatencyProducer extends Processor[String, LightSpan] with MetricsSupport {
   private var context: ProcessorContext = _
   private val processMeter = metricRegistry.meter("latency.producer.process")
   private val forwardMeter = metricRegistry.meter("latency.producer.emit")
@@ -36,7 +36,7 @@ class LatencyProducer extends Processor[String, SlimSpan] with MetricsSupport {
     this.context = context
   }
 
-  override def process(key: String, spanLite: SlimSpan): Unit = {
+  override def process(key: String, spanLite: LightSpan): Unit = {
     processMeter.mark()
 
     if (LOGGER.isDebugEnabled) {

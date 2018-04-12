@@ -6,9 +6,9 @@ import org.easymock.EasyMock._
 
 class GraphNodeProducerSpec extends TestSpec {
   describe("producing graph nodes") {
-    it("should emit a valid graph node for a give complete SlimSpan") {
-      Given("a valid SlimSpan instance")
-      val spanLite = validSlimSpan()
+    it("should emit a valid graph node for a give complete LightSpan") {
+      Given("a valid LightSpan instance")
+      val spanLite = validLightSpan()
       val context = mock[ProcessorContext]
       val graphNodeProducer = new GraphNodeProducer
       val captured = newCapture[String]()
@@ -26,8 +26,8 @@ class GraphNodeProducerSpec extends TestSpec {
       json should be ("{\"source\":\"foo-service\",\"destination\":\"baz-service\",\"operation\":\"bar\"}")
     }
     it("should emit no graph nodes for incomplete SpanLit") {
-      Given("an incomplete SlimSpan instance")
-      val spanLite = inCompleteSlimSpan()
+      Given("an incomplete LightSpan instance")
+      val spanLite = inCompleteLightSpan()
       val context = mock[ProcessorContext]
       val graphNodeProducer = new GraphNodeProducer
       When("process is called on GraphNodeProducer with it")
