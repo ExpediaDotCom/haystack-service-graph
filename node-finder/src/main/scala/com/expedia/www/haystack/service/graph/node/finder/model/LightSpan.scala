@@ -34,12 +34,8 @@ class LightSpan(val spanId: String) {
 
   require(spanId != null)
 
-  private var sourceServiceName: String = _
-  private var operationName: String = _
-  private var clientSend: Long = _
-  private var clientDuration: Long = _
-  private var serverDuration: Long = _
-  private var destinationServiceName: String = _
+  private var clientSpan : WeighableSpan = _
+  private var serverSpan : WeighableSpan = _
   private var flag = Flag(0)
 
   /**
@@ -50,35 +46,30 @@ class LightSpan(val spanId: String) {
   def isComplete: Boolean = flag.equals(Flag(3))
 
   /**
-    * Merges the given span into the current instance of the LightSpan. If the spanId of
-    * the given span matches the spanId of the LightSpan, certain fields from the given span are
-    * read and held in the current LightSpan by mutating it's private fields.
-    * @param span Span to be merged with the current LightSpan
-    * @param spanType type of the Span provided
-    * @return true if a merge is performed or false
+    * Returns the backing WeighableSpan objects
+    * @return list of WeighableSpan objects or an empty list
     */
-  def merge(span: Span, spanType: SpanType): Boolean = {
-    if (span.getSpanId.equals(spanId)) {
-      LOGGER.debug(s"received a matching span of type $spanType")
-      spanType match {
+  def getBackingSpans : List[WeighableSpan] = {
+    List(clientSpan, serverSpan).filter(w => w != null)
+  }
+
+  /**
+    * Merges the given span into the current instance of the LightSpan. If the spanId of
+    * the given span matches the spanId of the LightSpan, then it is held by the LighSpan
+    * to produce {@link #getGraphEdge} and {@link #getLatency} data
+    * @param weighableSpan WeighableSpan to be merged with the current LightSpan
+    */
+  def merge(weighableSpan: WeighableSpan): Unit = {
+    if (weighableSpan.spanId.equals(spanId)) {
+      LOGGER.debug(s"received a matching span of type ${weighableSpan.spanType}")
+      weighableSpan.spanType match {
         case SpanType.CLIENT =>
-          sourceServiceName = span.getServiceName
-          operationName = span.getOperationName
-          clientSend = SpanUtils.getEventTimestamp(span, SpanUtils.CLIENT_SEND_EVENT).getOrElse(0)
-          clientDuration = span.getDuration
+          this.clientSpan = weighableSpan
           flag = flag | Flag(1)
-          true
         case SpanType.SERVER =>
-          destinationServiceName = span.getServiceName
-          serverDuration = span.getDuration
+          this.serverSpan = weighableSpan
           flag = flag | Flag(2)
-          true
-        case _ => false
       }
-    }
-    else {
-      LOGGER.debug(s"received a span with spanId ${span.getSpanId} to be merged with $spanId - Ignored")
-      false
     }
   }
 
@@ -90,7 +81,7 @@ class LightSpan(val spanId: String) {
     */
   def getGraphEdge: Option[GraphEdge] = {
     if (isComplete) {
-      Some(GraphEdge(sourceServiceName, destinationServiceName, operationName))
+      Some(GraphEdge(clientSpan.serviceName, serverSpan.serviceName, clientSpan.operationName))
     } else {
       None
     }
@@ -104,19 +95,18 @@ class LightSpan(val spanId: String) {
     */
   def getLatency: Option[MetricPoint] = {
     if (isComplete) {
-      Some(MetricPoint("latency", MetricType.Gauge, getTags, clientDuration - serverDuration, clientSend))
+
+      val tags = Map(
+        TagKeys.SERVICE_NAME_KEY -> clientSpan.serviceName,
+        TagKeys.OPERATION_NAME_KEY -> clientSpan.operationName
+      )
+
+      Some(MetricPoint("latency", MetricType.Gauge, tags,
+        clientSpan.duration - serverSpan.duration, clientSpan.time / 1000))
     } else {
       None
     }
   }
-
-  private def getTags: Map[String, String] = {
-    Map(
-      TagKeys.SERVICE_NAME_KEY -> sourceServiceName,
-      TagKeys.OPERATION_NAME_KEY -> operationName
-    )
-  }
-
 
   override def toString = s"LightSpan($flag, $spanId, $isComplete)"
 }

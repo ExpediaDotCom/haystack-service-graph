@@ -52,7 +52,7 @@ class SpanAggregatorSpec extends TestSpec {
         produceServerSpan, produceClientSpan, produceClientAndServerSpans)
       producers.foreach(producer => writeSpans(10, 1000, producer, (span) => aggregator.process(span.getSpanId, span)))
       When("punctuate is called")
-      aggregator.punctuate(System.currentTimeMillis())
+      aggregator.getPunctuator(context).punctuate(System.currentTimeMillis())
       Then("it should produce 10 LightSpan instances as expected")
       verify(context)
       And("the aggregator's collection should be empty")

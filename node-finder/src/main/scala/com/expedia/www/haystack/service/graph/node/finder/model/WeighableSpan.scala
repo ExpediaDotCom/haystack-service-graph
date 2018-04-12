@@ -27,4 +27,6 @@ case class WeighableSpan(spanId: String,
   require(spanType != null)
 
   override def weight(): Long = time
+
+  def isLaterThan(cutOffTime : Long): Boolean = (time - cutOffTime) > 0
 }
