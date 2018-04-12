@@ -24,9 +24,8 @@ import com.expedia.www.haystack.service.graph.node.finder.utils.{Flag, SpanType,
 import org.slf4j.LoggerFactory
 
 /**
-  * A 'light' version of Span with fewer fields. An instance of SpanLite can contain data
-  * from both server and client spans. SpanLite is considered "complete" if it has data fields
-  * from both server and client span of the same SpanId
+  * An instance of SpanLite can contain data from both server and client spans.
+  * SpanLite is considered "complete" if it has data fields from both server and client span of the same SpanId
   * @param spanId Unique identifier of a Span
   */
 class SpanLite(val spanId: String) {
