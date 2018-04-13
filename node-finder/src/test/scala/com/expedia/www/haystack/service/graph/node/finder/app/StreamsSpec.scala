@@ -37,12 +37,12 @@ class StreamsSpec extends TestSpec {
         new SpanTimestampExtractor, 10000, 10000)
       val streams = new Streams(kafkaConfig)
       val topology = mock[Topology]
-      When("addSteps is invoked with a topology")
+      When("initialize is invoked with a topology")
       expecting {
         topology.addSource(isA(classOf[Topology.AutoOffsetReset]), anyString(),
           isA(classOf[SpanTimestampExtractor]), isA(classOf[StringDeserializer]),
           isA(classOf[SpanDeserializer]), anyString()).andReturn(topology).once()
-        topology.addProcessor(anyString(), isA(classOf[SpanAggregatorSupplier]),
+        topology.addProcessor(anyString(), isA(classOf[SpanAccumulatorSupplier]),
           anyString()).andReturn(topology).once()
         topology.addProcessor(anyString(), isA(classOf[GraphNodeProducerSupplier]),
           anyString()).andReturn(topology).once()
@@ -54,7 +54,7 @@ class StreamsSpec extends TestSpec {
           isA(classOf[StringSerializer]), anyString()).andReturn(topology).once()
       }
       replay(topology)
-      streams.addSteps(topology)
+      streams.initialize(topology)
       Then("it is configured as expected")
       verify(topology)
     }

@@ -102,7 +102,7 @@ class AppConfiguration(resourceName: String) {
         AutoOffsetReset.LATEST
       },
       timestampExtractor,
-      kafka.getInt("aggregator.interval"),
+      kafka.getInt("accumulator.interval"),
       kafka.getLong("close.timeout.ms")
     )
   }

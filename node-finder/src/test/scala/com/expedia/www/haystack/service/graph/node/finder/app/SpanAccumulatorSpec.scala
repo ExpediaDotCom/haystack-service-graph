@@ -23,8 +23,8 @@ import com.expedia.www.haystack.service.graph.node.finder.model.SpanPair
 import org.apache.kafka.streams.processor.{Cancellable, ProcessorContext, PunctuationType, Punctuator}
 import org.easymock.EasyMock._
 
-class SpanAggregatorSpec extends TestSpec {
-  describe("a span aggregator") {
+class SpanAccumulatorSpec extends TestSpec {
+  describe("a span accumulator") {
     it("should schedule Punctuator on init") {
       Given("a processor context")
       val context = mock[ProcessorContext]
@@ -34,27 +34,27 @@ class SpanAggregatorSpec extends TestSpec {
           .once()
       }
       replay(context)
-      val aggregator = new SpanAggregator(1000)
-      When("aggregator is initialized")
-      aggregator.init(context)
+      val accumulator = new SpanAccumulator(1000)
+      When("accumulator is initialized")
+      accumulator.init(context)
       Then("it should schedule punctuation")
       verify(context)
     }
 
     it("should collect all Client or Server Spans provided for processing") {
-      Given("an aggregator")
-      val aggregator = new SpanAggregator(1000)
+      Given("an accumulator")
+      val accumulator = new SpanAccumulator(1000)
       When("10 server, 10 client and 10 other spans are processed")
       val producers = List[(Long, (Span) => Unit) => Unit](produceSimpleSpan,
         produceServerSpan, produceClientSpan)
-      producers.foreach(producer => writeSpans(10, 1000, producer, (span) => aggregator.process(span.getSpanId, span)))
-      Then("aggregator should hold only the 10 client and 10 server spans")
-      aggregator.spanCount should be (20)
+      producers.foreach(producer => writeSpans(10, 1000, producer, (span) => accumulator.process(span.getSpanId, span)))
+      Then("accumulator should hold only the 10 client and 10 server spans")
+      accumulator.spanCount should be (20)
     }
 
     it("should emit SpanPair instances only for pairs of server and client spans") {
-      Given("an aggregator and initialized with a processor context")
-      val aggregator = new SpanAggregator(1000)
+      Given("an accumulator and initialized with a processor context")
+      val accumulator = new SpanAccumulator(1000)
       val context = mock[ProcessorContext]
       expecting {
         context.schedule(anyLong(), isA(classOf[PunctuationType]), isA(classOf[Punctuator]))
@@ -63,24 +63,24 @@ class SpanAggregatorSpec extends TestSpec {
         context.commit().once()
       }
       replay(context)
-      aggregator.init(context)
+      accumulator.init(context)
       And("50 spans are written to it, with 10 client, 10 server, 10 other and 10 pairs of server and client")
       val producers = List[(Long, (Span) => Unit) => Unit](produceSimpleSpan,
         produceServerSpan, produceClientSpan, produceClientAndServerSpans)
-      producers.foreach(producer => writeSpans(10, 1000, producer, (span) => aggregator.process(span.getSpanId, span)))
+      producers.foreach(producer => writeSpans(10, 1000, producer, (span) => accumulator.process(span.getSpanId, span)))
       When("punctuate is called")
-      aggregator.getPunctuator(context).punctuate(System.currentTimeMillis())
+      accumulator.getPunctuator(context).punctuate(System.currentTimeMillis())
       Then("it should produce 10 SpanPair instances as expected")
       verify(context)
-      And("the aggregator's collection should be empty")
-      aggregator.spanCount should be (0)
+      And("the accumulator's collection should be empty")
+      accumulator.spanCount should be (0)
     }
   }
-  describe("span aggregator supplier") {
-    it("should supply a valid aggregator") {
+  describe("span accumulator supplier") {
+    it("should supply a valid accumulator") {
       Given("a supplier instance")
-      val supplier = new SpanAggregatorSupplier(1000)
-      When("an aggregator instance is request")
+      val supplier = new SpanAccumulatorSupplier(1000)
+      When("an accumulator instance is request")
       val producer = supplier.get()
       Then("should yield a valid producer")
       producer should not be null

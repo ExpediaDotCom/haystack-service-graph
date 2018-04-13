@@ -76,7 +76,7 @@ class AppConfigurationSpec extends TestSpec {
       Then("it should load as expected")
       config.streamsConfig.defaultTimestampExtractor() shouldBe a [SpanTimestampExtractor]
       config.serviceCallTopic should be ("graph-nodes")
-      config.aggregatorInterval should be (60000)
+      config.accumulatorInterval should be (60000)
     }
   }
 

@@ -55,9 +55,11 @@ object App extends Main {
   @VisibleForTesting
   def createStreamsRunner(appConfiguration: AppConfiguration,
                           stateChangeListener: StateChangeListener): StreamsRunner = {
-    val streamsFactory = new StreamsFactory(new Streams(appConfiguration.kafkaConfig),
-      appConfiguration.kafkaConfig.streamsConfig,
-      Some(appConfiguration.kafkaConfig.protoSpanTopic))
+    //create the topology provider
+    val kafkaConfig = appConfiguration.kafkaConfig
+    val streams = new Streams(kafkaConfig)
+
+    val streamsFactory = new StreamsFactory(streams, kafkaConfig.streamsConfig, kafkaConfig.protoSpanTopic)
 
     new StreamsRunner(streamsFactory, stateChangeListener)
   }

@@ -30,7 +30,7 @@ import org.apache.kafka.streams.processor.TimestampExtractor
   * @param protoSpanTopic topic from where Spans serialized in protobuf to be consumed
   * @param autoOffsetReset Offset type for the kstreams app to start with
   * @param timestampExtractor instance of timestamp extractor
-  * @param aggregatorInterval interval to aggregate spans to look for client and server spans
+  * @param accumulatorInterval interval to aggregate spans to look for client and server spans
   * @param closeTimeoutInMs time for closing a kafka topic
   */
 case class KafkaConfiguration(streamsConfig: StreamsConfig,
@@ -39,7 +39,7 @@ case class KafkaConfiguration(streamsConfig: StreamsConfig,
                               protoSpanTopic: String,
                               autoOffsetReset: AutoOffsetReset,
                               timestampExtractor: TimestampExtractor,
-                              aggregatorInterval: Int,
+                              accumulatorInterval: Int,
                               closeTimeoutInMs: Long) {
   require(streamsConfig != null)
   require(StringUtils.isNotBlank(metricsTopic))

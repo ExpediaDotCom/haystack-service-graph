@@ -25,17 +25,17 @@ import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.streams.processor._
 import org.slf4j.LoggerFactory
 
-class SpanAggregatorSupplier(aggregatorInterval: Int) extends ProcessorSupplier[String, Span] {
-  override def get(): Processor[String, Span] = new SpanAggregator(aggregatorInterval)
+class SpanAccumulatorSupplier(accumulatorInterval: Int) extends ProcessorSupplier[String, Span] {
+  override def get(): Processor[String, Span] = new SpanAccumulator(accumulatorInterval)
 }
 
-class SpanAggregator(aggregatorInterval: Int) extends Processor[String, Span] with MetricsSupport {
+class SpanAccumulator(accumulatorInterval: Int) extends Processor[String, Span] with MetricsSupport {
 
-  private val LOGGER = LoggerFactory.getLogger(classOf[SpanAggregator])
-  private val processMeter = metricRegistry.meter("span.aggregator.process")
-  private val aggregateMeter = metricRegistry.meter("span.aggregator.aggregate")
-  private val forwardMeter = metricRegistry.meter("span.aggregator.emit")
-  private val aggregateHistogram = metricRegistry.histogram("span.aggregator.buffered.spans")
+  private val LOGGER = LoggerFactory.getLogger(classOf[SpanAccumulator])
+  private val processMeter = metricRegistry.meter("span.accumulator.process")
+  private val aggregateMeter = metricRegistry.meter("span.accumulator.aggregate")
+  private val forwardMeter = metricRegistry.meter("span.accumulator.emit")
+  private val aggregateHistogram = metricRegistry.histogram("span.accumulator.buffered.spans")
 
   //Bottom-heavy heap is the opposite of a top-heavy heap data structure
   //in here, heaviest object will be at the end of the queue. dequeue will
@@ -43,7 +43,7 @@ class SpanAggregator(aggregatorInterval: Int) extends Processor[String, Span] wi
   private val weightedQueue = BottomHeavyHeap[WeighableSpan]()
 
   override def init(context: ProcessorContext): Unit = {
-    context.schedule(aggregatorInterval, PunctuationType.STREAM_TIME, getPunctuator(context))
+    context.schedule(accumulatorInterval, PunctuationType.STREAM_TIME, getPunctuator(context))
     LOGGER.info(s"${this.getClass.getSimpleName} initialized")
   }
 
@@ -109,7 +109,7 @@ class SpanAggregator(aggregatorInterval: Int) extends Processor[String, Span] wi
 
       //we process only until cutoff time and leave the rest in place and see
       //if they get their matching span pair in the next punctuation
-      val cutOffTime = timestamp - (aggregatorInterval * 0.5).asInstanceOf[Long]
+      val cutOffTime = timestamp - (accumulatorInterval * 0.5).asInstanceOf[Long]
 
       LOGGER.info(s"Punctuate called with $timestamp. CutOff is $cutOffTime. Queue size is ${weightedQueue.size} spans")
 

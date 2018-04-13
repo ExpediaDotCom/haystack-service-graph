@@ -1,4 +1,6 @@
-**Under development**
+#Haystack : node-finder
+
+Information on what this component is all about is documented in the [README](../README.md) of the repository
 
 ## Building
 
@@ -37,7 +39,7 @@ kafka {
   streams {
     bootstrap.servers = "localhost:9092"
   }
-  aggregator {
+  accumulator {
       interval = 1000
   }
 }

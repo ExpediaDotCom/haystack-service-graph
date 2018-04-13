@@ -29,11 +29,13 @@ import org.apache.kafka.streams.Topology
 class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
 
   val PROTO_SPANS = "proto-spans"
-  val SPAN_AGGREGATOR = "span-aggregator"
+  val SPAN_ACCUMULATOR = "span-accumulator"
   val LATENCY_PRODUCER = "latency-producer"
   val GRAPH_NODE_PRODUCER = "nodes-n-edges-producer"
   val METRIC_SINK = "metric-sink"
   val GRAPH_NODE_SINK = "graph-nodes-sink"
+
+  override def get(): Topology = initialize(new Topology)
 
   /**
     * This provides a topology that is shown in the flow chart below
@@ -48,7 +50,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     *                             |
     *                   +---------v----------+
     *                   |                    |
-    *              +----+   span-aggregator  +----+
+    *              +----+   span-accumulator +----+
     *              |    |                    |    |
     *              |    +--------------------+    |
     *              |                              |
@@ -73,9 +75,9 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     *
     *    Processors:
     *
-    *         span-aggregator         :  Aggregates incoming spans for specified time to find matching client-server spans
-    *         latency-producer        :  From the span pairs produced by span-aggregator, this processor computes and emits network latency
-    *         nodes-n-edges-producer  :  From the span pairs produced by span-aggregator, this processor produces a simple graph relationship
+    *         span-accumulator        :  Aggregates incoming spans for specified time to find matching client-server spans
+    *         latency-producer        :  From the span pairs produced by span-accumulator, this processor computes and emits network latency
+    *         nodes-n-edges-producer  :  From the span pairs produced by span-accumulator, this processor produces a simple graph relationship
     *                                    between the services in the forrm of  service --(operation)--> service
     *    Sinks:
     *
@@ -84,28 +86,26 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     *
     * @return
     */
-  override def get(): Topology = addSteps(new Topology)
-
   @VisibleForTesting
-  def addSteps(topology: Topology) : Topology = {
+  def initialize(topology: Topology): Topology = {
     //add source
     addSource(PROTO_SPANS, topology)
 
-    //add span aggregator. This step will aggregate spans
+    //add span accumulator. This step will aggregate spans
     //by message id. This will emit spans with client-server
     //relationship after specified number of seconds
-    addAggregator(SPAN_AGGREGATOR, topology, PROTO_SPANS)
+    addAccumulator(SPAN_ACCUMULATOR, topology, PROTO_SPANS)
 
-    //add latency producer. This is downstream of aggregator
+    //add latency producer. This is downstream of accumulator
     //this will parse a span with client-server relationship and
     //emit a metric point on the latency for that service-operation pair
-    addLatencyProducer(LATENCY_PRODUCER, topology, SPAN_AGGREGATOR)
+    addLatencyProducer(LATENCY_PRODUCER, topology, SPAN_ACCUMULATOR)
 
-    //add graph node producer. This is downstream of aggregator
-    //for each client-server span emitted by the aggregator, this will
+    //add graph node producer. This is downstream of accumulator
+    //for each client-server span emitted by the accumulator, this will
     //produce a service - operation - service data point for building
     //the edges between the nodes in a graph
-    addGraphNodeProducer(GRAPH_NODE_PRODUCER, topology, SPAN_AGGREGATOR)
+    addGraphNodeProducer(GRAPH_NODE_PRODUCER, topology, SPAN_ACCUMULATOR)
 
     //add sink for latency producer
     addMetricSink(METRIC_SINK, kafkaConfiguration.metricsTopic, topology, LATENCY_PRODUCER)
@@ -128,27 +128,27 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
       kafkaConfiguration.protoSpanTopic)
   }
 
-  private def addAggregator(aggregatorName: String, topology: Topology, sourceName: String) : Unit = {
+  private def addAccumulator(accumulatorName: String, topology: Topology, sourceName: String) : Unit = {
     topology.addProcessor(
-      aggregatorName,
-      new SpanAggregatorSupplier(kafkaConfiguration.aggregatorInterval),
+      accumulatorName,
+      new SpanAccumulatorSupplier(kafkaConfiguration.accumulatorInterval),
       sourceName
     )
   }
 
-  private def addLatencyProducer(latencyProducerName: String, topology: Topology, aggregatorName: String) : Unit = {
+  private def addLatencyProducer(latencyProducerName: String, topology: Topology, accumulatorName: String) : Unit = {
     topology.addProcessor(
       latencyProducerName,
       new LatencyProducerSupplier(),
-      aggregatorName
+      accumulatorName
     )
   }
 
-  private def addGraphNodeProducer(graphNodeProducerName: String, topology: Topology, aggregatorName: String) = {
+  private def addGraphNodeProducer(graphNodeProducerName: String, topology: Topology, accumulatorName: String) = {
     topology.addProcessor(
       graphNodeProducerName,
       new GraphNodeProducerSupplier(),
-      aggregatorName
+      accumulatorName
     )
   }
 
