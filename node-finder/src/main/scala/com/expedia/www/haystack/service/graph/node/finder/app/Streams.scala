@@ -31,10 +31,59 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
   val PROTO_SPANS = "proto-spans"
   val SPAN_AGGREGATOR = "span-aggregator"
   val LATENCY_PRODUCER = "latency-producer"
-  val GRAPH_NODE_PRODUCER = "node-n-edges-producer"
-  val METRIC_SINK = "metricSink"
-  val GRAPH_NODE_SINK = "graphNodeSink"
-  
+  val GRAPH_NODE_PRODUCER = "nodes-n-edges-producer"
+  val METRIC_SINK = "metric-sink"
+  val GRAPH_NODE_SINK = "graph-nodes-sink"
+
+  /**
+    * This provides a topology that is shown in the flow chart below
+    *
+    *                     +---------------+
+    *                     |               |
+    *                     |  proto-spans  |
+    *                     |               |
+    *                     +-------+-------+
+    *                             |
+    *                             |
+    *                             |
+    *                   +---------v----------+
+    *                   |                    |
+    *              +----+   span-aggregator  +----+
+    *              |    |                    |    |
+    *              |    +--------------------+    |
+    *              |                              |
+    *              |                              |
+    *              |                              |
+    *    +---------v----------+         +---------v----------------+
+    *    |                    |         |                          |
+    *    |  latency-producer  |         |  nodes-n-edges-producer  |
+    *    |                    |         |                          |
+    *    +---------+----------+         +---------+----------------+
+    *              |                              |
+    *              |                              |
+    *     +--------v-------+                +-----v-------------+
+    *     |                |                |                   |
+    *     |   metric-sink  |                |  graph-nodes-sink |
+    *     |                |                |                   |
+    *     +----------------+                +-------------------+
+    *
+    *    Source:
+    *
+    *         proto-spans  :   Reads a topic of span serialized in protobuf
+    *
+    *    Processors:
+    *
+    *         span-aggregator         :  Aggregates incoming spans for specified time to find matching client-server spans
+    *         latency-producer        :  From the span pairs produced by span-aggregator, this processor computes and emits network latency
+    *         nodes-n-edges-producer  :  From the span pairs produced by span-aggregator, this processor produces a simple graph relationship
+    *                                    between the services in the forrm of  service --(operation)--> service
+    *    Sinks:
+    *
+    *         metric-sink       :  Output of latency-producer (MetricPoint) is serialized using MessagePack and sent to a kafka topic
+    *         graph-nodes-sink  :  Output of nodes-n-edges-producer is serialized a json string and sent to a kafka topic
+    *
+    * @return
+    */
   override def get(): Topology = addSteps(new Topology)
 
   @VisibleForTesting
