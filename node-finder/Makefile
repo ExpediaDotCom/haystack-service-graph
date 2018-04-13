@@ -10,5 +10,5 @@ docker-image: all
 all:
 	mvn clean verify
 
-release:
+release: docker-image
 	../scripts/publish-to-docker-hub.sh
