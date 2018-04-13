@@ -17,10 +17,9 @@ build-graph-builder:
 all: clean build-node-finder build-graph-builder
 
 # build all and release
-release: all
+release:
 	cd node-finder && $(MAKE) release
 	cd graph-builder && $(MAKE) release
-	./.travis/deploy.sh
 
 # run coverage tests
 report-coverage:
