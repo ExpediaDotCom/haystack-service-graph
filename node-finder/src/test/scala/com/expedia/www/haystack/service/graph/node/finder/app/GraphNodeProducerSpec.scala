@@ -1,0 +1,71 @@
+/*
+ *
+ *     Copyright 2018 Expedia, Inc.
+ *
+ *      Licensed under the Apache License, Version 2.0 (the "License");
+ *      you may not use this file except in compliance with the License.
+ *      You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *      Unless required by applicable law or agreed to in writing, software
+ *      distributed under the License is distributed on an "AS IS" BASIS,
+ *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *      See the License for the specific language governing permissions and
+ *      limitations under the License.
+ *
+ */
+package com.expedia.www.haystack.service.graph.node.finder.app
+
+import com.expedia.www.haystack.TestSpec
+import org.apache.kafka.streams.processor.ProcessorContext
+import org.easymock.EasyMock._
+
+class GraphNodeProducerSpec extends TestSpec {
+  describe("producing graph nodes") {
+    it("should emit a valid graph node for a give complete SpanPair") {
+      Given("a valid SpanPair instance")
+      val spanPair = validSpanPair()
+      val context = mock[ProcessorContext]
+      val graphNodeProducer = new GraphNodeProducer
+      val captured = newCapture[String]()
+      When("process is called on GraphNodeProducer with it")
+      expecting {
+        context.forward(anyString(), capture[String](captured)).once()
+        context.commit().once()
+      }
+      replay(context)
+      graphNodeProducer.init(context)
+      graphNodeProducer.process(spanPair.spanId, spanPair)
+      val json = captured.getValue
+      Then("it should produce a valid GraphNode object")
+      verify(context)
+      json should be ("{\"source\":\"foo-service\",\"destination\":\"baz-service\",\"operation\":\"bar\"}")
+    }
+    it("should emit no graph nodes for incomplete SpanLit") {
+      Given("an incomplete SpanPair instance")
+      val spanPair = inCompleteSpanPair()
+      val context = mock[ProcessorContext]
+      val graphNodeProducer = new GraphNodeProducer
+      When("process is called on GraphNodeProducer with it")
+      expecting {
+        context.commit().once()
+      }
+      replay(context)
+      graphNodeProducer.init(context)
+      graphNodeProducer.process(spanPair.spanId, spanPair)
+      Then("it should produce no graph node in the context")
+      verify(context)
+    }
+  }
+  describe("graph node producer supplier") {
+    it("should supply a valid producer") {
+      Given("a supplier instance")
+      val supplier = new GraphNodeProducerSupplier
+      When("a producer is request")
+      val producer = supplier.get()
+      Then("should yield a valid producer")
+      producer should not be null
+    }
+  }
+}

@@ -8,26 +8,43 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>haystack-service-graph-graph-builder</artifactId>
+    <artifactId>haystack-service-graph-builder</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
+    <licenses>
+        <!--
+           /*
+            *
+            *  Copyright 2018 Expedia, Inc.
+            *
+            *     Licensed under the Apache License, Version 2.0 (the "License");
+            *     you may not use this file except in compliance with the License.
+            *     You may obtain a copy of the License at
+            *
+            *         http://www.apache.org/licenses/LICENSE-2.0
+            *
+            *     Unless required by applicable law or agreed to in writing, software
+            *     distributed under the License is distributed on an "AS IS" BASIS,
+            *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            *     See the License for the specific language governing permissions and
+            *     limitations under the License.
+            *
+            */
+          -->
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    
     <properties>
-        <kafka-version>0.11.0.0</kafka-version>
+        <kafka-version>1.0.0</kafka-version>
         <mainClass>com.expedia.www.haystack.service.graph.builder.App</mainClass>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.expedia.www</groupId>
-            <artifactId>haystack-commons</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>io.searchbox</groupId>
             <artifactId>jest</artifactId>
@@ -127,38 +144,11 @@
     </dependencies>
 
     <build>
-        <finalName>haystack-service-graph-graph-builder</finalName>
+        <finalName>haystack-service-graph-builder</finalName>
         <plugins>
             <plugin>
                 <groupId>org.scalatest</groupId>
                 <artifactId>scalatest-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <environmentVariables>
-                                <HAYSTACK_PROP_KAFKA_CONSUMER_AUTO_OFFSET_RESET>earliest</HAYSTACK_PROP_KAFKA_CONSUMER_AUTO_OFFSET_RESET>
-                                <HAYSTACK_PROP_CASSANDRA_CONNECTIONS_MAX_PER_HOST>100</HAYSTACK_PROP_CASSANDRA_CONNECTIONS_MAX_PER_HOST>
-                                <HAYSTACK_PROP_CASSANDRA_ENDPOINTS>cass1,cass2</HAYSTACK_PROP_CASSANDRA_ENDPOINTS>
-                                <HAYSTACK_PROP_ELASTICSEARCH_INDEX_NAME_PREFIX>haystack-test</HAYSTACK_PROP_ELASTICSEARCH_INDEX_NAME_PREFIX>
-                            </environmentVariables>
-                            <wildcardSuites>com.expedia.www.haystack.service.graph.builder.unit</wildcardSuites>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>integration-test</id>
-                        <phase>integration-test</phase>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
-                        <configuration>
-                            <wildcardSuites>com.expedia.www.haystack.service.graph.builder.integration</wildcardSuites>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
 
             <plugin>

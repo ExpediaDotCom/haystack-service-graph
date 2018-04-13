@@ -1,4 +1,4 @@
-.PHONY: all finder builder release
+.PHONY: all clean build report-coverage build-node-finder build-graph-builder release
 
 PWD := $(shell pwd)
 
@@ -8,22 +8,13 @@ clean:
 build: clean
 	mvn package
 
-all: clean finder builder report-coverage
+build-node-finder:
+	mvn verify -pl node-finder -am
 
-report-coverage:
-	docker run -it -v ~/.m2:/root/.m2 -w /src -v `pwd`:/src maven:3.5.0-jdk-8 /bin/sh -c 'mvn scoverage:report-only && mvn clean'
+build-graph-builder:
+	mvn verify -pl graph-builder -am
 
-finder: build_finder
-	cd node-finder && $(MAKE) integration_test
-
-buidler: build_builder
-	cd graph-builder && $(MAKE) integration_test
-
-build_finder:
-	mvn package -pl node-finder -am
-
-build_builder:
-	mvn package -pl graph-builder -am
+all: clean build-node-finder build-graph-builder
 
 # build all and release
 release: all
@@ -31,3 +22,7 @@ release: all
 	cd graph-builder && $(MAKE) release
 	./.travis/deploy.sh
 
+# run coverage tests
+report-coverage:
+	mvn clean scoverage:test scoverage:report-only
+	open target/site/scoverage/index.html

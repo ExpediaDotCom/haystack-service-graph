@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <artifactId>haystack-service-graph</artifactId>
@@ -12,56 +13,43 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
+    <licenses>
+        <!--
+           /*
+            *
+            *  Copyright 2018 Expedia, Inc.
+            *
+            *     Licensed under the Apache License, Version 2.0 (the "License");
+            *     you may not use this file except in compliance with the License.
+            *     You may obtain a copy of the License at
+            *
+            *         http://www.apache.org/licenses/LICENSE-2.0
+            *
+            *     Unless required by applicable law or agreed to in writing, software
+            *     distributed under the License is distributed on an "AS IS" BASIS,
+            *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+            *     See the License for the specific language governing permissions and
+            *     limitations under the License.
+            *
+            */
+          -->
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <properties>
-        <kafka-version>0.11.0.0</kafka-version>
+        <kafka-version>1.0.0</kafka-version>
         <mainClass>com.expedia.www.haystack.service.graph.node.finder.App</mainClass>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.expedia.www</groupId>
-            <artifactId>haystack-commons</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.searchbox</groupId>
-            <artifactId>jest</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.elasticsearch</groupId>
-            <artifactId>elasticsearch</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-ec2</artifactId>
-        </dependency>
-
-        <!-- cassandra client-->
-        <dependency>
-            <groupId>com.datastax.cassandra</groupId>
-            <artifactId>cassandra-driver-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.json4s</groupId>
-            <artifactId>json4s-jackson_${scala.major.minor.version}</artifactId>
         </dependency>
 
         <!-- kafka -->
@@ -83,47 +71,21 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-streams</artifactId>
+            <version>${kafka-version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.expedia.www</groupId>
             <artifactId>haystack-logback-metrics-appender</artifactId>
         </dependency>
 
-        <!-- Test Dependencies  -->
-
         <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-streams</artifactId>
-            <version>${kafka-version}</version>
-            <classifier>test</classifier>
-            <scope>test</scope>
+            <groupId>org.msgpack</groupId>
+            <artifactId>msgpack-core</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-streams</artifactId>
-            <version>${kafka-version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka_${scala.major.minor.version}</artifactId>
-            <version>${kafka-version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
-            <classifier>test</classifier>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.kafka</groupId>
-            <artifactId>kafka-clients</artifactId>
-            <version>${kafka-version}</version>
-            <classifier>test</classifier>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -139,13 +101,7 @@
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <environmentVariables>
-                                <HAYSTACK_PROP_KAFKA_CONSUMER_AUTO_OFFSET_RESET>earliest</HAYSTACK_PROP_KAFKA_CONSUMER_AUTO_OFFSET_RESET>
-                                <HAYSTACK_PROP_CASSANDRA_CONNECTIONS_MAX_PER_HOST>100</HAYSTACK_PROP_CASSANDRA_CONNECTIONS_MAX_PER_HOST>
-                                <HAYSTACK_PROP_CASSANDRA_ENDPOINTS>cass1,cass2</HAYSTACK_PROP_CASSANDRA_ENDPOINTS>
-                                <HAYSTACK_PROP_ELASTICSEARCH_INDEX_NAME_PREFIX>haystack-test</HAYSTACK_PROP_ELASTICSEARCH_INDEX_NAME_PREFIX>
-                            </environmentVariables>
-                            <wildcardSuites>com.expedia.www.haystack.service.graph.node.finder.unit</wildcardSuites>
+                            <tagsToExclude>org.expedia.www.haystack.commons.scalatest.IntegrationSuite</tagsToExclude>
                         </configuration>
                     </execution>
                     <execution>
@@ -155,10 +111,22 @@
                             <goal>test</goal>
                         </goals>
                         <configuration>
-                            <wildcardSuites>com.expedia.www.haystack.service.graph.node.finder.integration</wildcardSuites>
+                            <tagsToInclude>org.expedia.www.haystack.commons.scalatest.IntegrationSuite</tagsToInclude>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.scoverage</groupId>
+                <artifactId>scoverage-maven-plugin</artifactId>
+                <configuration>
+                    <highlighting>true</highlighting>
+                    <excludedPackages>
+                        com.expedia.www.haystack.service.graph.node.finder;com.expedia.www.haystack.commons.kstreams.app.Main;com.expedia.www.haystack.commons.kstreams.app.StreamsFactory
+                    </excludedPackages>
+                    <!--<excludedFiles> </excludedFiles>-->
+                </configuration>
             </plugin>
 
             <plugin>
@@ -185,10 +153,12 @@
                         </goals>
                         <configuration>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                                     <resource>reference.conf</resource>
                                 </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>${mainClass}</mainClass>
                                 </transformer>
                             </transformers>
