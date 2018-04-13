@@ -3,9 +3,14 @@
 ## Building
 
 ```
-mvn clean package
+mvn clean verify
 ```
 
+or
+
+```
+make docker-image
+```
 
 ## Testing Locally 
 
