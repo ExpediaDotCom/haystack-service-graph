@@ -4,11 +4,11 @@ export DOCKER_ORG := expediadotcom
 export DOCKER_IMAGE_NAME := haystack-service-graph-builder
 PWD := $(shell pwd)
 
-docker-image: all
-	docker build -t $(DOCKER_IMAGE_NAME) -f build/docker/Dockerfile .
-
 all:
 	mvn clean verify
 
+docker-image: all
+	docker build -t $(DOCKER_IMAGE_NAME) -f build/docker/Dockerfile .
+
 release: docker-image
-	../scripts/publish-to-docker-hub.sh
+	../.travis/publish-to-docker-hub.sh
