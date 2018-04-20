@@ -48,6 +48,17 @@ object SpanUtils {
   private val SPAN_TYPE_MAP = Map(Flag(THREE) -> SpanType.CLIENT, Flag(TWELVE) -> SpanType.SERVER)
 
   /**
+    * Given a span check if it is eligible for accumulation and can be a weighable span
+    * @param span span to validate
+    * @return
+    */
+  def isAccumulableSpan(span: Span): Boolean =
+    StringUtils.isNotBlank(span.getSpanId)&&
+    StringUtils.isNotBlank(span.getServiceName) &&
+    StringUtils.isNotBlank(span.getOperationName) &&
+    span.getStartTime > 0
+
+  /**
     * Given a span, this method looks for ('cs', 'cr') and ('sr', 'ss') pairs in log fields with key as "event"
     * to identify a span type. Presence of ('cs', 'cr') events will result in SpanType.CLIENT and presence of
     * events ('sr', 'ss') events will result in SpanType.SERVER. All other spans will be identified as OTHER

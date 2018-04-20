@@ -52,9 +52,8 @@ class SpanAccumulator(accumulatorInterval: Int) extends Processor[String, Span] 
 
     //find the span type
     val spanType = SpanUtils.getSpanType(span)
-    LOGGER.info(s"Received $spanType span : ${span.getTraceId} :: ${span.getSpanId} :: ${span.getStartTime}")
 
-    if (spanType != SpanType.OTHER) {
+    if (spanType != SpanType.OTHER && SpanUtils.isAccumulableSpan(span)) {
 
       //startTime is in microseconds, so divide it by 1000 to send MS
       val weighableSpan = WeighableSpan(span.getSpanId,
@@ -67,7 +66,6 @@ class SpanAccumulator(accumulatorInterval: Int) extends Processor[String, Span] 
       weightedQueue.enqueue(weighableSpan)
 
       aggregateMeter.mark()
-      LOGGER.info(s"Processed $spanType span : $weighableSpan")
     }
   }
 
