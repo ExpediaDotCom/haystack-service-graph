@@ -1,0 +1,54 @@
+/*
+ *
+ *     Copyright 2018 Expedia, Inc.
+ *
+ *      Licensed under the Apache License, Version 2.0 (the "License");
+ *      you may not use this file except in compliance with the License.
+ *      You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *      Unless required by applicable law or agreed to in writing, software
+ *      distributed under the License is distributed on an "AS IS" BASIS,
+ *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *      See the License for the specific language governing permissions and
+ *      limitations under the License.
+ *
+ */
+package com.expedia.www.haystack.service.graph.graph.builder.model
+
+import java.util
+
+import com.expedia.www.haystack.service.graph.graph.builder.ServiceGraph
+import com.google.gson.Gson
+import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
+
+class ServiceGraphSerde extends Serde[ServiceGraph] {
+  override def deserializer(): Deserializer[ServiceGraph] = new ServiceGraphDeserializer
+
+  override def serializer(): Serializer[ServiceGraph] = new ServiceGraphSerializer
+
+  override def configure(map: util.Map[String, _], b: Boolean): Unit = ()
+
+  override def close(): Unit = ()
+}
+
+class ServiceGraphSerializer extends Serializer[ServiceGraph] {
+  override def serialize(topic: String, graphEdgeSet: ServiceGraph): Array[Byte] = {
+    new Gson().toJson(graphEdgeSet).getBytes
+  }
+
+  override def configure(map: util.Map[String, _], b: Boolean): Unit = ()
+
+  override def close(): Unit = ()
+}
+
+class ServiceGraphDeserializer extends Deserializer[ServiceGraph] {
+  override def deserialize(topic: String, data: Array[Byte]): ServiceGraph = {
+    new Gson().fromJson(new String(data), classOf[ServiceGraph])
+  }
+
+  override def configure(map: util.Map[String, _], b: Boolean): Unit = ()
+
+  override def close(): Unit = ()
+}
