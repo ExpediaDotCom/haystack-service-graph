@@ -15,19 +15,20 @@
  *      limitations under the License.
  *
  */
-package com.expedia.www.haystack.service.graph.node.finder.model
+package com.expedia.www.haystack.service.graph.graph.builder.model
 
-import com.expedia.www.haystack.TestSpec
+import org.apache.commons.lang3.StringUtils
 
-class GraphEdgeSpec extends TestSpec {
-  describe("graphEdge object serialization") {
-    it("should produce an expected json") {
-      Given("a graph edge instance")
-      val graphEdge = GraphEdge("source-service", "destination-service", "operation-name")
-      When("toJson is invoked")
-      val json = graphEdge.toJson
-      Then("it should produce a simple json string")
-      json should be ("{\"source\":\"source-service\",\"destination\":\"destination-service\",\"operation\":\"operation-name\"}")
-    }
-  }
+/**
+  * Case class with enough information to build a relationship between to graph nodes
+  * @param source identifier for the source graph node
+  * @param destination identifier for the destination graph node
+  * @param operation identifier for the graph edge
+  */
+case class GraphEdge(source: String,
+                     destination: String,
+                     operation: String)  {
+  require(StringUtils.isNotBlank(source))
+  require(StringUtils.isNotBlank(destination))
+  require(StringUtils.isNoneBlank(operation))
 }

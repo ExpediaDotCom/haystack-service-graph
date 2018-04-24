@@ -13,7 +13,7 @@
         <host>${HAYSTACK_GRAPHITE_HOST:monitoring-influxdb-graphite.kube-system.svc}</host>
         <port>${HAYSTACK_GRAPHITE_PORT:2003}</port>
         <!-- template used in influxdb : "haystack.* system.subsystem.application.host.class.measurement*" -->
-        <namePrefix>haystack.service.graph.node.finder.#hostname#.</namePrefix>
+        <namePrefix>haystack.service-graph.graph-builder.#hostname#.</namePrefix>
     </outputWriter>
     <collectIntervalInSeconds>60</collectIntervalInSeconds>
 </jmxtrans-agent>
