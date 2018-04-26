@@ -17,8 +17,7 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.app
 
-import com.expedia.open.tracing.Span
-import com.expedia.www.haystack.service.graph.graph.builder.{ServiceGraph, TestSpec}
+import com.expedia.www.haystack.service.graph.graph.builder.TestSpec
 import com.expedia.www.haystack.service.graph.graph.builder.model.GraphEdge
 import org.apache.kafka.streams.processor.{Cancellable, ProcessorContext, PunctuationType, Punctuator}
 import org.easymock.EasyMock._

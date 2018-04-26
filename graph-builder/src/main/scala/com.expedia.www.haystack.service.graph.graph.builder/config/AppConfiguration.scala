@@ -20,7 +20,6 @@ package com.expedia.www.haystack.service.graph.graph.builder.config
 import java.util.Properties
 
 import com.expedia.www.haystack.commons.config.ConfigurationLoader
-import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.typesafe.config.Config
 import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.StreamsConfig
@@ -71,7 +70,6 @@ class AppConfiguration(resourceName: String) {
     val kafka = config.getConfig("kafka")
     val streamsConfig = kafka.getConfig("streams")
     val consumerConfig = kafka.getConfig("consumer")
-    val producerConfig = kafka.getConfig("producer")
 
     val props = new Properties
 
@@ -93,7 +91,6 @@ class AppConfiguration(resourceName: String) {
 
     KafkaConfiguration(new StreamsConfig(props),
       consumerConfig.getString("topic"),
-      producerConfig.getString("topic"),
       if (streamsConfig.hasPath("auto.offset.reset")) {
         AutoOffsetReset.valueOf(streamsConfig.getString("auto.offset.reset").toUpperCase)
       }
@@ -104,5 +101,38 @@ class AppConfiguration(resourceName: String) {
       kafka.getInt("accumulator.interval"),
       kafka.getLong("close.timeout.ms")
     )
+  }
+
+  /**
+    *
+    * cassandra configuration object
+    */
+  lazy val cassandraConfig: CassandraConfiguration = {
+    val cs = config.getConfig("cassandra")
+
+    val socketConfig = cs.getConfig("connections")
+
+    val socket = SocketConfiguration(
+      socketConfig.getInt("max.per.host"),
+      socketConfig.getBoolean("keep.alive"),
+      socketConfig.getInt("conn.timeout.ms"),
+      socketConfig.getInt("read.timeout.ms"))
+
+    val keyspaceConfig = cs.getConfig("keyspace")
+
+    val autoCreateSchemaField = "auto.create.schema"
+    val autoCreateSchema = if (keyspaceConfig.hasPath(autoCreateSchemaField)
+      && StringUtils.isNotEmpty(keyspaceConfig.getString(autoCreateSchemaField))) {
+      Some(keyspaceConfig.getString(autoCreateSchemaField))
+    } else {
+      None
+    }
+
+    CassandraConfiguration(
+      if (cs.hasPath("endpoints")) cs.getString("endpoints").split(",").toList else Nil,
+      keyspaceConfig.getString("name"),
+      keyspaceConfig.getString("table.name"),
+      autoCreateSchema,
+      socket)
   }
 }

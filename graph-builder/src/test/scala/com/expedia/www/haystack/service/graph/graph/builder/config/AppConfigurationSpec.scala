@@ -17,7 +17,6 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.config
 
-import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.expedia.www.haystack.service.graph.graph.builder.TestSpec
 import com.typesafe.config.ConfigException
 import org.apache.kafka.streams.processor.WallclockTimestampExtractor
@@ -69,6 +68,15 @@ class AppConfigurationSpec extends TestSpec {
       config.streamsConfig.defaultTimestampExtractor() shouldBe a [WallclockTimestampExtractor]
       config.consumerTopic should be ("graph-nodes")
       config.accumulatorInterval should be (60000)
+    }
+    it("should create CassandraConfiguration as specified") {
+      Given("a test configuration file")
+      val file = "test/test.conf"
+      When("Application configuration is loaded and cassandraConfig is obtained")
+      val config = new AppConfiguration(file).cassandraConfig
+      Then("it should load as expected")
+      config.autoCreateSchema.isDefined should be(true)
+      config.endpoints.head should be("cassandra")
     }
   }
 }

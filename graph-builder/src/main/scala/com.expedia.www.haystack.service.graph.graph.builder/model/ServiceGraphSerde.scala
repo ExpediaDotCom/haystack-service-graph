@@ -19,7 +19,6 @@ package com.expedia.www.haystack.service.graph.graph.builder.model
 
 import java.util
 
-import com.expedia.www.haystack.service.graph.graph.builder.ServiceGraph
 import com.google.gson.Gson
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 

@@ -19,17 +19,20 @@ package com.expedia.www.haystack.service.graph.graph.builder.app
 
 import java.util.function.Supplier
 
-import com.expedia.www.haystack.service.graph.graph.builder.config.KafkaConfiguration
-import com.expedia.www.haystack.service.graph.graph.builder.model.{GraphEdgeDeserializer, ServiceGraphSerializer}
+import com.expedia.www.haystack.service.graph.graph.builder.config.{CassandraConfiguration, KafkaConfiguration}
+import com.expedia.www.haystack.service.graph.graph.builder.model.GraphEdgeDeserializer
+import com.expedia.www.haystack.service.graph.graph.builder.writer.CassandraWriter
 import com.netflix.servo.util.VisibleForTesting
-import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
+import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.streams.Topology
 
-class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
+class Streams(kafkaConfiguration: KafkaConfiguration, cassandraConfiguration: CassandraConfiguration) extends Supplier[Topology] {
   val GRAPH_NODES = "graph-nodes"
   val SERVICE_GRAPH_ACCUMULATOR = "service-graph-accumulator"
-  val KAFKA_SINK = "kafka-sink"
   val CASSANDRA_SINK = "cassandra-sink"
+
+  implicit private val executor = scala.concurrent.ExecutionContext.global
+  val writer = new CassandraWriter(cassandraConfiguration)
 
   override def get(): Topology = initialize(new Topology)
 
@@ -43,11 +46,8 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     // will be emitted out periodically
     addAccumulator(SERVICE_GRAPH_ACCUMULATOR, topology, GRAPH_NODES)
 
-    //add sink for graph node producer
-    addServiceGraphKafkaSink(KAFKA_SINK, kafkaConfiguration.kafkaSinkTopic, topology, SERVICE_GRAPH_ACCUMULATOR)
-
-    // TODO add Cassandra sink
-    // addServiceGraphCassandraSink(CASSANDRA_SINK, kafkaConfiguration.kafkaSinkTopic, topology, SERVICE_GRAPH_ACCUMULATOR)
+    // cassandra sink for graph node producer
+    addServiceGraphCassandraSink(CASSANDRA_SINK,  topology, SERVICE_GRAPH_ACCUMULATOR)
 
     //return the topology built
     topology
@@ -71,12 +71,10 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     )
   }
 
-  private def addServiceGraphKafkaSink(graphNodeSinkName: String, serviceCallTopic: String, topology: Topology, graphNodeProducerName: String) :Unit = {
-    topology.addSink(
+  private def addServiceGraphCassandraSink(graphNodeSinkName: String, topology: Topology, graphNodeProducerName: String) :Unit = {
+    topology.addProcessor(
       graphNodeSinkName,
-      serviceCallTopic,
-      new StringSerializer,
-      new ServiceGraphSerializer,
+      new ServiceGraphSinkSupplier(writer),
       graphNodeProducerName
     )
   }

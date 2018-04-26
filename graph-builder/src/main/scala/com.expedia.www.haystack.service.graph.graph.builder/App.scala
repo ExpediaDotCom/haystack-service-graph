@@ -57,7 +57,7 @@ object App extends Main {
                           stateChangeListener: StateChangeListener): StreamsRunner = {
     //create the topology provider
     val kafkaConfig = appConfiguration.kafkaConfig
-    val streams = new Streams(kafkaConfig)
+    val streams = new Streams(kafkaConfig, appConfiguration.cassandraConfig)
 
     val streamsFactory = new StreamsFactory(streams, kafkaConfig.streamsConfig, kafkaConfig.consumerTopic)
 

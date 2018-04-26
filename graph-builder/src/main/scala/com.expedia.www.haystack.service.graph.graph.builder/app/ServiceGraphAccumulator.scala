@@ -18,8 +18,7 @@
 package com.expedia.www.haystack.service.graph.graph.builder.app
 
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.expedia.www.haystack.service.graph.graph.builder.ServiceGraph
-import com.expedia.www.haystack.service.graph.graph.builder.model.GraphEdge
+import com.expedia.www.haystack.service.graph.graph.builder.model.{GraphEdge, ServiceGraph}
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.streams.processor._
 import org.slf4j.LoggerFactory
