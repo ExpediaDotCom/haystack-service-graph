@@ -17,7 +17,7 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.model
 
-import com.expedia.www.haystack.commons.entities.{MetricPoint, MetricType, TagKeys}
+import com.expedia.www.haystack.commons.entities.{GraphEdge, MetricPoint, MetricType, TagKeys}
 import com.expedia.www.haystack.service.graph.node.finder.utils.{Flag, SpanType}
 import org.slf4j.LoggerFactory
 

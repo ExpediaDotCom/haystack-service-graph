@@ -45,10 +45,10 @@ class GraphNodeProducer extends Processor[String, SpanPair] with MetricsSupport 
 
     spanPair.getGraphEdge match {
       case Some(graphEdge) =>
-        context.forward(spanPair.spanId, graphEdge.toJson)
+        context.forward(graphEdge, graphEdge)
         forwardMeter.mark()
         if (LOGGER.isDebugEnabled) {
-          LOGGER.debug(s"Graph edge : (${spanPair.spanId}, ${graphEdge.toJson}")
+          LOGGER.debug(s"Graph edge : (${spanPair.spanId}, $graphEdge")
         }
       case None =>
     }

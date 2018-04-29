@@ -20,7 +20,7 @@ package com.expedia.www.haystack.service.graph.node.finder.model
 import java.util.UUID
 
 import com.expedia.www.haystack.TestSpec
-import com.expedia.www.haystack.commons.entities.{MetricPoint, MetricType, TagKeys}
+import com.expedia.www.haystack.commons.entities.{GraphEdge, MetricPoint, MetricType, TagKeys}
 
 class SpanPairSpec extends TestSpec {
   describe("an incomplete SpanPair") {
