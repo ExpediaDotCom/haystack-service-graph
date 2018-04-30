@@ -15,33 +15,28 @@
  *      limitations under the License.
  *
  */
-package com.expedia.www.haystack.service.graph.graph.builder.config
+package com.expedia.www.haystack.service.graph.graph.builder.config.entities
 
 import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.Topology.AutoOffsetReset
-import org.apache.kafka.streams.processor.TimestampExtractor
 
 /**
   * Case class holding required configuration for the node finder kstreams app
   * @param streamsConfig valid instance of StreamsConfig
   * @param consumerTopic topic name for graph-nodes topic
-  * @param kafkaSinkTopic topic name for kafka sink topic, will be used if kafkaSinkEnabled is true
+  * @param producerTopic topic name for kafka sink topic, will be used if kafkaSinkEnabled is true
   * @param autoOffsetReset Offset type for the kstreams app to start with
-  * @param timestampExtractor instance of timestamp extractor
-  * @param accumulatorInterval interval to aggregate spans to look for client and server spans
   * @param closeTimeoutInMs time for closing a kafka topic
   */
 case class KafkaConfiguration(streamsConfig: StreamsConfig,
                               consumerTopic: String,
-                              kafkaSinkTopic: String,
+                              producerTopic: String,
                               autoOffsetReset: AutoOffsetReset,
-                              timestampExtractor: TimestampExtractor,
-                              accumulatorInterval: Int,
                               closeTimeoutInMs: Long) {
   require(streamsConfig != null)
   require(StringUtils.isNotBlank(consumerTopic))
+  require(StringUtils.isNotBlank(producerTopic))
   require(autoOffsetReset != null)
-  require(timestampExtractor != null)
   require(closeTimeoutInMs > 0)
 }

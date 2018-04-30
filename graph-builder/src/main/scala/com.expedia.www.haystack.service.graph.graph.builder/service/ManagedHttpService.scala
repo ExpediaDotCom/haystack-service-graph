@@ -15,9 +15,26 @@
  *      limitations under the License.
  *
  */
-package com.expedia.www.haystack.service.graph.graph.builder
+package com.expedia.www.haystack.service.graph.graph.builder.service
 
-import org.scalatest.easymock.EasyMockSugar
-import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
+import java.util.concurrent.atomic.AtomicBoolean
 
-trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar
+import com.expedia.www.haystack.commons.kstreams.app.ManagedService
+
+class ManagedHttpService(service: HttpService) extends ManagedService {
+  require(service != null)
+  private val isRunning: AtomicBoolean = new AtomicBoolean(false)
+
+  override def start(): Unit = {
+    service.start()
+    isRunning.set(true)
+  }
+
+  override def stop(): Unit = {
+    if(isRunning.getAndSet(false)) {
+      service.close()
+    }
+  }
+
+  override def hasStarted: Boolean = isRunning.get()
+}

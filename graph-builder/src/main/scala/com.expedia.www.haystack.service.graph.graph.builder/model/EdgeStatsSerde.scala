@@ -19,22 +19,21 @@ package com.expedia.www.haystack.service.graph.graph.builder.model
 
 import java.util
 
-import com.expedia.www.haystack.service.graph.graph.builder.ServiceGraph
 import com.google.gson.Gson
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
 
-class ServiceGraphSerde extends Serde[ServiceGraph] {
-  override def deserializer(): Deserializer[ServiceGraph] = new ServiceGraphDeserializer
+class EdgeStatsSerde extends Serde[EdgeStats] {
+  override def deserializer(): Deserializer[EdgeStats] = new EdgeStatsDeserializer
 
-  override def serializer(): Serializer[ServiceGraph] = new ServiceGraphSerializer
+  override def serializer(): Serializer[EdgeStats] = new EdgeStatsSerializer
 
   override def configure(map: util.Map[String, _], b: Boolean): Unit = ()
 
   override def close(): Unit = ()
 }
 
-class ServiceGraphSerializer extends Serializer[ServiceGraph] {
-  override def serialize(topic: String, graphEdgeSet: ServiceGraph): Array[Byte] = {
+class EdgeStatsSerializer extends Serializer[EdgeStats] {
+  override def serialize(topic: String, graphEdgeSet: EdgeStats): Array[Byte] = {
     new Gson().toJson(graphEdgeSet).getBytes
   }
 
@@ -43,9 +42,10 @@ class ServiceGraphSerializer extends Serializer[ServiceGraph] {
   override def close(): Unit = ()
 }
 
-class ServiceGraphDeserializer extends Deserializer[ServiceGraph] {
-  override def deserialize(topic: String, data: Array[Byte]): ServiceGraph = {
-    new Gson().fromJson(new String(data), classOf[ServiceGraph])
+class EdgeStatsDeserializer extends Deserializer[EdgeStats] {
+  override def deserialize(topic: String, data: Array[Byte]): EdgeStats = {
+    if(data == null) EdgeStats(0, 0)
+    else new Gson().fromJson(new String(data), classOf[EdgeStats])
   }
 
   override def configure(map: util.Map[String, _], b: Boolean): Unit = ()

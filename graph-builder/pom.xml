@@ -104,6 +104,20 @@
             <artifactId>haystack-logback-metrics-appender</artifactId>
         </dependency>
 
+        <!-- servlet -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>fluent-hc</artifactId>
+        </dependency>
+
         <!-- Test Dependencies  -->
 
         <dependency>

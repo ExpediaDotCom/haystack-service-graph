@@ -17,50 +17,66 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder
 
+import com.codahale.metrics.JmxReporter
 import com.expedia.www.haystack.commons.health.{HealthStatusController, UpdateHealthStatusFile}
-import com.expedia.www.haystack.commons.kstreams.app.{Main, StateChangeListener, StreamsFactory, StreamsRunner}
-import com.expedia.www.haystack.service.graph.graph.builder.app.Streams
+import com.expedia.www.haystack.commons.kstreams.app.{ManagedKafkaStreams, StateChangeListener}
+import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfiguration
-import com.netflix.servo.util.VisibleForTesting
+import com.expedia.www.haystack.service.graph.graph.builder.config.entities.{KafkaConfiguration, ServiceConfiguration}
+import com.expedia.www.haystack.service.graph.graph.builder.service.resources.{GlobalServiceGraphResource, IsWorkingResource, LocalServiceGraphResource}
+import com.expedia.www.haystack.service.graph.graph.builder.service.{HttpService, ManagedHttpService}
+import com.expedia.www.haystack.service.graph.graph.builder.stream.{Streams, StreamsFactory}
+import org.apache.kafka.streams.KafkaStreams
 
 /**
   * Starting point for graph-builder application
   */
-object App extends Main {
-  /**
-    * Creates a valid instance of StreamsRunner.
-    *
-    * StreamsRunner is created with a valid StreamsFactory instance and a listener that observes
-    * state changes of the kstreams application.
-    *
-    * StreamsFactory in turn is created with a Topology Supplier and kafka.StreamsConfig. Any failure in
-    * StreamsFactory is gracefully handled by StreamsRunner to shut the application off
-    *
-    * Core logic of this application is in the `app.Streams` instance - which is a topology supplier. The
-    * topology of this application is built in this class.
-    *
-    * @return A valid instance of `StreamsRunner`
-    */
-  override def createStreamsRunner(): StreamsRunner = {
+object App extends MetricsSupport {
+  def main(args: Array[String]): Unit = {
+    val jmxReporter: JmxReporter = JmxReporter.forRegistry(metricRegistry).build()
     val appConfiguration = new AppConfiguration()
-
     val healthStatusController = new HealthStatusController
     healthStatusController.addListener(new UpdateHealthStatusFile(appConfiguration.healthStatusFilePath))
 
-    val stateChangeListener = new StateChangeListener(healthStatusController)
+    // build kafka stream to create service graph
+    // it ingests graph edges and create service graph out of it
+    // graphs are stored as materialized ktable in stream state store
+    val stream = createStream(appConfiguration.kafkaConfig, healthStatusController)
 
-    createStreamsRunner(appConfiguration, stateChangeListener)
+    // build http service to query current service graph
+    // it performs interactive query on ktable
+    val service = createService(appConfiguration.serviceConfig, stream, appConfiguration.kafkaConfig.producerTopic)
+
+    //start the application
+    val app = new ManagedApplication(
+      new ManagedHttpService(service),
+      new ManagedKafkaStreams(stream),
+      jmxReporter)
+    app.start()
+
+    // set application to healthy
+    healthStatusController.setHealthy()
+
+    //add a shutdown hook
+    Runtime.getRuntime.addShutdownHook(new Thread() {
+      override def run(): Unit = app.stop()
+    })
   }
 
-  @VisibleForTesting
-  def createStreamsRunner(appConfiguration: AppConfiguration,
-                          stateChangeListener: StateChangeListener): StreamsRunner = {
-    //create the topology provider
-    val kafkaConfig = appConfiguration.kafkaConfig
-    val streams = new Streams(kafkaConfig)
+  // TODO move it to a factory and add error handling for stream creation step
+  private def createStream(kafkaConfig: KafkaConfiguration, healthStatusController: HealthStatusController): KafkaStreams = {
+    val applicationStream = new Streams(kafkaConfig)
+    val streamsFactory = new StreamsFactory(applicationStream, kafkaConfig.streamsConfig, kafkaConfig.consumerTopic)
+    streamsFactory.create(new StateChangeListener(healthStatusController))
+  }
 
-    val streamsFactory = new StreamsFactory(streams, kafkaConfig.streamsConfig, kafkaConfig.consumerTopic)
-
-    new StreamsRunner(streamsFactory, stateChangeListener)
+  // TODO move it to a factory and add error handling for service creation step
+  private def createService(serviceConfig: ServiceConfiguration, stream: KafkaStreams, storeName: String): HttpService = {
+    val servlets = Map(
+      "/servicegraph/global" -> new GlobalServiceGraphResource(stream, storeName),
+      "/servicegraph/local" -> new LocalServiceGraphResource(stream, storeName),
+      "/isWorking" -> new IsWorkingResource
+    )
+    new HttpService(serviceConfig, servlets)
   }
 }

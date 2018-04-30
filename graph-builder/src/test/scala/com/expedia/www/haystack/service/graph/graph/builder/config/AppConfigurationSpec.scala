@@ -17,7 +17,6 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.config
 
-import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.expedia.www.haystack.service.graph.graph.builder.TestSpec
 import com.typesafe.config.ConfigException
 import org.apache.kafka.streams.processor.WallclockTimestampExtractor
@@ -68,7 +67,6 @@ class AppConfigurationSpec extends TestSpec {
       Then("it should load as expected")
       config.streamsConfig.defaultTimestampExtractor() shouldBe a [WallclockTimestampExtractor]
       config.consumerTopic should be ("graph-nodes")
-      config.accumulatorInterval should be (60000)
     }
   }
 }

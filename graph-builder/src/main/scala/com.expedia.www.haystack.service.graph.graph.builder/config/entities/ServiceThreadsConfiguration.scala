@@ -15,9 +15,16 @@
  *      limitations under the License.
  *
  */
-package com.expedia.www.haystack.service.graph.graph.builder
+package com.expedia.www.haystack.service.graph.graph.builder.config.entities
 
-import org.scalatest.easymock.EasyMockSugar
-import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
-
-trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar
+/**
+  * Threads configuration for servlet container
+  * @param min minimum number of threads to use for running servlets
+  * @param max maximum number of threads to use for running servlets
+  * @param idleTimeout timeout for a thread
+  */
+case class ServiceThreadsConfiguration(min: Int, max: Int, idleTimeout: Int) {
+  require(min > 0)
+  require(max > min)
+  require(idleTimeout > 0)
+}
