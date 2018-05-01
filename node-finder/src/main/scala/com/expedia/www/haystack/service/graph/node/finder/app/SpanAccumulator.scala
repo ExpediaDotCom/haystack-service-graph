@@ -25,6 +25,8 @@ import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.streams.processor._
 import org.slf4j.LoggerFactory
 
+import scala.collection.mutable
+
 class SpanAccumulatorSupplier(accumulatorInterval: Int) extends ProcessorSupplier[String, Span] {
   override def get(): Processor[String, Span] = new SpanAccumulator(accumulatorInterval)
 }
@@ -81,22 +83,17 @@ class SpanAccumulator(accumulatorInterval: Int) extends Processor[String, Span] 
     forwardMeter.mark()
   }
 
-  private def drainQueueAndMapAsSpanPairs() : Map[String, SpanPair] = {
-    var mapOfSpanPairs : Map[String, SpanPair] = Map.empty
+  private def drainQueueAndMapAsSpanPairs(): Iterable[SpanPair] = {
+    val mapOfSpanPairs = mutable.Map[String, SpanPair]()
 
     //dequeue everything and add to map. if the span is already there, then merge it.
     while (weightedQueue.nonEmpty) {
       val weighableSpan = weightedQueue.dequeue()
-      val spanPair = mapOfSpanPairs.getOrElse(weighableSpan.spanId, {
-        val ls = new SpanPair(weighableSpan.spanId)
-        mapOfSpanPairs = mapOfSpanPairs.updated(weighableSpan.spanId, ls)
-        ls
-      })
-
+      val spanPair = mapOfSpanPairs.getOrElseUpdate(weighableSpan.spanId, new SpanPair(weighableSpan.spanId))
       spanPair.merge(weighableSpan)
     }
 
-    mapOfSpanPairs
+    mapOfSpanPairs.values
   }
 
   @VisibleForTesting
@@ -109,17 +106,17 @@ class SpanAccumulator(accumulatorInterval: Int) extends Processor[String, Span] 
       //if they get their matching span pair in the next punctuation
       val cutOffTime = timestamp - (accumulatorInterval * 0.5).asInstanceOf[Long]
 
-      LOGGER.info(s"Punctuate called with $timestamp. CutOff is $cutOffTime. Queue size is ${weightedQueue.size} spans")
+      LOGGER.debug(s"Punctuate called with $timestamp. CutOff is $cutOffTime. Queue size is ${weightedQueue.size} spans")
 
       //dequeue weighableSpans and add to map of [spanId, SpanPair]
       //if a span is already there, then merge it
-      val mapOfSpanPairs : Map[String, SpanPair] = drainQueueAndMapAsSpanPairs()
+      val spanPairs : Iterable[SpanPair] = drainQueueAndMapAsSpanPairs()
 
       //iterate map values and forward all complete spans. If the incomplete one is within
       //the last few TimeUnits, we will retain it by enqueuing again to see if there is a matching
       //span in the next batch. If the incomplete one is over the time limit, we will discard them
       var count = 0
-      mapOfSpanPairs.values.foreach(spanPair => {
+      spanPairs.foreach(spanPair => {
         if (spanPair.isComplete) {
           forward(context, spanPair)
           count += 1
