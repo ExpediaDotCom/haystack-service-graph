@@ -15,20 +15,14 @@
  *      limitations under the License.
  *
  */
-package com.expedia.www.haystack.service.graph.graph.builder.model
-
-import org.apache.commons.lang3.StringUtils
+package com.expedia.www.haystack.service.graph.graph.builder.config.entities
 
 /**
-  * Case class with enough information to build a relationship between to graph nodes
-  * @param source identifier for the source graph node
-  * @param destination identifier for the destination graph node
-  * @param operation identifier for the graph edge
+  * Http configuration for servlet container
+  * @param port port to use by servlet container
+  * @param idleTimeout http connection timeout
   */
-case class GraphEdge(source: String,
-                     destination: String,
-                     operation: String)  {
-  require(StringUtils.isNotBlank(source))
-  require(StringUtils.isNotBlank(destination))
-  require(StringUtils.isNoneBlank(operation))
+case class ServiceHttpConfiguration(port: Int, idleTimeout: Long) {
+  require(port > 0)
+  require(idleTimeout > 0)
 }

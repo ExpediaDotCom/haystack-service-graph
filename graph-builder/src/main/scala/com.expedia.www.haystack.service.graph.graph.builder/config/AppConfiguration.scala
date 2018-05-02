@@ -20,12 +20,11 @@ package com.expedia.www.haystack.service.graph.graph.builder.config
 import java.util.Properties
 
 import com.expedia.www.haystack.commons.config.ConfigurationLoader
-import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
+import com.expedia.www.haystack.service.graph.graph.builder.config.entities._
 import com.typesafe.config.Config
 import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.Topology.AutoOffsetReset
-import org.apache.kafka.streams.processor.{TimestampExtractor, WallclockTimestampExtractor}
 
 import scala.collection.JavaConverters._
 
@@ -81,16 +80,6 @@ class AppConfiguration(resourceName: String) {
     // validate props
     verifyRequiredProps(props)
 
-    val timestampExtractor =  Option(props.getProperty("timestamp.extractor")) match {
-      case Some(timeStampExtractorClass) =>
-        Class.forName(timeStampExtractorClass).newInstance().asInstanceOf[TimestampExtractor]
-      case None =>
-        new WallclockTimestampExtractor
-    }
-
-    //set timestamp extractor
-    props.setProperty("timestamp.extractor", timestampExtractor.getClass.getName)
-
     KafkaConfiguration(new StreamsConfig(props),
       consumerConfig.getString("topic"),
       producerConfig.getString("topic"),
@@ -100,9 +89,33 @@ class AppConfiguration(resourceName: String) {
       else {
         AutoOffsetReset.LATEST
       },
-      timestampExtractor,
-      kafka.getInt("accumulator.interval"),
       kafka.getLong("close.timeout.ms")
+    )
+  }
+
+  /**
+    * Instance of {@link ServiceConfiguration} to be used by servlet container
+    */
+  lazy val serviceConfig: ServiceConfiguration = {
+    val service = config.getConfig("service")
+    val threads = service.getConfig("threads")
+    val http = service.getConfig("http")
+    val client = service.getConfig("client")
+
+    ServiceConfiguration(
+      ServiceThreadsConfiguration(
+        threads.getInt("min"),
+        threads.getInt("max"),
+        threads.getInt("idle.timeout")
+      ),
+      ServiceHttpConfiguration(
+        http.getInt("port"),
+        http.getLong("idle.timeout")
+      ),
+      ServiceClientConfiguration(
+        client.getLong("connection.timeout"),
+        client.getLong("socket.timeout")
+      )
     )
   }
 }

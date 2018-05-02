@@ -18,6 +18,7 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.www.haystack.TestSpec
+import com.expedia.www.haystack.commons.entities.GraphEdge
 import org.apache.kafka.streams.processor.ProcessorContext
 import org.easymock.EasyMock._
 
@@ -28,19 +29,21 @@ class GraphNodeProducerSpec extends TestSpec {
       val spanPair = validSpanPair()
       val context = mock[ProcessorContext]
       val graphNodeProducer = new GraphNodeProducer
-      val captured = newCapture[String]()
+      val captured = newCapture[GraphEdge]()
       When("process is called on GraphNodeProducer with it")
       expecting {
-        context.forward(anyString(), capture[String](captured)).once()
+        context.forward(anyString(), capture[GraphEdge](captured)).once()
         context.commit().once()
       }
       replay(context)
       graphNodeProducer.init(context)
       graphNodeProducer.process(spanPair.spanId, spanPair)
-      val json = captured.getValue
+      val edge = captured.getValue
       Then("it should produce a valid GraphNode object")
       verify(context)
-      json should be ("{\"source\":\"foo-service\",\"destination\":\"baz-service\",\"operation\":\"bar\"}")
+      edge.source should be("foo-service")
+      edge.destination should be("baz-service")
+      edge.operation should be("bar")
     }
     it("should emit no graph nodes for incomplete SpanLit") {
       Given("an incomplete SpanPair instance")

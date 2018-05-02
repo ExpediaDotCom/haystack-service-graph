@@ -15,9 +15,17 @@
  *      limitations under the License.
  *
  */
-package com.expedia.www.haystack.service.graph.graph.builder
+package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
-import org.scalatest.easymock.EasyMockSugar
-import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
+import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 
-trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar
+import org.apache.http.entity.ContentType
+
+class IsWorkingResource() extends HttpServlet {
+
+  protected override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = {
+    response.setContentType(ContentType.TEXT_HTML.getMimeType)
+    response.setStatus(HttpServletResponse.SC_OK)
+    response.getWriter.println(true)
+  }
+}

@@ -104,6 +104,20 @@
             <artifactId>haystack-logback-metrics-appender</artifactId>
         </dependency>
 
+        <!-- servlet -->
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-servlet</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>fluent-hc</artifactId>
+        </dependency>
+
         <!-- Test Dependencies  -->
 
         <dependency>
@@ -146,9 +160,31 @@
     <build>
         <finalName>haystack-service-graph-graph-builder</finalName>
         <plugins>
+
             <plugin>
                 <groupId>org.scalatest</groupId>
                 <artifactId>scalatest-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <tagsToExclude>org.expedia.www.haystack.commons.scalatest.IntegrationSuite</tagsToExclude>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>integration-test</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <tagsToInclude>org.expedia.www.haystack.commons.scalatest.IntegrationSuite</tagsToInclude>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

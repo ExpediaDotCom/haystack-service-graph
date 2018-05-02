@@ -15,9 +15,15 @@
  *      limitations under the License.
  *
  */
-package com.expedia.www.haystack.service.graph.graph.builder
+package org.expedia.www.haystack.commons.scalatest;
 
-import org.scalatest.easymock.EasyMockSugar
-import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar
+@org.scalatest.TagAnnotation
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.TYPE})
+public @interface IntegrationSuite {
+}

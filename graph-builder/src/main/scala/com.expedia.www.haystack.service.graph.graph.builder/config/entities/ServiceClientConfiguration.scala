@@ -15,9 +15,14 @@
  *      limitations under the License.
  *
  */
-package com.expedia.www.haystack.service.graph.graph.builder
+package com.expedia.www.haystack.service.graph.graph.builder.config.entities
 
-import org.scalatest.easymock.EasyMockSugar
-import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
-
-trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar
+/**
+  *
+  * @param connectionTimeout
+  * @param socketTimeout
+  */
+case class ServiceClientConfiguration(connectionTimeout: Long, socketTimeout: Long) {
+  require(connectionTimeout > 0)
+  require(socketTimeout > 0)
+}

@@ -15,9 +15,16 @@
  *      limitations under the License.
  *
  */
-package com.expedia.www.haystack.service.graph.graph.builder
+package com.expedia.www.haystack.service.graph.graph.builder.config.entities
 
-import org.scalatest.easymock.EasyMockSugar
-import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
-
-trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar
+/**
+  * Configuration for servlets and servlet container
+  * @param threads threads configuration of servelet container
+  * @param http http configuration of servelet container
+  * @param client configuration of http client
+  */
+case class ServiceConfiguration(threads: ServiceThreadsConfiguration, http: ServiceHttpConfiguration, client: ServiceClientConfiguration) {
+  require(threads != null)
+  require(http != null)
+  require(client != null)
+}

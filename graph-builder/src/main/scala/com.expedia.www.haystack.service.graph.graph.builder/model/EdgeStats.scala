@@ -15,9 +15,6 @@
  *      limitations under the License.
  *
  */
-package com.expedia.www.haystack.service.graph.graph.builder
+package com.expedia.www.haystack.service.graph.graph.builder.model
 
-import org.scalatest.easymock.EasyMockSugar
-import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
-
-trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar
+case class EdgeStats(count: Long, lastSeen: Long)

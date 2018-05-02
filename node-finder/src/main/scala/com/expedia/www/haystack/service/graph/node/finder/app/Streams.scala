@@ -20,6 +20,7 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 import java.util.function.Supplier
 
 import com.expedia.www.haystack.commons.kstreams.serde.SpanSerde
+import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
 import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
 import com.netflix.servo.util.VisibleForTesting
@@ -168,8 +169,8 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     topology.addSink(
       graphNodeSinkName,
       serviceCallTopic,
-      new StringSerializer,
-      new StringSerializer,
+      new GraphEdgeSerializer,
+      new GraphEdgeSerializer,
       graphNodeProducerName
     )
   }
