@@ -20,7 +20,7 @@ package com.expedia.www.haystack.service.graph.graph.builder.config
 import java.util.Properties
 
 import com.expedia.www.haystack.commons.config.ConfigurationLoader
-import com.expedia.www.haystack.service.graph.graph.builder.config.entities.{KafkaConfiguration, ServiceConfiguration, ServiceHttpConfiguration, ServiceThreadsConfiguration}
+import com.expedia.www.haystack.service.graph.graph.builder.config.entities._
 import com.typesafe.config.Config
 import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.StreamsConfig
@@ -100,6 +100,7 @@ class AppConfiguration(resourceName: String) {
     val service = config.getConfig("service")
     val threads = service.getConfig("threads")
     val http = service.getConfig("http")
+    val client = service.getConfig("client")
 
     ServiceConfiguration(
       ServiceThreadsConfiguration(
@@ -110,6 +111,10 @@ class AppConfiguration(resourceName: String) {
       ServiceHttpConfiguration(
         http.getInt("port"),
         http.getLong("idle.timeout")
+      ),
+      ServiceClientConfiguration(
+        client.getLong("connection.timeout"),
+        client.getLong("socket.timeout")
       )
     )
   }

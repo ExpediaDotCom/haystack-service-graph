@@ -26,47 +26,64 @@ class AppConfigurationSpec extends TestSpec {
     it("should fail creating KafkaConfiguration if no application id is specified") {
       Given("a test configuration file")
       val file = "test/test_no_app_id.conf"
+
       When("Application configuration is loaded")
+
       Then("it should throw an exception")
       intercept[IllegalArgumentException] {
         new AppConfiguration(file).kafkaConfig
       }
     }
+
     it("should fail creating KafkaConfiguration if no bootstrap is specified") {
       Given("a test configuration file")
       val file = "test/test_no_bootstrap.conf"
+
       When("Application configuration is loaded")
+
       Then("it should throw an exception")
       intercept[IllegalArgumentException] {
         new AppConfiguration(file).kafkaConfig
       }
     }
+
     it("should fail creating KafkaConfiguration if no consumer is specified") {
       Given("a test configuration file")
       val file = "test/test_no_consumer.conf"
+
       When("Application configuration is loaded")
+
       Then("it should throw an exception")
       intercept[ConfigException] {
         new AppConfiguration(file).kafkaConfig
       }
     }
+
     it("should fail creating KafkaConfiguration if no producer is specified") {
       Given("a test configuration file")
       val file = "test/test_no_producer.conf"
+
       When("Application configuration is loaded")
+
       Then("it should throw an exception")
       intercept[ConfigException] {
         new AppConfiguration(file).kafkaConfig
       }
     }
-    it("should create KafkaConfiguration as specified") {
+
+    it("should create KafkaConfiguration and ServiceConfiguration as specified") {
       Given("a test configuration file")
       val file = "test/test.conf"
+
       When("Application configuration is loaded and KafkaConfiguration is obtained")
-      val config = new AppConfiguration(file).kafkaConfig
+      val config = new AppConfiguration(file)
+
       Then("it should load as expected")
-      config.streamsConfig.defaultTimestampExtractor() shouldBe a [WallclockTimestampExtractor]
-      config.consumerTopic should be ("graph-nodes")
+      config.kafkaConfig.streamsConfig.defaultTimestampExtractor() shouldBe a [WallclockTimestampExtractor]
+      config.kafkaConfig.consumerTopic should be ("graph-nodes")
+      config.serviceConfig.http.port should be (8080)
+      config.serviceConfig.threads.max should be(5)
+      config.serviceConfig.client.connectionTimeout should be(1000)
     }
   }
 }

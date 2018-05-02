@@ -18,13 +18,11 @@
 package com.expedia.www.haystack.service.graph.graph.builder.config.entities
 
 /**
-  * Configuration for servlets and servlet container
-  * @param threads threads configuration of servelet container
-  * @param http http configuration of servelet container
-  * @param client configuration of http client
+  *
+  * @param connectionTimeout
+  * @param socketTimeout
   */
-case class ServiceConfiguration(threads: ServiceThreadsConfiguration, http: ServiceHttpConfiguration, client: ServiceClientConfiguration) {
-  require(threads != null)
-  require(http != null)
-  require(client != null)
+case class ServiceClientConfiguration(connectionTimeout: Long, socketTimeout: Long) {
+  require(connectionTimeout > 0)
+  require(socketTimeout > 0)
 }
