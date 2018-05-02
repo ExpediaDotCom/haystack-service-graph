@@ -16,7 +16,6 @@ class ManagedApplication(service: ManagedService, stream: ManagedService, jmxRep
   require(stream != null)
   require(jmxReporter != null)
 
-  // TODO handle exceptions in start step
   def start(): Unit = {
     jmxReporter.start()
     LOGGER.info("Starting the given topology and service")

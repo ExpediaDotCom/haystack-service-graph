@@ -22,6 +22,7 @@ import java.util.Properties
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 
+import com.expedia.www.haystack.commons.health.HealthStatusController
 import com.expedia.www.haystack.commons.kstreams.app.StateChangeListener
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.streams.{KafkaStreams, StreamsConfig, Topology}
@@ -38,25 +39,24 @@ import scala.util.Try
   * @param streamsConfig    Configuration instance for KafkaStreams
   * @param consumerTopic    Optional consuming topic name
   */
-class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: StreamsConfig, consumerTopic: String) {
+class StreamSupplier(topologySupplier: Supplier[Topology], healthStatusController: HealthStatusController, streamsConfig: StreamsConfig, consumerTopic: String) {
 
   require(topologySupplier != null, "streamsBuilder is required")
+  require(healthStatusController != null, "healthStatusController is required")
   require(streamsConfig != null, "streamsConfig is required")
+  require(consumerTopic != null && !consumerTopic.isEmpty, "consumerTopic is required")
 
-  val consumerTopicName = Option(consumerTopic)
-  private val LOGGER = LoggerFactory.getLogger(classOf[StreamsFactory])
-
-  def this(streamsSupplier: Supplier[Topology], streamsConfig: StreamsConfig) = this(streamsSupplier, streamsConfig, null)
+  private val LOGGER = LoggerFactory.getLogger(classOf[StreamSupplier])
 
   /**
     * creates a new instance of KafkaStreams application wrapped as a {@link ManagedService} instance
     *
-    * @param listener instance of StateChangeListener that observes KafkaStreams state changes
     * @return instance of ManagedService
     */
-  def create(listener: StateChangeListener): KafkaStreams = {
+  def get(): KafkaStreams = {
     checkConsumerTopic()
 
+    val listener = new StateChangeListener(healthStatusController)
     val streams = new KafkaStreams(topologySupplier.get(), streamsConfig)
     streams.setStateListener(listener)
     streams.setUncaughtExceptionHandler(listener)
@@ -66,27 +66,23 @@ class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: Stream
   }
 
   private def checkConsumerTopic(): Unit = {
-    if (consumerTopicName.nonEmpty) {
-      val topicName = consumerTopicName.get
-      LOGGER.info(s"checking for the consumer topic $topicName")
-      val adminClient = AdminClient.create(getBootstrapProperties)
-      try {
-        val present = adminClient.listTopics().names().get().contains(topicName)
-        if (!present) {
-          throw new TopicNotPresentException(topicName,
-            s"Topic '$topicName' is configured as a consumer and it is not present")
-        }
+    LOGGER.info(s"checking for the consumer topic $consumerTopic")
+    val adminClient = AdminClient.create(getBootstrapProperties)
+    try {
+      val present = adminClient.listTopics().names().get().contains(consumerTopic)
+      if (!present) {
+        throw new TopicNotPresentException(consumerTopic,
+          s"Topic '$consumerTopic' is configured as a consumer and it is not present")
       }
-      finally {
-        Try(adminClient.close(5, TimeUnit.SECONDS))
-      }
+    }
+    finally {
+      Try(adminClient.close(5, TimeUnit.SECONDS))
     }
   }
 
   private def getBootstrapProperties: Properties = {
     val properties = new Properties()
-    properties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG,
-      streamsConfig.getList(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG))
+    properties.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, streamsConfig.getList(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG))
     properties
   }
 
@@ -99,6 +95,5 @@ class StreamsFactory(topologySupplier: Supplier[Topology], streamsConfig: Stream
   class TopicNotPresentException(topic: String, message: String) extends RuntimeException(message) {
     def getTopic: String = topic
   }
-
 }
 

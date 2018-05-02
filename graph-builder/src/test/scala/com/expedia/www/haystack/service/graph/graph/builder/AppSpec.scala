@@ -141,7 +141,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
       Then("servicegraph endpoint should return the new edge")
       val edgeJson = Request
-        .Get(s"http://localhost:${appConfig.serviceConfig.http.port}/servicegraph/global")
+        .Get(s"http://localhost:${appConfig.serviceConfig.http.port}/servicegraph")
         .execute()
         .returnContent()
         .asString()
