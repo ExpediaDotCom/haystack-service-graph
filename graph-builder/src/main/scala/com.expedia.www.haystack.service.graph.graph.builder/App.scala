@@ -26,6 +26,7 @@ import com.expedia.www.haystack.service.graph.graph.builder.config.entities.{Kaf
 import com.expedia.www.haystack.service.graph.graph.builder.service.resources.{GlobalServiceGraphResource, IsWorkingResource, LocalServiceGraphResource}
 import com.expedia.www.haystack.service.graph.graph.builder.service.{HttpService, ManagedHttpService}
 import com.expedia.www.haystack.service.graph.graph.builder.stream.{Streams, StreamsFactory}
+import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.streams.KafkaStreams
 
 /**
@@ -64,14 +65,16 @@ object App extends MetricsSupport {
   }
 
   // TODO move it to a factory and add error handling for stream creation step
-  private def createStream(kafkaConfig: KafkaConfiguration, healthStatusController: HealthStatusController): KafkaStreams = {
+  @VisibleForTesting
+  def createStream(kafkaConfig: KafkaConfiguration, healthStatusController: HealthStatusController): KafkaStreams = {
     val applicationStream = new Streams(kafkaConfig)
     val streamsFactory = new StreamsFactory(applicationStream, kafkaConfig.streamsConfig, kafkaConfig.consumerTopic)
     streamsFactory.create(new StateChangeListener(healthStatusController))
   }
 
   // TODO move it to a factory and add error handling for service creation step
-  private def createService(serviceConfig: ServiceConfiguration, stream: KafkaStreams, storeName: String): HttpService = {
+  @VisibleForTesting
+  def createService(serviceConfig: ServiceConfiguration, stream: KafkaStreams, storeName: String): HttpService = {
     val servlets = Map(
       "/servicegraph/global" -> new GlobalServiceGraphResource(stream, storeName),
       "/servicegraph/local" -> new LocalServiceGraphResource(stream, storeName),

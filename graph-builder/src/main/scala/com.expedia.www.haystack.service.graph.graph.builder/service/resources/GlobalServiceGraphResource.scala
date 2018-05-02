@@ -21,6 +21,7 @@ import java.util
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 
 import com.expedia.www.haystack.commons.entities.GraphEdge
+import com.expedia.www.haystack.service.graph.graph.builder.model.{ServiceGraph, ServiceGraphEdge}
 import com.google.gson.Gson
 import org.apache.http.client.fluent.Request
 import org.apache.http.entity.ContentType
@@ -35,7 +36,7 @@ class GlobalServiceGraphResource(streams: KafkaStreams, storeName: String) exten
   }
 
   private def fetchEdgesFromAllHosts() = {
-    val edgesList = new util.ArrayList[GraphEdge]()
+    val edgesList: util.ArrayList[ServiceGraphEdge] = new util.ArrayList[ServiceGraphEdge]()
 
     // TODO handle exception cases
     // TODO add configs for http client
@@ -48,10 +49,10 @@ class GlobalServiceGraphResource(streams: KafkaStreams, storeName: String) exten
           .returnContent()
           .asString()
 
-        edgesList.addAll(new Gson().fromJson(edgeJson, classOf[util.ArrayList[GraphEdge]]))
+        edgesList.addAll(new Gson().fromJson(edgeJson, classOf[ServiceGraph]).graphEdges)
       })
 
     // TODO log number of edges being returned
-    edgesList
+    ServiceGraph(edgesList)
   }
 }

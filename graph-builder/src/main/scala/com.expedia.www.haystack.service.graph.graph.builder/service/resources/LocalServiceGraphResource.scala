@@ -17,15 +17,16 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
-import java.util
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 
 import com.expedia.www.haystack.commons.entities.GraphEdge
-import com.expedia.www.haystack.service.graph.graph.builder.model.EdgeStats
+import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, ServiceGraph, ServiceGraphEdge}
 import com.google.gson.Gson
 import org.apache.http.entity.ContentType
-import org.apache.kafka.streams.KafkaStreams
-import org.apache.kafka.streams.state.{KeyValueIterator, QueryableStoreTypes, ReadOnlyKeyValueStore}
+import org.apache.kafka.streams.state.{QueryableStoreTypes, ReadOnlyKeyValueStore}
+import org.apache.kafka.streams.{KafkaStreams, KeyValue}
+
+import scala.collection.JavaConverters._
 
 class LocalServiceGraphResource(streams: KafkaStreams, storeName: String) extends HttpServlet {
   lazy val store: ReadOnlyKeyValueStore[GraphEdge, EdgeStats] =
@@ -37,18 +38,13 @@ class LocalServiceGraphResource(streams: KafkaStreams, storeName: String) extend
     response.setStatus(HttpServletResponse.SC_OK)
 
     // TODO add counters for number of edges being returned
-    response.getWriter.println(new Gson().toJson(fetchEdgesFromLocal()))
+    val serviceGraphJson = new Gson().toJson(fetchServiceGraphFromLocal())
+
+    response.getWriter.println(serviceGraphJson)
   }
 
-  private def fetchEdgesFromLocal() = {
-    val edgeIterator: KeyValueIterator[GraphEdge, EdgeStats] = store.all()
-    val edgesList = new util.ArrayList[GraphEdge]()
-
-    while(edgeIterator.hasNext) {
-      val kv = edgeIterator.next()
-      edgesList.add(kv.key)
-    }
-
-    edgesList
+  private def fetchServiceGraphFromLocal() = {
+    val serviceGraphEdges = for (kv: KeyValue[GraphEdge, EdgeStats] <- store.all().asScala) yield ServiceGraphEdge(kv.key, kv.value)
+    ServiceGraph(serviceGraphEdges.toList.asJava)
   }
 }
