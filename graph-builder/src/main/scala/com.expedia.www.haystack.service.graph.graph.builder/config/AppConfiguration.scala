@@ -77,6 +77,10 @@ class AppConfiguration(resourceName: String) {
     // add stream specific properties
     addProps(streamsConfig, props)
 
+    // add stream application server config
+    props.setProperty(StreamsConfig.APPLICATION_SERVER_CONFIG,
+      s"${config.getString("service.host")}:${config.getInt("service.http.port")}")
+
     // validate props
     verifyRequiredProps(props)
 
