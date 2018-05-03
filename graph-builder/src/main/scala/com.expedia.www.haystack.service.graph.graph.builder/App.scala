@@ -18,7 +18,7 @@
 package com.expedia.www.haystack.service.graph.graph.builder
 
 import com.codahale.metrics.JmxReporter
-import com.expedia.www.haystack.commons.health.{HealthStatusController, UpdateHealthStatusFile}
+import com.expedia.www.haystack.commons.health.{HealthController, HealthStatusController, UpdateHealthStatusFile}
 import com.expedia.www.haystack.commons.kstreams.app.ManagedKafkaStreams
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfiguration
@@ -67,6 +67,9 @@ object App extends MetricsSupport {
 
       //start the application
       app.start()
+
+      // mark the status of app as 'healthy'
+      HealthController.setHealthy()
     } catch {
       case ex: Exception =>
         LOGGER.error("Observed fatal exception while running the app", ex)
