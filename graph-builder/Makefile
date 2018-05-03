@@ -1,7 +1,7 @@
 .PHONY: integration_test release
 
 export DOCKER_ORG := expediadotcom
-export DOCKER_IMAGE_NAME := haystack-service-graph-builder
+export DOCKER_IMAGE_NAME := haystack-service-graph-graph-builder
 PWD := $(shell pwd)
 
 all:
