@@ -63,7 +63,7 @@ class GlobalServiceGraphResource(streams: KafkaStreams, storeName: String) exten
           .returnContent()
           .asString()
 
-        edgesList.addAll(new Gson().fromJson(edgeJson, classOf[ServiceGraph]).graphEdges)
+        edgesList.addAll(new Gson().fromJson(edgeJson, classOf[ServiceGraph]).edges)
       })
 
     edgeCount.update(edgesList.size())

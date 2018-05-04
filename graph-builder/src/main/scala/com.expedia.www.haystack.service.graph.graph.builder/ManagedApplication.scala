@@ -7,6 +7,8 @@ import com.expedia.www.haystack.commons.kstreams.app.ManagedService
 import com.expedia.www.haystack.commons.logger.LoggerUtils
 import org.slf4j.LoggerFactory
 
+import scala.util.Try
+
 class ManagedApplication(service: ManagedService, stream: ManagedService, jmxReporter: JmxReporter) {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[ManagedApplication])
@@ -36,16 +38,16 @@ class ManagedApplication(service: ManagedService, stream: ManagedService, jmxRep
   def stop(): Unit = {
     if (running.getAndSet(false)) {
       LOGGER.info("Shutting down http service")
-      service.stop()
+      Try(service.stop())
 
       LOGGER.info("Shutting down kafka stream")
-      stream.stop()
+      Try(stream.stop())
 
       LOGGER.info("Shutting down jmxReporter")
-      jmxReporter.close()
+      Try(jmxReporter.close())
 
       LOGGER.info("Shutting down logger. Bye!")
-      LoggerUtils.shutdownLogger()
+      Try(LoggerUtils.shutdownLogger())
     }
   }
 }

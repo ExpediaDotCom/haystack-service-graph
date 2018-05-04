@@ -52,7 +52,9 @@ class LocalServiceGraphResource(streams: KafkaStreams, storeName: String) extend
   }
 
   private def fetchServiceGraphFromLocal() = {
-    val serviceGraphEdgesIterator = for (kv: KeyValue[GraphEdge, EdgeStats] <- store.all().asScala) yield ServiceGraphEdge(kv.key, kv.value)
+    val serviceGraphEdgesIterator =
+      for (kv: KeyValue[GraphEdge, EdgeStats] <- store.all().asScala)
+        yield ServiceGraphEdge(kv.key.source, kv.key.destination, kv.key.operation, kv.value)
     val serviceGraphEdge = serviceGraphEdgesIterator.toList.asJava
     edgeCount.update(serviceGraphEdge.size())
     ServiceGraph(serviceGraphEdge)
