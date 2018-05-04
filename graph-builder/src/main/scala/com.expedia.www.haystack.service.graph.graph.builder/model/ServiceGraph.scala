@@ -17,4 +17,4 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.model
 
-case class ServiceGraph(graphEdges: java.util.List[ServiceGraphEdge])
+case class ServiceGraph(edges: java.util.List[ServiceGraphEdge])

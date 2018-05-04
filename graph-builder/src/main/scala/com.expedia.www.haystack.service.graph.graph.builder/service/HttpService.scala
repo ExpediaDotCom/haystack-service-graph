@@ -62,6 +62,7 @@ class HttpService(config: ServiceConfiguration, resources: Map[String, Servlet])
   }
 
   def close(): Unit = {
+    server.stop()
     server.destroy()
   }
 }

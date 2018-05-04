@@ -147,8 +147,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
         .asString()
 
       val serviceGraph = new Gson().fromJson(edgeJson, classOf[ServiceGraph])
-      val filteredEdges = serviceGraph.graphEdges.asScala.filter(
-        edge => edge.graphEdge.source == source && edge.graphEdge.destination == destination)
+      val filteredEdges = serviceGraph.edges.asScala.filter(
+        edge => edge.source == source && edge.destination == destination)
 
       filteredEdges.length should be(1)
     }

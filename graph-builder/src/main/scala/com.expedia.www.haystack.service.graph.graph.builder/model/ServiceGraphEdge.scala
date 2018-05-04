@@ -17,6 +17,4 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.model
 
-import com.expedia.www.haystack.commons.entities.GraphEdge
-
-case class ServiceGraphEdge(graphEdge: GraphEdge, edgeStats: EdgeStats)
+case class ServiceGraphEdge(source: String, destination: String, operation: String, stats: EdgeStats)
