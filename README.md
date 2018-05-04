@@ -95,7 +95,20 @@ Starting point for the application is the [Streams](node-finder/src/main/scala/c
 
 ## Component: graph-builder
 
-**under development**
+This components takes graph edges emitted by `node-finder` and merges them together to form the full service-graph. It has a dual function as an http endpoint to return the accumulated service-graph. 
+
+#### Streaming
+`graph-builder` accumulates incoming edges in [ktable](https://kafka.apache.org/0102/javadoc/org/apache/kafka/streams/kstream/KTable.html), using the stream [table duality concept](https://docs.confluent.io/current/streams/concepts.html#duality-of-streams-and-tables). Each row in ktable represets one graph edge. Each edge is supplemented with some stats such as running count and last seen timestamp. 
+
+Kafka does take care of persisting and replicating the graph ktable across brokers to have fault tolerance.  
+
+#### HTTP API
+`graph-builder` also acts as an http api to query the graph ktable. Uses servlets over embedded jetty for implementing endpoints. [Kafka interactive query](https://kafka.apache.org/10/documentation/streams/developer-guide/interactive-queries.html) is used for fetching graphs from local.  
+
+Interactive query to a single stream nodes return only the graph-edges sharded to that node, hence it is a partial view of the world. The servlet take care of fetching partial graphs from all nodes having the ktable to form full service-graphs.
+  
+######endpoints 
+1. `/servicegraph` : returns full service graph, includes edges from all know services. Edges include operations also.  
 
 ## Building
 
