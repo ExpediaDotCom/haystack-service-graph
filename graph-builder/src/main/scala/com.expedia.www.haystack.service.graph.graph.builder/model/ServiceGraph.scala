@@ -17,4 +17,10 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.model
 
-case class ServiceGraph(edges: java.util.List[ServiceGraphEdge])
+/**
+  * Service graph
+  * @param edges list of edges in the graph
+  */
+case class ServiceGraph(edges: java.util.List[ServiceGraphEdge]) {
+  require(edges != null)
+}
