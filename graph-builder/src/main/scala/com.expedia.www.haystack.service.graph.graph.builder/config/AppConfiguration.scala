@@ -121,6 +121,7 @@ class AppConfiguration(resourceName: String) {
     val client = service.getConfig("client")
 
     ServiceConfiguration(
+      service.getString("host"),
       ServiceThreadsConfiguration(
         threads.getInt("min"),
         threads.getInt("max"),
@@ -131,8 +132,8 @@ class AppConfiguration(resourceName: String) {
         http.getLong("idle.timeout")
       ),
       ServiceClientConfiguration(
-        client.getLong("connection.timeout"),
-        client.getLong("socket.timeout")
+        client.getInt("connection.timeout"),
+        client.getInt("socket.timeout")
       )
     )
   }

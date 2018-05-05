@@ -23,6 +23,7 @@ import com.expedia.www.haystack.commons.kstreams.app.ManagedKafkaStreams
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.{KafkaConfiguration, ServiceConfiguration}
+import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalEdgesFetcher, RemoteEdgesFetcher}
 import com.expedia.www.haystack.service.graph.graph.builder.service.resources.{GlobalServiceGraphResource, IsWorkingResource, LocalServiceGraphResource}
 import com.expedia.www.haystack.service.graph.graph.builder.service.{HttpService, ManagedHttpService}
 import com.expedia.www.haystack.service.graph.graph.builder.stream.{ServiceGraphStreamSupplier, StreamSupplier}
@@ -116,9 +117,12 @@ object App extends MetricsSupport {
 
   @VisibleForTesting
   def createService(serviceConfig: ServiceConfiguration, stream: KafkaStreams, storeName: String): HttpService = {
+    val localEdgesFetcher = new LocalEdgesFetcher(stream, storeName)
+    val remoteEdgesFetcher = new RemoteEdgesFetcher(serviceConfig.client)
+
     val servlets = Map(
-      "/servicegraph/local" -> new LocalServiceGraphResource(stream, storeName),
-      "/servicegraph" -> new GlobalServiceGraphResource(stream, storeName),
+      "/servicegraph/local" -> new LocalServiceGraphResource(localEdgesFetcher),
+      "/servicegraph" -> new GlobalServiceGraphResource(stream: KafkaStreams, storeName: String, serviceConfig, localEdgesFetcher, remoteEdgesFetcher),
       "/isWorking" -> new IsWorkingResource
     )
 

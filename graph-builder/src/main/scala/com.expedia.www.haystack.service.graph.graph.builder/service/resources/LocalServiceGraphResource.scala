@@ -17,46 +17,17 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
-import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
-
-import com.expedia.www.haystack.commons.entities.GraphEdge
-import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, ServiceGraph, ServiceGraphEdge}
-import com.google.gson.Gson
-import org.apache.http.entity.ContentType
-import org.apache.kafka.streams.state.{QueryableStoreTypes, ReadOnlyKeyValueStore}
-import org.apache.kafka.streams.{KafkaStreams, KeyValue}
-import org.slf4j.LoggerFactory
+import com.expedia.www.haystack.service.graph.graph.builder.model.ServiceGraph
+import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.LocalEdgesFetcher
 
 import scala.collection.JavaConverters._
 
-class LocalServiceGraphResource(streams: KafkaStreams, storeName: String) extends HttpServlet with MetricsSupport  {
-
-  private val LOGGER = LoggerFactory.getLogger(classOf[LocalServiceGraphResource])
+class LocalServiceGraphResource(localEdgesFetcher: LocalEdgesFetcher) extends Resource("servicegraph.local") {
   private val edgeCount = metricRegistry.histogram("servicegraph.local.edges")
 
-  private lazy val store: ReadOnlyKeyValueStore[GraphEdge, EdgeStats] =
-    streams.store(storeName, QueryableStoreTypes.keyValueStore[GraphEdge, EdgeStats]())
-
-  // TODO add counters, improve logging and error handling for servlet
-  protected override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = {
-    response.setContentType(ContentType.APPLICATION_JSON.getMimeType)
-    response.setStatus(HttpServletResponse.SC_OK)
-
-    val serviceGraphJson = new Gson().toJson(fetchServiceGraphFromLocal())
-
-    response.getWriter.print(serviceGraphJson)
-    response.getWriter.flush()
-
-    LOGGER.info("accesslog: /servicegraph/local completed successfully")
-  }
-
-  private def fetchServiceGraphFromLocal() = {
-    val serviceGraphEdgesIterator =
-      for (kv: KeyValue[GraphEdge, EdgeStats] <- store.all().asScala)
-        yield ServiceGraphEdge(kv.key.source, kv.key.destination, kv.key.operation, kv.value)
-    val serviceGraphEdge = serviceGraphEdgesIterator.toList.asJava
-    edgeCount.update(serviceGraphEdge.size())
-    ServiceGraph(serviceGraphEdge)
+  protected override def get(): ServiceGraph = {
+    val localGraph = ServiceGraph(localEdgesFetcher.fetchEdges().asJava)
+    edgeCount.update(localGraph.edges.size())
+    localGraph
   }
 }
