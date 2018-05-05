@@ -28,7 +28,7 @@ import org.apache.kafka.streams.processor.WallclockTimestampExtractor
 import org.apache.kafka.streams.state.Stores
 import org.apache.kafka.streams.{Consumed, StreamsBuilder, Topology}
 
-class ServiceGraphStream(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
+class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
   override def get(): Topology = initialize(new StreamsBuilder)
 
   private def initialize(builder: StreamsBuilder): Topology = {

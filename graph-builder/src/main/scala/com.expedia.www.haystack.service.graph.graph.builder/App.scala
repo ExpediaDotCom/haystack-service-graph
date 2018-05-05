@@ -25,7 +25,7 @@ import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfigurat
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.{KafkaConfiguration, ServiceConfiguration}
 import com.expedia.www.haystack.service.graph.graph.builder.service.resources.{GlobalServiceGraphResource, IsWorkingResource, LocalServiceGraphResource}
 import com.expedia.www.haystack.service.graph.graph.builder.service.{HttpService, ManagedHttpService}
-import com.expedia.www.haystack.service.graph.graph.builder.stream.{ServiceGraphStream, StreamSupplier}
+import com.expedia.www.haystack.service.graph.graph.builder.stream.{ServiceGraphStreamSupplier, StreamSupplier}
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.streams.KafkaStreams
 import org.slf4j.LoggerFactory
@@ -36,59 +36,82 @@ import org.slf4j.LoggerFactory
 object App extends MetricsSupport {
   private val LOGGER = LoggerFactory.getLogger(App.getClass)
 
-  var app: ManagedApplication = _
-
   def main(args: Array[String]): Unit = {
-    val jmxReporter: JmxReporter = JmxReporter.forRegistry(metricRegistry).build()
     val appConfiguration = new AppConfiguration()
+
+    // instantiate the application
+    // if any exception occurs during instantiation
+    // gracefully handles teardown and does system exit
+    val app = createApp(appConfiguration)
+
+    // start the application
+    // if any exception occurs during startup
+    // gracefully handles teardown and does system exit
+    app.start()
+
+    // add a shutdown hook
+    Runtime.getRuntime.addShutdownHook(new Thread() {
+      override def run(): Unit = {
+        LOGGER.info("Shutdown hook is invoked, tearing down the application.")
+        app.stop()
+      }
+    })
+
+    // mark the status of app as 'healthy'
+    HealthController.setHealthy()
+  }
+
+  @VisibleForTesting
+  def createApp(appConfiguration: AppConfiguration): ManagedApplication = {
+    val jmxReporter: JmxReporter = JmxReporter.forRegistry(metricRegistry).build()
     val healthStatusController = new HealthStatusController
     healthStatusController.addListener(new UpdateHealthStatusFile(appConfiguration.healthStatusFilePath))
 
+    var stream: KafkaStreams = null
+    var service: HttpService = null
     try {
+
       // build kafka stream to create service graph
       // it ingests graph edges and create service graph out of it
       // graphs are stored as materialized ktable in stream state store
-      val stream = createStream(appConfiguration.kafkaConfig, healthStatusController)
+      stream = createStream(appConfiguration.kafkaConfig, healthStatusController)
 
       // build http service to query current service graph
       // it performs interactive query on ktable
-      val service = createService(appConfiguration.serviceConfig, stream, appConfiguration.kafkaConfig.producerTopic)
+      service = createService(appConfiguration.serviceConfig, stream, appConfiguration.kafkaConfig.producerTopic)
 
-      // create managed application
-      app = new ManagedApplication(
+      // wrap service and stream in a managed application instance
+      // ManagedApplication makes sure that startup/shutdown sequence is right
+      // and startup/shutdow errors are handling appropriately
+      new ManagedApplication(
         new ManagedHttpService(service),
         new ManagedKafkaStreams(stream),
         jmxReporter)
 
-      //add a shutdown hook
-      Runtime.getRuntime.addShutdownHook(new Thread() {
-        override def run(): Unit = app.stop()
-      })
-
-      //start the application
-      app.start()
-
-      // mark the status of app as 'healthy'
-      HealthController.setHealthy()
     } catch {
       case ex: Exception =>
-        LOGGER.error("Observed fatal exception while running the app", ex)
-        if(app != null) app.stop()
+        LOGGER.error("Observed fatal exception instantiating the app", ex)
+        if(stream != null) stream.close()
+        if(service != null) service.close()
         System.exit(1)
+        null
     }
   }
 
   @VisibleForTesting
   def createStream(kafkaConfig: KafkaConfiguration, healthStatusController: HealthStatusController): KafkaStreams = {
+    // service graph kafka stream supplier
+    val serviceGraphStreamSupplier = new ServiceGraphStreamSupplier(kafkaConfig)
+
     // create kstream using application topology
-    val streamsFactory = new StreamSupplier(
-      new ServiceGraphStream(kafkaConfig),
+    val streamsSupplier = new StreamSupplier(
+      serviceGraphStreamSupplier,
       healthStatusController,
       kafkaConfig.streamsConfig,
       kafkaConfig.consumerTopic)
 
     // build kstream app
-    streamsFactory.get()
+    streamsSupplier.get()
   }
 
   @VisibleForTesting
