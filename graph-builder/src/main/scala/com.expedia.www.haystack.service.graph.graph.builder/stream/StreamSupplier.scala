@@ -39,7 +39,7 @@ import scala.util.Try
   * @param streamsConfig    Configuration instance for KafkaStreams
   * @param consumerTopic    Optional consuming topic name
   */
-class StreamSupplier(topologySupplier: Supplier[Topology], healthStatusController: HealthStatusController, streamsConfig: StreamsConfig, consumerTopic: String) {
+class StreamSupplier(topologySupplier: Supplier[Topology], healthStatusController: HealthStatusController, streamsConfig: StreamsConfig, consumerTopic: String) extends Supplier[KafkaStreams] {
 
   require(topologySupplier != null, "streamsBuilder is required")
   require(healthStatusController != null, "healthStatusController is required")
@@ -53,7 +53,7 @@ class StreamSupplier(topologySupplier: Supplier[Topology], healthStatusControlle
     *
     * @return instance of ManagedService
     */
-  def get(): KafkaStreams = {
+  override def get(): KafkaStreams = {
     checkConsumerTopic()
 
     val listener = new StateChangeListener(healthStatusController)

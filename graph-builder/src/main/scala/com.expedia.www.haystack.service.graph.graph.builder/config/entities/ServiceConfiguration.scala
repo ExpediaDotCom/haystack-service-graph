@@ -17,13 +17,17 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.config.entities
 
+import org.apache.commons.lang3.StringUtils
+
 /**
   * Configuration for servlets and servlet container
+ *
   * @param threads threads configuration of servelet container
   * @param http http configuration of servelet container
   * @param client configuration of http client
   */
-case class ServiceConfiguration(threads: ServiceThreadsConfiguration, http: ServiceHttpConfiguration, client: ServiceClientConfiguration) {
+case class ServiceConfiguration(host: String, threads: ServiceThreadsConfiguration, http: ServiceHttpConfiguration, client: ServiceClientConfiguration) {
+  require(StringUtils.isNotEmpty(host))
   require(threads != null)
   require(http != null)
   require(client != null)

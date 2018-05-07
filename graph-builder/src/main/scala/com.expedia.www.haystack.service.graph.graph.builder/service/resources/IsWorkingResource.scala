@@ -17,15 +17,9 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
-import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
+class IsWorkingResource() extends Resource("isworking") {
 
-import org.apache.http.entity.ContentType
+  protected override def get(): IsWorking = new IsWorking()
 
-class IsWorkingResource() extends HttpServlet {
-
-  protected override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = {
-    response.setContentType(ContentType.TEXT_HTML.getMimeType)
-    response.setStatus(HttpServletResponse.SC_OK)
-    response.getWriter.println(true)
-  }
+  class IsWorking(isWorking: Boolean = true)
 }

@@ -155,7 +155,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
   }
 
   override def afterAll {
-    //stop topology
+    //stop service & topology
+    service.close()
     stream.close()
 
     //stop kafka and zk

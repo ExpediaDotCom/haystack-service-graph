@@ -22,7 +22,7 @@ package com.expedia.www.haystack.service.graph.graph.builder.config.entities
   * @param connectionTimeout
   * @param socketTimeout
   */
-case class ServiceClientConfiguration(connectionTimeout: Long, socketTimeout: Long) {
+case class ServiceClientConfiguration(connectionTimeout: Int, socketTimeout: Int) {
   require(connectionTimeout > 0)
   require(socketTimeout > 0)
 }

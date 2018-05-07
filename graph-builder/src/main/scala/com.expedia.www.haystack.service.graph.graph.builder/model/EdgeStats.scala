@@ -17,4 +17,9 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.model
 
+/**
+  * Object to hold stats for graph edges
+  * @param count edge count seen so far
+  * @param lastSeen timestamp the edge was last seen, in ms
+  */
 case class EdgeStats(count: Long, lastSeen: Long)

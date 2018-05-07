@@ -1,7 +1,5 @@
 package com.expedia.www.haystack.service.graph.graph.builder
 
-import java.util.concurrent.atomic.AtomicBoolean
-
 import com.codahale.metrics.JmxReporter
 import com.expedia.www.haystack.commons.kstreams.app.ManagedService
 import com.expedia.www.haystack.commons.logger.LoggerUtils
@@ -12,23 +10,27 @@ import scala.util.Try
 class ManagedApplication(service: ManagedService, stream: ManagedService, jmxReporter: JmxReporter) {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[ManagedApplication])
-  private val running = new AtomicBoolean(false)
 
   require(service != null)
   require(stream != null)
   require(jmxReporter != null)
 
   def start(): Unit = {
-    jmxReporter.start()
-    LOGGER.info("Starting the given topology and service")
+    try {
+      jmxReporter.start()
+      LOGGER.info("Starting the given topology and service")
 
-    service.start()
-    LOGGER.info("http service started successfully")
+      service.start()
+      LOGGER.info("http service started successfully")
 
-    stream.start()
-    LOGGER.info("kafka stream started successfully")
-
-    running.set(true)
+      stream.start()
+      LOGGER.info("kafka stream started successfully")
+    } catch {
+      case ex: Exception =>
+        LOGGER.error("Observed fatal exception while starting the app", ex)
+        stop()
+        System.exit(1)
+    }
   }
 
   /**
@@ -36,7 +38,6 @@ class ManagedApplication(service: ManagedService, stream: ManagedService, jmxRep
     * previously started. If not, this method does nothing
     */
   def stop(): Unit = {
-    if (running.getAndSet(false)) {
       LOGGER.info("Shutting down http service")
       Try(service.stop())
 
@@ -48,6 +49,5 @@ class ManagedApplication(service: ManagedService, stream: ManagedService, jmxRep
 
       LOGGER.info("Shutting down logger. Bye!")
       Try(LoggerUtils.shutdownLogger())
-    }
   }
 }

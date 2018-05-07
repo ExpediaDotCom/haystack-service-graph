@@ -24,14 +24,16 @@ import org.apache.kafka.streams.Topology.AutoOffsetReset
 /**
   * Case class holding required configuration for the node finder kstreams app
   * @param streamsConfig valid instance of StreamsConfig
-  * @param consumerTopic topic name for graph-nodes topic
-  * @param producerTopic topic name for kafka sink topic, will be used if kafkaSinkEnabled is true
+  * @param consumerTopic topic name for incoming graph edges topic
+  * @param producerTopic topic name for materialized ktable changelogs
+  * @param producerTopicConfig topic config for materialized ktable changelogs
   * @param autoOffsetReset Offset type for the kstreams app to start with
   * @param closeTimeoutInMs time for closing a kafka topic
   */
 case class KafkaConfiguration(streamsConfig: StreamsConfig,
                               consumerTopic: String,
                               producerTopic: String,
+                              producerTopicConfig: java.util.Map[String, String],
                               autoOffsetReset: AutoOffsetReset,
                               closeTimeoutInMs: Long) {
   require(streamsConfig != null)

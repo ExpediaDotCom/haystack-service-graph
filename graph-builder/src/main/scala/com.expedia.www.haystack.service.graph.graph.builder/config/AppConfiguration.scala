@@ -58,6 +58,7 @@ class AppConfiguration(resourceName: String) {
     def verifyRequiredProps(props: Properties): Unit = {
       require(StringUtils.isNotBlank(props.getProperty(StreamsConfig.APPLICATION_ID_CONFIG)))
       require(StringUtils.isNotBlank(props.getProperty(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG)))
+      require(StringUtils.isNotBlank(props.getProperty(StreamsConfig.APPLICATION_SERVER_CONFIG)))
     }
 
     def addProps(config: Config, props: Properties, prefix: (String) => String = identity): Unit = {
@@ -72,27 +73,40 @@ class AppConfiguration(resourceName: String) {
     val consumerConfig = kafka.getConfig("consumer")
     val producerConfig = kafka.getConfig("producer")
 
-    val props = new Properties
-
     // add stream specific properties
-    addProps(streamsConfig, props)
-
+    val streamProps = new Properties
+    addProps(streamsConfig, streamProps)
     // add stream application server config
-    props.setProperty(StreamsConfig.APPLICATION_SERVER_CONFIG,
+    streamProps.setProperty(StreamsConfig.APPLICATION_SERVER_CONFIG,
       s"${config.getString("service.host")}:${config.getInt("service.http.port")}")
-
     // validate props
-    verifyRequiredProps(props)
+    verifyRequiredProps(streamProps)
 
-    KafkaConfiguration(new StreamsConfig(props),
+    // changelog topic specific configs
+    val producerTopicConfigMap =
+      if (producerConfig.hasPath("config"))
+        producerConfig
+          .getConfig("config")
+          .entrySet()
+          .asScala
+          .map(entry => entry.getKey -> entry.getValue.unwrapped().toString)
+          .toMap
+          .asJava
+      else
+        new java.util.HashMap[String, String]()
+
+    // offset reset for kstream
+    val autoOffsetReset =
+      if (streamsConfig.hasPath("auto.offset.reset"))
+        AutoOffsetReset.valueOf(streamsConfig.getString("auto.offset.reset").toUpperCase)
+      else
+        AutoOffsetReset.LATEST
+
+    KafkaConfiguration(new StreamsConfig(streamProps),
       consumerConfig.getString("topic"),
       producerConfig.getString("topic"),
-      if (streamsConfig.hasPath("auto.offset.reset")) {
-        AutoOffsetReset.valueOf(streamsConfig.getString("auto.offset.reset").toUpperCase)
-      }
-      else {
-        AutoOffsetReset.LATEST
-      },
+      producerTopicConfigMap,
+      autoOffsetReset,
       kafka.getLong("close.timeout.ms")
     )
   }
@@ -107,6 +121,7 @@ class AppConfiguration(resourceName: String) {
     val client = service.getConfig("client")
 
     ServiceConfiguration(
+      service.getString("host"),
       ServiceThreadsConfiguration(
         threads.getInt("min"),
         threads.getInt("max"),
@@ -117,8 +132,8 @@ class AppConfiguration(resourceName: String) {
         http.getLong("idle.timeout")
       ),
       ServiceClientConfiguration(
-        client.getLong("connection.timeout"),
-        client.getLong("socket.timeout")
+        client.getInt("connection.timeout"),
+        client.getInt("socket.timeout")
       )
     )
   }

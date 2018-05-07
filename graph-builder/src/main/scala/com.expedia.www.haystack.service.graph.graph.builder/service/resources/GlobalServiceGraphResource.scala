@@ -18,32 +18,25 @@
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
 import java.util
-import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 
-import com.expedia.www.haystack.commons.metrics.MetricsSupport
+import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.{ServiceGraph, ServiceGraphEdge}
-import com.google.gson.Gson
-import org.apache.http.client.fluent.Request
-import org.apache.http.entity.ContentType
+import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalEdgesFetcher, RemoteEdgesFetcher}
 import org.apache.kafka.streams.KafkaStreams
 import org.slf4j.LoggerFactory
 
-class GlobalServiceGraphResource(streams: KafkaStreams, storeName: String) extends HttpServlet with MetricsSupport {
+import scala.collection.JavaConverters._
+
+class GlobalServiceGraphResource(streams: KafkaStreams,
+                                 storeName: String,
+                                 serviceConfig: ServiceConfiguration,
+                                 localEdgesFetcher: LocalEdgesFetcher,
+                                 remoteEdgesFetcher: RemoteEdgesFetcher)
+  extends Resource("servicegraph") {
   private val LOGGER = LoggerFactory.getLogger(classOf[LocalServiceGraphResource])
-  private val edgeCount = metricRegistry.histogram("servicegraph.global.edges")
+  private val globalEdgeCount = metricRegistry.histogram("servicegraph.global.edges")
 
-  // TODO add counters, improve logging and error handling for servlet
-  protected override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = {
-    response.setContentType(ContentType.APPLICATION_JSON.getMimeType)
-    response.setStatus(HttpServletResponse.SC_OK)
-
-    response.getWriter.print(new Gson().toJson(fetchEdgesFromAllHosts()))
-    response.getWriter.flush()
-
-    LOGGER.info("accesslog: /servicegraph/global completed successfully")
-  }
-
-  private def fetchEdgesFromAllHosts() = {
+  protected override def get(): ServiceGraph = {
     val edgesList: util.ArrayList[ServiceGraphEdge] = new util.ArrayList[ServiceGraphEdge]()
 
     // get list of all hosts containing service-graph store
@@ -52,21 +45,23 @@ class GlobalServiceGraphResource(streams: KafkaStreams, storeName: String) exten
     streams
       .allMetadataForStore(storeName)
       .forEach(host => {
-        LOGGER.info(s"request graph from :$host")
 
-        // TODO handle exception cases
-        // TODO add configs for http client
-        // TODO trigger requests to all hosts in parallel and merge the futures
-        val edgeJson = Request
-          .Get(s"http://${host.host()}:${host.port()}/servicegraph/local")
-          .execute()
-          .returnContent()
-          .asString()
+        val edges =
+          if (host.host() == serviceConfig.host) {
+            val localEdges = localEdgesFetcher.fetchEdges()
+            LOGGER.info(s"graph from local returned ${localEdges.size} edges")
+            localEdges
+          }
+          else {
+            val remoteEdges = remoteEdgesFetcher.fetchEdges(serviceConfig.host, serviceConfig.http.port)
+            LOGGER.info(s"graph from ${host.host()} returned ${remoteEdges.size} edges")
+            remoteEdges
+          }
 
-        edgesList.addAll(new Gson().fromJson(edgeJson, classOf[ServiceGraph]).edges)
+        edgesList.addAll(edges.asJava)
       })
 
-    edgeCount.update(edgesList.size())
+    globalEdgeCount.update(edgesList.size())
     ServiceGraph(edgesList)
   }
 }
