@@ -22,68 +22,69 @@ import java.util.function.Supplier
 import com.expedia.www.haystack.commons.kstreams.serde.SpanSerde
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
-import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
+import com.expedia.www.haystack.service.graph.node.finder.config.AppConfiguration
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.Topology
 
-class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
+class Streams(appConfiguration: AppConfiguration) extends Supplier[Topology] {
 
-  val PROTO_SPANS = "proto-spans"
-  val SPAN_ACCUMULATOR = "span-accumulator"
-  val LATENCY_PRODUCER = "latency-producer"
-  val GRAPH_NODE_PRODUCER = "nodes-n-edges-producer"
-  val METRIC_SINK = "metric-sink"
-  val GRAPH_NODE_SINK = "graph-nodes-sink"
+  private val PROTO_SPANS = "proto-spans"
+  private val SPAN_ACCUMULATOR = "span-accumulator"
+  private val LATENCY_PRODUCER = "latency-producer"
+  private val GRAPH_NODE_PRODUCER = "nodes-n-edges-producer"
+  private val METRIC_SINK = "metric-sink"
+  private val GRAPH_NODE_SINK = "graph-nodes-sink"
+  private val kafkaConfiguration = appConfiguration.kafkaConfig
 
   override def get(): Topology = initialize(new Topology)
 
   /**
     * This provides a topology that is shown in the flow chart below
     *
-    *                     +---------------+
-    *                     |               |
-    *                     |  proto-spans  |
-    *                     |               |
-    *                     +-------+-------+
-    *                             |
-    *                             |
-    *                             |
-    *                   +---------v----------+
-    *                   |                    |
-    *              +----+   span-accumulator +----+
-    *              |    |                    |    |
-    *              |    +--------------------+    |
-    *              |                              |
-    *              |                              |
-    *              |                              |
-    *    +---------v----------+         +---------v----------------+
-    *    |                    |         |                          |
-    *    |  latency-producer  |         |  nodes-n-edges-producer  |
-    *    |                    |         |                          |
-    *    +---------+----------+         +---------+----------------+
-    *              |                              |
-    *              |                              |
-    *     +--------v-------+                +-----v-------------+
-    *     |                |                |                   |
-    *     |   metric-sink  |                |  graph-nodes-sink |
-    *     |                |                |                   |
-    *     +----------------+                +-------------------+
+    * +---------------+
+    * |               |
+    * |  proto-spans  |
+    * |               |
+    * +-------+-------+
+    * |
+    * |
+    * |
+    * +---------v----------+
+    * |                    |
+    * +----+   span-accumulator +----+
+    * |    |                    |    |
+    * |    +--------------------+    |
+    * |                              |
+    * |                              |
+    * |                              |
+    * +---------v----------+         +---------v----------------+
+    * |                    |         |                          |
+    * |  latency-producer  |         |  nodes-n-edges-producer  |
+    * |                    |         |                          |
+    * +---------+----------+         +---------+----------------+
+    * |                              |
+    * |                              |
+    * +--------v-------+                +-----v-------------+
+    * |                |                |                   |
+    * |   metric-sink  |                |  graph-nodes-sink |
+    * |                |                |                   |
+    * +----------------+                +-------------------+
     *
-    *    Source:
+    * Source:
     *
-    *         proto-spans  :   Reads a topic of span serialized in protobuf
+    * proto-spans  :   Reads a topic of span serialized in protobuf
     *
-    *    Processors:
+    * Processors:
     *
-    *         span-accumulator        :  Aggregates incoming spans for specified time to find matching client-server spans
-    *         latency-producer        :  From the span pairs produced by span-accumulator, this processor computes and emits network latency
-    *         nodes-n-edges-producer  :  From the span pairs produced by span-accumulator, this processor produces a simple graph relationship
-    *                                    between the services in the forrm of  service --(operation)--> service
-    *    Sinks:
+    * span-accumulator        :  Aggregates incoming spans for specified time to find matching client-server spans
+    * latency-producer        :  From the span pairs produced by span-accumulator, this processor computes and emits network latency
+    * nodes-n-edges-producer  :  From the span pairs produced by span-accumulator, this processor produces a simple graph relationship
+    * between the services in the forrm of  service --(operation)--> service
+    * Sinks:
     *
-    *         metric-sink       :  Output of latency-producer (MetricPoint) is serialized using MessagePack and sent to a kafka topic
-    *         graph-nodes-sink  :  Output of nodes-n-edges-producer is serialized a json string and sent to a kafka topic
+    * metric-sink       :  Output of latency-producer (MetricPoint) is serialized using MessagePack and sent to a kafka topic
+    * graph-nodes-sink  :  Output of nodes-n-edges-producer is serialized a json string and sent to a kafka topic
     *
     * @return
     */
@@ -118,7 +119,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     topology
   }
 
-  private def addSource(stepName: String, topology: Topology) : Unit = {
+  private def addSource(stepName: String, topology: Topology): Unit = {
     //add a source
     topology.addSource(
       kafkaConfiguration.autoOffsetReset,
@@ -129,7 +130,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
       kafkaConfiguration.protoSpanTopic)
   }
 
-  private def addAccumulator(accumulatorName: String, topology: Topology, sourceName: String) : Unit = {
+  private def addAccumulator(accumulatorName: String, topology: Topology, sourceName: String): Unit = {
     topology.addProcessor(
       accumulatorName,
       new SpanAccumulatorSupplier(kafkaConfiguration.accumulatorInterval),
@@ -137,10 +138,10 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     )
   }
 
-  private def addLatencyProducer(latencyProducerName: String, topology: Topology, accumulatorName: String) : Unit = {
+  private def addLatencyProducer(latencyProducerName: String, topology: Topology, accumulatorName: String): Unit = {
     topology.addProcessor(
       latencyProducerName,
-      new LatencyProducerSupplier(),
+      new LatencyProducerSupplier(appConfiguration.encoder),
       accumulatorName
     )
   }
@@ -154,7 +155,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
   }
 
   private def addMetricSink(metricSinkName: String, metricsTopic: String, topology: Topology,
-                            latencyProducerName: String) : Unit = {
+                            latencyProducerName: String): Unit = {
     topology.addSink(
       metricSinkName,
       metricsTopic,
@@ -165,7 +166,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
   }
 
   private def addGraphNodeSink(graphNodeSinkName: String, serviceCallTopic: String, topology: Topology,
-                               graphNodeProducerName: String) :Unit = {
+                               graphNodeProducerName: String): Unit = {
     topology.addSink(
       graphNodeSinkName,
       serviceCallTopic,

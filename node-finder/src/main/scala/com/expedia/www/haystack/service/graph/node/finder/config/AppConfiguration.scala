@@ -20,6 +20,7 @@ package com.expedia.www.haystack.service.graph.node.finder.config
 import java.util.Properties
 
 import com.expedia.www.haystack.commons.config.ConfigurationLoader
+import com.expedia.www.haystack.commons.entities.encoders.{Encoder, EncoderFactory}
 import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.typesafe.config.Config
 import org.apache.commons.lang3.StringUtils
@@ -49,6 +50,16 @@ class AppConfiguration(resourceName: String) {
     * Location of the health status file
     */
   val healthStatusFilePath: String = config.getString("health.status.path")
+
+  /**
+    *
+    * @return type of encoder to use on metricpoint key names
+    */
+  val encoder: Encoder = {
+    val encoderType = config.getString("metricpoint.encoder.type")
+    EncoderFactory.newInstance(encoderType)
+  }
+
 
   /**
     * Instance of {@link KafkaConfiguration KafkaConfiguration} to be used by the kstreams application
@@ -81,7 +92,7 @@ class AppConfiguration(resourceName: String) {
     // validate props
     verifyRequiredProps(props)
 
-    val timestampExtractor =  Option(props.getProperty("timestamp.extractor")) match {
+    val timestampExtractor = Option(props.getProperty("timestamp.extractor")) match {
       case Some(timeStampExtractorClass) =>
         Class.forName(timeStampExtractorClass).newInstance().asInstanceOf[TimestampExtractor]
       case None =>

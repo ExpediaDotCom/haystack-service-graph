@@ -18,13 +18,15 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.www.haystack.TestSpec
+import com.expedia.www.haystack.commons.entities.encoders.PeriodReplacementEncoder
 import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.expedia.www.haystack.commons.kstreams.serde.SpanDeserializer
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
-import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
+import com.expedia.www.haystack.service.graph.node.finder.config.{AppConfiguration, KafkaConfiguration}
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.{StreamsConfig, Topology}
+import org.easymock.EasyMock
 import org.easymock.EasyMock._
 
 class StreamsSpec extends TestSpec {
@@ -35,8 +37,14 @@ class StreamsSpec extends TestSpec {
       val kafkaConfig = KafkaConfiguration(streamsConfig,
         "metrics", "service-call",
         "proto-spans", Topology.AutoOffsetReset.LATEST,
-        new SpanTimestampExtractor, 10000, 10000)
-      val streams = new Streams(kafkaConfig)
+       new SpanTimestampExtractor, 10000, 10000)
+      val appConfiguration = mock[AppConfiguration]
+      expecting {
+        appConfiguration.kafkaConfig.andReturn(kafkaConfig).anyTimes()
+        appConfiguration.encoder.andReturn(new PeriodReplacementEncoder).anyTimes()
+      }
+      EasyMock.replay(appConfiguration)
+      val streams = new Streams(appConfiguration)
       val topology = mock[Topology]
       When("initialize is invoked with a topology")
       expecting {
