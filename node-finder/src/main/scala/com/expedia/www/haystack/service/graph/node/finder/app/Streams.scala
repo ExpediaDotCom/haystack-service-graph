@@ -29,12 +29,12 @@ import org.apache.kafka.streams.Topology
 
 class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
 
-  val PROTO_SPANS = "proto-spans"
-  val SPAN_ACCUMULATOR = "span-accumulator"
-  val LATENCY_PRODUCER = "latency-producer"
-  val GRAPH_NODE_PRODUCER = "nodes-n-edges-producer"
-  val METRIC_SINK = "metric-sink"
-  val GRAPH_NODE_SINK = "graph-nodes-sink"
+  private val PROTO_SPANS = "proto-spans"
+  private val SPAN_ACCUMULATOR = "span-accumulator"
+  private val LATENCY_PRODUCER = "latency-producer"
+  private val GRAPH_NODE_PRODUCER = "nodes-n-edges-producer"
+  private val METRIC_SINK = "metric-sink"
+  private val GRAPH_NODE_SINK = "graph-nodes-sink"
 
   override def get(): Topology = initialize(new Topology)
 
@@ -140,7 +140,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
   private def addLatencyProducer(latencyProducerName: String, topology: Topology, accumulatorName: String) : Unit = {
     topology.addProcessor(
       latencyProducerName,
-      new LatencyProducerSupplier(),
+      new LatencyProducerSupplier(kafkaConfiguration.metricPointEncoder),
       accumulatorName
     )
   }

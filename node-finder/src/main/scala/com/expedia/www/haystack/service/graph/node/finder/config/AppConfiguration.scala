@@ -20,6 +20,7 @@ package com.expedia.www.haystack.service.graph.node.finder.config
 import java.util.Properties
 
 import com.expedia.www.haystack.commons.config.ConfigurationLoader
+import com.expedia.www.haystack.commons.entities.encoders.EncoderFactory
 import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.typesafe.config.Config
 import org.apache.commons.lang3.StringUtils
@@ -49,6 +50,7 @@ class AppConfiguration(resourceName: String) {
     * Location of the health status file
     */
   val healthStatusFilePath: String = config.getString("health.status.path")
+
 
   /**
     * Instance of {@link KafkaConfiguration KafkaConfiguration} to be used by the kstreams application
@@ -81,18 +83,20 @@ class AppConfiguration(resourceName: String) {
     // validate props
     verifyRequiredProps(props)
 
-    val timestampExtractor =  Option(props.getProperty("timestamp.extractor")) match {
+    val timestampExtractor = Option(props.getProperty("timestamp.extractor")) match {
       case Some(timeStampExtractorClass) =>
         Class.forName(timeStampExtractorClass).newInstance().asInstanceOf[TimestampExtractor]
       case None =>
         new SpanTimestampExtractor
     }
 
+
     //set timestamp extractor
     props.setProperty("timestamp.extractor", timestampExtractor.getClass.getName)
 
     KafkaConfiguration(new StreamsConfig(props),
       producerConfig.getString("metrics.topic"),
+      EncoderFactory.newInstance(producerConfig.getString("metrics.key.encoder")),
       producerConfig.getString("service.call.topic"),
       consumerConfig.getString("topic"),
       if (streamsConfig.hasPath("auto.offset.reset")) {

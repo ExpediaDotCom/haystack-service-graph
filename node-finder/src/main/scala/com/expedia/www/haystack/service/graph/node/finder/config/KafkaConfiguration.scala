@@ -17,6 +17,7 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.config
 
+import com.expedia.www.haystack.commons.entities.encoders.Encoder
 import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.Topology.AutoOffsetReset
@@ -26,6 +27,7 @@ import org.apache.kafka.streams.processor.TimestampExtractor
   * Case class holding required configuration for the node finder kstreams app
   * @param streamsConfig valid instance of StreamsConfig
   * @param metricsTopic topic name for latency metrics
+  * @param metricPointEncoder encoder used to generate the metricPoint key in kafka
   * @param serviceCallTopic topic name for service call relationship information
   * @param protoSpanTopic topic from where Spans serialized in protobuf to be consumed
   * @param autoOffsetReset Offset type for the kstreams app to start with
@@ -35,6 +37,7 @@ import org.apache.kafka.streams.processor.TimestampExtractor
   */
 case class KafkaConfiguration(streamsConfig: StreamsConfig,
                               metricsTopic: String,
+                              metricPointEncoder : Encoder,
                               serviceCallTopic: String,
                               protoSpanTopic: String,
                               autoOffsetReset: AutoOffsetReset,
