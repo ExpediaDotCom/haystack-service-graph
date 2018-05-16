@@ -22,12 +22,12 @@ import java.util.function.Supplier
 import com.expedia.www.haystack.commons.kstreams.serde.SpanSerde
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
-import com.expedia.www.haystack.service.graph.node.finder.config.AppConfiguration
+import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.Topology
 
-class Streams(appConfiguration: AppConfiguration) extends Supplier[Topology] {
+class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
 
   private val PROTO_SPANS = "proto-spans"
   private val SPAN_ACCUMULATOR = "span-accumulator"
@@ -35,7 +35,6 @@ class Streams(appConfiguration: AppConfiguration) extends Supplier[Topology] {
   private val GRAPH_NODE_PRODUCER = "nodes-n-edges-producer"
   private val METRIC_SINK = "metric-sink"
   private val GRAPH_NODE_SINK = "graph-nodes-sink"
-  private val kafkaConfiguration = appConfiguration.kafkaConfig
 
   override def get(): Topology = initialize(new Topology)
 
@@ -141,7 +140,7 @@ class Streams(appConfiguration: AppConfiguration) extends Supplier[Topology] {
   private def addLatencyProducer(latencyProducerName: String, topology: Topology, accumulatorName: String) : Unit = {
     topology.addProcessor(
       latencyProducerName,
-      new LatencyProducerSupplier(appConfiguration.encoder),
+      new LatencyProducerSupplier(kafkaConfiguration.metricPointEncoder),
       accumulatorName
     )
   }

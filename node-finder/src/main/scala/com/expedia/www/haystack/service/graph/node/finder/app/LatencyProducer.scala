@@ -24,6 +24,7 @@ import org.apache.kafka.streams.processor.{Processor, ProcessorContext, Processo
 import org.slf4j.LoggerFactory
 
 class LatencyProducerSupplier(metricPointEncoder: Encoder) extends ProcessorSupplier[String, SpanPair] {
+  require(metricPointEncoder != null)
   override def get(): Processor[String, SpanPair] = new LatencyProducer(metricPointEncoder)
 }
 
@@ -32,6 +33,8 @@ class LatencyProducer(metricPointEncoder: Encoder) extends Processor[String, Spa
   private val processMeter = metricRegistry.meter("latency.producer.process")
   private val forwardMeter = metricRegistry.meter("latency.producer.emit")
   private val LOGGER = LoggerFactory.getLogger(classOf[LatencyProducer])
+  require(metricPointEncoder != null)
+
 
   override def init(context: ProcessorContext): Unit = {
     this.context = context
