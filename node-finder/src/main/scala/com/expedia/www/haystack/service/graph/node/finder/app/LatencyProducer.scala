@@ -17,16 +17,19 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.app
 
+import com.expedia.www.haystack.commons.entities.encoders.Encoder
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.node.finder.model.SpanPair
 import org.apache.kafka.streams.processor.{Processor, ProcessorContext, ProcessorSupplier}
 import org.slf4j.LoggerFactory
 
-class LatencyProducerSupplier extends ProcessorSupplier[String, SpanPair] {
-  override def get(): Processor[String, SpanPair] = new LatencyProducer
+class LatencyProducerSupplier(encoder: Encoder) extends ProcessorSupplier[String, SpanPair] {
+  require(encoder != null)
+  override def get(): Processor[String, SpanPair] = new LatencyProducer(encoder)
 }
 
-class LatencyProducer extends Processor[String, SpanPair] with MetricsSupport {
+class LatencyProducer(encoder: Encoder) extends Processor[String, SpanPair] with MetricsSupport {
+  require(encoder != null)
   private var context: ProcessorContext = _
   private val processMeter = metricRegistry.meter("latency.producer.process")
   private val forwardMeter = metricRegistry.meter("latency.producer.emit")
@@ -45,10 +48,11 @@ class LatencyProducer extends Processor[String, SpanPair] with MetricsSupport {
 
     spanPair.getLatency match {
       case Some(metricPoint) =>
-        context.forward(metricPoint.metric, metricPoint)
+        val key = metricPoint.getMetricPointKey(encoder)
+        context.forward(key, metricPoint)
         forwardMeter.mark()
         if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug(s"Latency Metric: (${metricPoint.metric}, $metricPoint")
+          LOGGER.debug(s"Latency Metric: ($key, $metricPoint")
         }
       case None =>
     }

@@ -18,6 +18,7 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.www.haystack.TestSpec
+import com.expedia.www.haystack.commons.entities.encoders.Encoder
 import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.expedia.www.haystack.commons.kstreams.serde.SpanDeserializer
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
@@ -33,7 +34,7 @@ class StreamsSpec extends TestSpec {
       Given("a configuration object of type KafkaConfiguration")
       val streamsConfig = mock[StreamsConfig]
       val kafkaConfig = KafkaConfiguration(streamsConfig,
-        "metrics", "service-call",
+        "metrics", mock[Encoder], "service-call",
         "proto-spans", Topology.AutoOffsetReset.LATEST,
         new SpanTimestampExtractor, 10000, 10000)
       val streams = new Streams(kafkaConfig)

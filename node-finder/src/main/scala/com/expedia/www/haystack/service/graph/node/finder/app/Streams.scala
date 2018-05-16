@@ -140,7 +140,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
   private def addLatencyProducer(latencyProducerName: String, topology: Topology, accumulatorName: String) : Unit = {
     topology.addProcessor(
       latencyProducerName,
-      new LatencyProducerSupplier(),
+      new LatencyProducerSupplier(kafkaConfiguration.metricsKeyEncoder),
       accumulatorName
     )
   }
