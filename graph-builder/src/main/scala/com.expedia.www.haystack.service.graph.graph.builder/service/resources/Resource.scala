@@ -20,8 +20,9 @@ package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.google.gson.Gson
 import org.apache.http.entity.ContentType
+import org.json4s.DefaultFormats
+import org.json4s.jackson.Serialization
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
@@ -31,6 +32,8 @@ abstract class Resource(endpointName: String) extends HttpServlet with MetricsSu
   private val timer = metricRegistry.timer(endpointName)
   private val failureCount = metricRegistry.meter(s"$endpointName.failure")
 
+  implicit val formats = DefaultFormats
+
   protected override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = {
     val time = timer.time()
 
@@ -38,13 +41,13 @@ abstract class Resource(endpointName: String) extends HttpServlet with MetricsSu
       case Success(getResponse) =>
         response.setContentType(ContentType.APPLICATION_JSON.getMimeType)
         response.setStatus(HttpServletResponse.SC_OK)
-        response.getWriter.print(new Gson().toJson(getResponse))
+        response.getWriter.print(Serialization.write(getResponse))
         LOGGER.info(s"accesslog: ${request.getRequestURI} completed successfully")
 
       case Failure(ex) =>
         response.setContentType(ContentType.APPLICATION_JSON.getMimeType)
         response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-        response.getWriter.print(new Gson().toJson(new Error(ex.getMessage)))
+        response.getWriter.print(Serialization.write(new Error(ex.getMessage)))
         failureCount.mark()
         LOGGER.error(s"accesslog: ${request.getRequestURI} failed")
     }

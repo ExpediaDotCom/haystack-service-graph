@@ -20,14 +20,12 @@ package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 import com.expedia.www.haystack.service.graph.graph.builder.model.ServiceGraph
 import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.LocalEdgesFetcher
 
-import scala.collection.JavaConverters._
-
 class LocalServiceGraphResource(localEdgesFetcher: LocalEdgesFetcher) extends Resource("servicegraph.local") {
   private val edgeCount = metricRegistry.histogram("servicegraph.local.edges")
 
   protected override def get(): ServiceGraph = {
-    val localGraph = ServiceGraph(localEdgesFetcher.fetchEdges().asJava)
-    edgeCount.update(localGraph.edges.size())
+    val localGraph = ServiceGraph(localEdgesFetcher.fetchEdges())
+    edgeCount.update(localGraph.edges.length)
     localGraph
   }
 }

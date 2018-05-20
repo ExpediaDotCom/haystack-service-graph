@@ -27,12 +27,13 @@ import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfigurat
 import com.expedia.www.haystack.service.graph.graph.builder.kafka.KafkaController
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, ServiceGraph}
 import com.expedia.www.haystack.service.graph.graph.builder.service.HttpService
-import com.google.gson.Gson
 import org.apache.http.client.fluent.Request
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.streams.KafkaStreams
 import org.apache.kafka.streams.state.{QueryableStoreTypes, ReadOnlyKeyValueStore}
 import org.expedia.www.haystack.commons.scalatest.IntegrationSuite
+import org.json4s.DefaultFormats
+import org.json4s.jackson.Serialization
 import org.scalatest.BeforeAndAfterAll
 
 import scala.collection.JavaConverters._
@@ -45,6 +46,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
   private val appConfig = new AppConfiguration("integration/local.conf")
   var stream: KafkaStreams = _
   var service: HttpService = _
+
+  implicit val formats = DefaultFormats
 
   override def beforeAll {
     //start kafka and zk
@@ -146,8 +149,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
         .returnContent()
         .asString()
 
-      val serviceGraph = new Gson().fromJson(edgeJson, classOf[ServiceGraph])
-      val filteredEdges = serviceGraph.edges.asScala.filter(
+      val serviceGraph = Serialization.read[ServiceGraph](edgeJson)
+      val filteredEdges = serviceGraph.edges.filter(
         edge => edge.source == source && edge.destination == destination)
 
       filteredEdges.length should be(1)

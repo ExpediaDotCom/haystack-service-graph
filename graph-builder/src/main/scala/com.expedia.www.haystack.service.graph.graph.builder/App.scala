@@ -122,7 +122,11 @@ object App extends MetricsSupport {
 
     val servlets = Map(
       "/servicegraph/local" -> new LocalServiceGraphResource(localEdgesFetcher),
-      "/servicegraph" -> new GlobalServiceGraphResource(stream: KafkaStreams, storeName: String, serviceConfig, localEdgesFetcher, remoteEdgesFetcher),
+      "/servicegraph" -> new GlobalServiceGraphResource(stream,
+        storeName,
+        serviceConfig,
+        localEdgesFetcher,
+        remoteEdgesFetcher),
       "/isWorking" -> new IsWorkingResource
     )
 
