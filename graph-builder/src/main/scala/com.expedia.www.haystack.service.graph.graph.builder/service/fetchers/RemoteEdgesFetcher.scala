@@ -19,31 +19,29 @@ package com.expedia.www.haystack.service.graph.graph.builder.service.fetchers
 
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceClientConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.{ServiceGraph, ServiceGraphEdge}
-import com.google.gson.Gson
 import org.apache.http.client.fluent.Request
 import org.apache.http.client.utils.URIBuilder
-
-import scala.collection.JavaConverters._
+import org.json4s.DefaultFormats
+import org.json4s.jackson.Serialization
 
 class RemoteEdgesFetcher(clientConfig: ServiceClientConfiguration) {
+  implicit val formats = DefaultFormats
+
   def fetchEdges(host: String, port: Int): List[ServiceGraphEdge] = {
     val request = new URIBuilder()
       .setScheme("http")
+      .setPath("/servicegraph/local")
       .setHost(host)
       .setPort(port)
       .build()
 
-    val edgeJson = Request.Get(request)
+    val response = Request.Get(request)
       .connectTimeout(clientConfig.connectionTimeout)
       .socketTimeout(clientConfig.socketTimeout)
       .execute()
       .returnContent()
       .asString()
 
-    new Gson()
-      .fromJson(edgeJson, classOf[ServiceGraph])
-      .edges
-      .asScala
-      .toList
+    Serialization.read[ServiceGraph](response).edges
   }
 }

@@ -17,10 +17,8 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
-import java.util
-
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceConfiguration
-import com.expedia.www.haystack.service.graph.graph.builder.model.{ServiceGraph, ServiceGraphEdge}
+import com.expedia.www.haystack.service.graph.graph.builder.model.ServiceGraph
 import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalEdgesFetcher, RemoteEdgesFetcher}
 import org.apache.kafka.streams.KafkaStreams
 import org.slf4j.LoggerFactory
@@ -37,31 +35,26 @@ class GlobalServiceGraphResource(streams: KafkaStreams,
   private val globalEdgeCount = metricRegistry.histogram("servicegraph.global.edges")
 
   protected override def get(): ServiceGraph = {
-    val edgesList: util.ArrayList[ServiceGraphEdge] = new util.ArrayList[ServiceGraphEdge]()
-
     // get list of all hosts containing service-graph store
     // fetch local service graphs from all hosts
     // and merge local graphs to create global graph
-    streams
+    val edgesList = streams
       .allMetadataForStore(storeName)
-      .forEach(host => {
+      .asScala
+      .flatMap(host => {
+        if (host.host() == serviceConfig.host) {
+          val localEdges = localEdgesFetcher.fetchEdges()
+          LOGGER.info(s"graph from local returned ${localEdges.size} edges")
+          localEdges
+        }
+        else {
+          val remoteEdges = remoteEdgesFetcher.fetchEdges(host.host(), host.port())
+          LOGGER.info(s"graph from ${host.host()} returned ${remoteEdges.size} edges")
+          remoteEdges
+        }
+      }).toList
 
-        val edges =
-          if (host.host() == serviceConfig.host) {
-            val localEdges = localEdgesFetcher.fetchEdges()
-            LOGGER.info(s"graph from local returned ${localEdges.size} edges")
-            localEdges
-          }
-          else {
-            val remoteEdges = remoteEdgesFetcher.fetchEdges(serviceConfig.host, serviceConfig.http.port)
-            LOGGER.info(s"graph from ${host.host()} returned ${remoteEdges.size} edges")
-            remoteEdges
-          }
-
-        edgesList.addAll(edges.asJava)
-      })
-
-    globalEdgeCount.update(edgesList.size())
+    globalEdgeCount.update(edgesList.length)
     ServiceGraph(edgesList)
   }
 }
