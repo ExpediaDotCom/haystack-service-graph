@@ -19,7 +19,8 @@ package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.ServiceGraph
-import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalEdgesFetcher, RemoteEdgesFetcher}
+import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalServiceEdgesFetcher, RemoteServiceEdgesFetcher}
+import com.expedia.www.haystack.service.graph.graph.builder.service.utils.ServiceEdgesMerger._
 import org.apache.kafka.streams.KafkaStreams
 import org.slf4j.LoggerFactory
 
@@ -28,8 +29,8 @@ import scala.collection.JavaConverters._
 class GlobalServiceGraphResource(streams: KafkaStreams,
                                  storeName: String,
                                  serviceConfig: ServiceConfiguration,
-                                 localEdgesFetcher: LocalEdgesFetcher,
-                                 remoteEdgesFetcher: RemoteEdgesFetcher)
+                                 localEdgesFetcher: LocalServiceEdgesFetcher,
+                                 remoteEdgesFetcher: RemoteServiceEdgesFetcher)
   extends Resource("servicegraph") {
   private val LOGGER = LoggerFactory.getLogger(classOf[LocalServiceGraphResource])
   private val globalEdgeCount = metricRegistry.histogram("servicegraph.global.edges")
@@ -54,7 +55,9 @@ class GlobalServiceGraphResource(streams: KafkaStreams,
         }
       }).toList
 
-    globalEdgeCount.update(edgesList.length)
-    ServiceGraph(edgesList)
+    val mergedEdgeList = getMergedEdgesForSourceDestinatioPairs(edgesList)
+
+    globalEdgeCount.update(mergedEdgeList.length)
+    ServiceGraph(mergedEdgeList)
   }
 }

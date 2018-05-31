@@ -18,9 +18,9 @@
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
 import com.expedia.www.haystack.service.graph.graph.builder.model.ServiceGraph
-import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.LocalEdgesFetcher
+import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.LocalServiceEdgesFetcher
 
-class LocalServiceGraphResource(localEdgesFetcher: LocalEdgesFetcher) extends Resource("servicegraph.local") {
+class LocalServiceGraphResource(localEdgesFetcher: LocalServiceEdgesFetcher) extends Resource("servicegraph.local") {
   private val edgeCount = metricRegistry.histogram("servicegraph.local.edges")
 
   protected override def get(): ServiceGraph = {

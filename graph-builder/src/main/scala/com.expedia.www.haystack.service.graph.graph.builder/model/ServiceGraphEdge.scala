@@ -23,12 +23,10 @@ import org.apache.commons.lang3.StringUtils
   * A graph edge representing relationship between two services over an operation
   * @param source source service
   * @param destination destination service
-  * @param operation operation invoked on source
   * @param stats stats around the edge
   */
-case class ServiceGraphEdge(source: String, destination: String, operation: String, stats: EdgeStats)  {
+case class ServiceGraphEdge(source: String, destination: String, stats: EdgeStats)  {
   require(StringUtils.isNotEmpty(source))
   require(StringUtils.isNotEmpty(destination))
-  require(StringUtils.isNotEmpty(operation))
   require(stats != null)
 }
