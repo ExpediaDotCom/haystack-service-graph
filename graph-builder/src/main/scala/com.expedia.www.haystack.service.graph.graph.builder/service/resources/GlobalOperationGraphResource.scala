@@ -18,24 +18,23 @@
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceConfiguration
-import com.expedia.www.haystack.service.graph.graph.builder.model.ServiceGraph
-import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalServiceEdgesFetcher, RemoteServiceEdgesFetcher}
-import com.expedia.www.haystack.service.graph.graph.builder.service.utils.ServiceEdgesMerger._
+import com.expedia.www.haystack.service.graph.graph.builder.model.OperationGraph
+import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalOperationEdgesFetcher, RemoteOperationEdgesFetcher}
 import org.apache.kafka.streams.KafkaStreams
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
-class GlobalServiceGraphResource(streams: KafkaStreams,
-                                 storeName: String,
-                                 serviceConfig: ServiceConfiguration,
-                                 localEdgesFetcher: LocalServiceEdgesFetcher,
-                                 remoteEdgesFetcher: RemoteServiceEdgesFetcher)
-  extends Resource("servicegraph") {
-  private val LOGGER = LoggerFactory.getLogger(classOf[LocalServiceGraphResource])
-  private val globalEdgeCount = metricRegistry.histogram("servicegraph.global.edges")
+class GlobalOperationGraphResource(streams: KafkaStreams,
+                                   storeName: String,
+                                   serviceConfig: ServiceConfiguration,
+                                   localEdgesFetcher: LocalOperationEdgesFetcher,
+                                   remoteEdgesFetcher: RemoteOperationEdgesFetcher)
+  extends Resource("operationgraph") {
+  private val LOGGER = LoggerFactory.getLogger(classOf[GlobalOperationGraphResource])
+  private val globalEdgeCount = metricRegistry.histogram("operationgraph.global.edges")
 
-  protected override def get(): ServiceGraph = {
+  protected override def get(): OperationGraph = {
     // get list of all hosts containing service-graph store
     // fetch local service graphs from all hosts
     // and merge local graphs to create global graph
@@ -55,9 +54,7 @@ class GlobalServiceGraphResource(streams: KafkaStreams,
         }
       }).toList
 
-    val mergedEdgeList = getMergedEdgesForSourceDestinatioPairs(edgesList)
-
-    globalEdgeCount.update(mergedEdgeList.length)
-    ServiceGraph(mergedEdgeList)
+    globalEdgeCount.update(edgesList.length)
+    OperationGraph(edgesList)
   }
 }

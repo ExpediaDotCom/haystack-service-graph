@@ -17,14 +17,14 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
-import com.expedia.www.haystack.service.graph.graph.builder.model.ServiceGraph
-import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.LocalServiceEdgesFetcher
+import com.expedia.www.haystack.service.graph.graph.builder.model.OperationGraph
+import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalOperationEdgesFetcher, LocalServiceEdgesFetcher}
 
-class LocalServiceGraphResource(localEdgesFetcher: LocalServiceEdgesFetcher) extends Resource("servicegraph.local") {
-  private val edgeCount = metricRegistry.histogram("servicegraph.local.edges")
+class LocalOperationGraphResource(localEdgesFetcher: LocalOperationEdgesFetcher) extends Resource("operationgraph.local") {
+  private val edgeCount = metricRegistry.histogram("operationgraph.local.edges")
 
-  protected override def get(): ServiceGraph = {
-    val localGraph = ServiceGraph(localEdgesFetcher.fetchEdges())
+  protected override def get(): OperationGraph = {
+    val localGraph = OperationGraph(localEdgesFetcher.fetchEdges())
     edgeCount.update(localGraph.edges.length)
     localGraph
   }

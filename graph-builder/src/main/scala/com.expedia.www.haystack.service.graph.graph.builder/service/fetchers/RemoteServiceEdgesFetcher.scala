@@ -24,7 +24,7 @@ import org.apache.http.client.utils.URIBuilder
 import org.json4s.DefaultFormats
 import org.json4s.jackson.Serialization
 
-class RemoteEdgesFetcher(clientConfig: ServiceClientConfiguration) {
+class RemoteServiceEdgesFetcher(clientConfig: ServiceClientConfiguration) {
   implicit val formats = DefaultFormats
 
   def fetchEdges(host: String, port: Int): List[ServiceGraphEdge] = {
