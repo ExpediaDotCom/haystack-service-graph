@@ -25,7 +25,7 @@ import com.expedia.www.haystack.commons.health.HealthStatusController
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
 import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.kafka.KafkaController
-import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, ServiceGraph}
+import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, OperationGraph, ServiceGraph}
 import com.expedia.www.haystack.service.graph.graph.builder.service.HttpService
 import org.apache.http.client.fluent.Request
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
@@ -152,6 +152,36 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       val serviceGraph = Serialization.read[ServiceGraph](edgeJson)
       val filteredEdges = serviceGraph.edges.filter(
         edge => edge.source == source && edge.destination == destination)
+
+      filteredEdges.length should be(1)
+    }
+
+    it("should make operationgraph queriable through http") {
+      Given("running stream topology")
+
+      When("getting new edge")
+      //send test data to source topic
+      val producer = kafkaController.createProducer(
+        appConfig.kafkaConfig.consumerTopic,
+        classOf[GraphEdgeSerializer], classOf[GraphEdgeSerializer]
+      )
+      val random = new Random
+      val source = random.nextInt().toString
+      val destination = random.nextInt().toString
+      val operation = random.nextInt().toString
+      //send sample data
+      produceRecord(producer, source, destination, operation)
+
+      Then("operationgraph endpoint should return the new edge")
+      val edgeJson = Request
+        .Get(s"http://localhost:${appConfig.serviceConfig.http.port}/operationgraph")
+        .execute()
+        .returnContent()
+        .asString()
+
+      val operationGraph = Serialization.read[OperationGraph](edgeJson)
+      val filteredEdges = operationGraph.edges.filter(
+        edge => edge.source == source && edge.destination == destination && edge.operation == operation)
 
       filteredEdges.length should be(1)
     }

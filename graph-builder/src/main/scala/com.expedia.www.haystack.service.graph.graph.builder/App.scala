@@ -23,8 +23,8 @@ import com.expedia.www.haystack.commons.kstreams.app.ManagedKafkaStreams
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.{KafkaConfiguration, ServiceConfiguration}
-import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalServiceEdgesFetcher, RemoteServiceEdgesFetcher}
-import com.expedia.www.haystack.service.graph.graph.builder.service.resources.{GlobalServiceGraphResource, IsWorkingResource, LocalServiceGraphResource}
+import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalOperationEdgesFetcher, LocalServiceEdgesFetcher, RemoteOperationEdgesFetcher, RemoteServiceEdgesFetcher}
+import com.expedia.www.haystack.service.graph.graph.builder.service.resources._
 import com.expedia.www.haystack.service.graph.graph.builder.service.{HttpService, ManagedHttpService}
 import com.expedia.www.haystack.service.graph.graph.builder.stream.{ServiceGraphStreamSupplier, StreamSupplier}
 import com.netflix.servo.util.VisibleForTesting
@@ -117,10 +117,14 @@ object App extends MetricsSupport {
 
   @VisibleForTesting
   def createService(serviceConfig: ServiceConfiguration, stream: KafkaStreams, storeName: String): HttpService = {
+    val localOperationEdgesFetcher = new LocalOperationEdgesFetcher(stream, storeName)
+    val remoteOperationEdgesFetcher = new RemoteOperationEdgesFetcher(serviceConfig.client)
     val localServiceEdgesFetcher = new LocalServiceEdgesFetcher(stream, storeName)
     val remoteServiceEdgesFetcher = new RemoteServiceEdgesFetcher(serviceConfig.client)
 
     val servlets = Map(
+      "/operationgraph/local" -> new LocalOperationGraphResource(localOperationEdgesFetcher),
+      "/operationgraph" -> new GlobalOperationGraphResource(stream, storeName, serviceConfig, localOperationEdgesFetcher, remoteOperationEdgesFetcher),
       "/servicegraph/local" -> new LocalServiceGraphResource(localServiceEdgesFetcher),
       "/servicegraph" -> new GlobalServiceGraphResource(stream, storeName, serviceConfig, localServiceEdgesFetcher, remoteServiceEdgesFetcher),
       "/isWorking" -> new IsWorkingResource
