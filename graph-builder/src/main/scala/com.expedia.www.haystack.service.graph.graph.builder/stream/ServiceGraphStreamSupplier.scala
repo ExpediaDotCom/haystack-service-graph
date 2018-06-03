@@ -31,10 +31,9 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
   override def get(): Topology = initialize(new StreamsBuilder)
 
   private def tumblingWindow(): TimeWindows = {
-    // TODO read of and until from config
     TimeWindows
-      .of(TimeUnit.SECONDS.toMillis(3600))
-      .until(TimeUnit.DAYS.toMillis(7))
+      .of(TimeUnit.SECONDS.toMillis(kafkaConfiguration.aggregationWindowSec))
+      .until(TimeUnit.DAYS.toMillis(kafkaConfiguration.aggregationRetentionDays))
   }
 
   private def initialize(builder: StreamsBuilder): Topology = {
