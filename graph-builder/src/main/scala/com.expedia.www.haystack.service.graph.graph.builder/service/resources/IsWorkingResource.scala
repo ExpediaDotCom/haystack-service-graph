@@ -17,9 +17,11 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
+import javax.servlet.http.HttpServletRequest
+
 class IsWorkingResource() extends Resource("isworking") {
 
-  protected override def get(): IsWorking = new IsWorking()
+  protected override def get(request: HttpServletRequest): IsWorking = new IsWorking()
 
   class IsWorking(isWorking: Boolean = true)
 }

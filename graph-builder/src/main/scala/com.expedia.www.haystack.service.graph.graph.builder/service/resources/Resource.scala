@@ -37,7 +37,7 @@ abstract class Resource(endpointName: String) extends HttpServlet with MetricsSu
   protected override def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit = {
     val time = timer.time()
 
-    Try(get()) match {
+    Try(get(request)) match {
       case Success(getResponse) =>
         response.setContentType(ContentType.APPLICATION_JSON.getMimeType)
         response.setStatus(HttpServletResponse.SC_OK)
@@ -49,7 +49,7 @@ abstract class Resource(endpointName: String) extends HttpServlet with MetricsSu
         response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
         response.getWriter.print(Serialization.write(new Error(ex.getMessage)))
         failureCount.mark()
-        LOGGER.error(s"accesslog: ${request.getRequestURI} failed")
+        LOGGER.error(s"accesslog: ${request.getRequestURI} failed", ex)
     }
 
     response.getWriter.flush()
@@ -57,7 +57,7 @@ abstract class Resource(endpointName: String) extends HttpServlet with MetricsSu
   }
 
   // endpoint method for child resources to inherit
-  protected def get(): Object
+  protected def get(request: HttpServletRequest): Object
 
   class Error(message: String, error: Boolean = true)
 }

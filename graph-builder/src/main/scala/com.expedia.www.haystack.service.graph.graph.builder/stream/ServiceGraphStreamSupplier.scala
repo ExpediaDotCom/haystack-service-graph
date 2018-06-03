@@ -17,19 +17,25 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.stream
 
+import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 
-import com.expedia.www.haystack.commons.entities.GraphEdge
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerde
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.KafkaConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, EdgeStatsSerde}
 import org.apache.kafka.streams.kstream._
 import org.apache.kafka.streams.processor.WallclockTimestampExtractor
-import org.apache.kafka.streams.state.Stores
 import org.apache.kafka.streams.{Consumed, StreamsBuilder, Topology}
 
 class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
   override def get(): Topology = initialize(new StreamsBuilder)
+
+  private def tumblingWindow(): TimeWindows = {
+    // TODO read of and until from config
+    TimeWindows
+      .of(TimeUnit.SECONDS.toMillis(3600))
+      .until(TimeUnit.DAYS.toMillis(7))
+  }
 
   private def initialize(builder: StreamsBuilder): Topology = {
 
@@ -54,14 +60,17 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
         Serialized.`with`(new GraphEdgeSerde, new GraphEdgeSerde)
       )
       //
+      // create tumbling windows for edges
+      .windowedBy(tumblingWindow())
+      //
       // calculate stats for edges
       // keep the resulting ktable as materialized view in memory
       // enabled logging to persist ktable changelog topic and replicated to multiple brokers
-      .aggregate[EdgeStats](
+      .aggregate(
         () => EdgeStats(0, 0),
-        edgeStatsAggregator,
+        (_, _, aggregate: EdgeStats) => EdgeStats(aggregate.count + 1, System.currentTimeMillis()),
         Materialized
-          .as(Stores.inMemoryKeyValueStore(kafkaConfiguration.producerTopic))
+          .as(kafkaConfiguration.producerTopic)
           .withKeySerde(new GraphEdgeSerde)
           .withValueSerde(new EdgeStatsSerde)
           .withCachingEnabled()
@@ -70,11 +79,5 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
 
     // build stream topology and return
     builder.build()
-  }
-
-  // TODO find out why scala is not able to infer types of direct lambda for aggregator
-  private val edgeStatsAggregator = new Aggregator[GraphEdge, GraphEdge, EdgeStats] {
-    override def apply(key: GraphEdge, value: GraphEdge, aggregate: EdgeStats): EdgeStats =
-      EdgeStats(aggregate.count + 1, System.currentTimeMillis())
   }
 }
