@@ -17,9 +17,12 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
+import javax.servlet.http.HttpServletRequest
+
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.OperationGraph
 import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalOperationEdgesFetcher, RemoteOperationEdgesFetcher}
+import com.expedia.www.haystack.service.graph.graph.builder.service.utils.TimestampUtils
 import org.apache.kafka.streams.KafkaStreams
 import org.slf4j.LoggerFactory
 
@@ -34,7 +37,10 @@ class GlobalOperationGraphResource(streams: KafkaStreams,
   private val LOGGER = LoggerFactory.getLogger(classOf[GlobalOperationGraphResource])
   private val globalEdgeCount = metricRegistry.histogram("operationgraph.global.edges")
 
-  protected override def get(): OperationGraph = {
+  protected override def get(request: HttpServletRequest): OperationGraph = {
+    val from = TimestampUtils.fromTimestamp(request)
+    val to = TimestampUtils.toTimestamp(request)
+
     // get list of all hosts containing service-graph store
     // fetch local service graphs from all hosts
     // and merge local graphs to create global graph
@@ -43,7 +49,7 @@ class GlobalOperationGraphResource(streams: KafkaStreams,
       .asScala
       .flatMap(host => {
         if (host.host() == serviceConfig.host) {
-          val localEdges = localEdgesFetcher.fetchEdges()
+          val localEdges = localEdgesFetcher.fetchEdges(from, to)
           LOGGER.info(s"graph from local returned ${localEdges.size} edges")
           localEdges
         }

@@ -17,10 +17,13 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 
+import javax.servlet.http.HttpServletRequest
+
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.ServiceGraph
 import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalServiceEdgesFetcher, RemoteServiceEdgesFetcher}
-import com.expedia.www.haystack.service.graph.graph.builder.service.utils.ServiceEdgesMerger._
+import com.expedia.www.haystack.service.graph.graph.builder.service.utils.EdgesMerger._
+import com.expedia.www.haystack.service.graph.graph.builder.service.utils.TimestampUtils
 import org.apache.kafka.streams.KafkaStreams
 import org.slf4j.LoggerFactory
 
@@ -35,7 +38,10 @@ class GlobalServiceGraphResource(streams: KafkaStreams,
   private val LOGGER = LoggerFactory.getLogger(classOf[LocalServiceGraphResource])
   private val globalEdgeCount = metricRegistry.histogram("servicegraph.global.edges")
 
-  protected override def get(): ServiceGraph = {
+  protected override def get(request: HttpServletRequest): ServiceGraph = {
+    val from = TimestampUtils.fromTimestamp(request)
+    val to = TimestampUtils.toTimestamp(request)
+
     // get list of all hosts containing service-graph store
     // fetch local service graphs from all hosts
     // and merge local graphs to create global graph
@@ -44,7 +50,7 @@ class GlobalServiceGraphResource(streams: KafkaStreams,
       .asScala
       .flatMap(host => {
         if (host.host() == serviceConfig.host) {
-          val localEdges = localEdgesFetcher.fetchEdges()
+          val localEdges = localEdgesFetcher.fetchEdges(from, to)
           LOGGER.info(s"graph from local returned ${localEdges.size} edges")
           localEdges
         }
@@ -55,7 +61,7 @@ class GlobalServiceGraphResource(streams: KafkaStreams,
         }
       }).toList
 
-    val mergedEdgeList = getMergedEdgesForSourceDestinatioPairs(edgesList)
+    val mergedEdgeList = getMergedServiceEdges(edgesList)
 
     globalEdgeCount.update(mergedEdgeList.length)
     ServiceGraph(mergedEdgeList)

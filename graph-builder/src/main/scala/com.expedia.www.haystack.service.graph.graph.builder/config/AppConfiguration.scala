@@ -102,12 +102,18 @@ class AppConfiguration(resourceName: String) {
       else
         AutoOffsetReset.LATEST
 
+    val aggregation = kafka.getConfig("aggregate")
+    val aggregationWindowSec = aggregation.getInt("window.sec")
+    val aggregationRetentionDays = aggregation.getInt("retention.days")
+
     KafkaConfiguration(new StreamsConfig(streamProps),
       consumerConfig.getString("topic"),
       producerConfig.getString("topic"),
       producerTopicConfigMap,
       autoOffsetReset,
-      kafka.getLong("close.timeout.ms")
+      kafka.getLong("close.timeout.ms"),
+      aggregationWindowSec,
+      aggregationRetentionDays
     )
   }
 

@@ -30,7 +30,7 @@ import com.expedia.www.haystack.service.graph.graph.builder.service.HttpService
 import org.apache.http.client.fluent.Request
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.streams.KafkaStreams
-import org.apache.kafka.streams.state.{QueryableStoreTypes, ReadOnlyKeyValueStore}
+import org.apache.kafka.streams.state.{QueryableStoreTypes, ReadOnlyKeyValueStore, ReadOnlyWindowStore}
 import org.expedia.www.haystack.commons.scalatest.IntegrationSuite
 import org.json4s.DefaultFormats
 import org.json4s.jackson.Serialization
@@ -88,11 +88,11 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
       Then("edges should be added to edges ktable")
       //read data from ktable to validate
-      val store: ReadOnlyKeyValueStore[GraphEdge, EdgeStats] =
-        stream.store(appConfig.kafkaConfig.producerTopic, QueryableStoreTypes.keyValueStore[GraphEdge, EdgeStats]())
+      val store: ReadOnlyWindowStore[GraphEdge, EdgeStats] =
+      stream.store(appConfig.kafkaConfig.producerTopic, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
       val storeIterator = store.all()
-      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key == GraphEdge(source, destination, operation))
+      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key == GraphEdge(source, destination, operation))
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(1)
@@ -116,11 +116,11 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
       Then("only one edge should be added to edges ktable")
       //read data from ktable to validate
-      val store: ReadOnlyKeyValueStore[GraphEdge, EdgeStats] =
-        stream.store(appConfig.kafkaConfig.producerTopic, QueryableStoreTypes.keyValueStore[GraphEdge, EdgeStats]())
+      val store: ReadOnlyWindowStore[GraphEdge, EdgeStats] =
+        stream.store(appConfig.kafkaConfig.producerTopic, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
       val storeIterator = store.all()
-      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key == GraphEdge(source, destination, operation))
+      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key == GraphEdge(source, destination, operation))
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(3)

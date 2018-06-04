@@ -35,7 +35,10 @@ case class KafkaConfiguration(streamsConfig: StreamsConfig,
                               producerTopic: String,
                               producerTopicConfig: java.util.Map[String, String],
                               autoOffsetReset: AutoOffsetReset,
-                              closeTimeoutInMs: Long) {
+                              closeTimeoutInMs: Long,
+                              aggregationWindowSec: Int,
+                              aggregationRetentionDays: Int
+                             ) {
   require(streamsConfig != null)
   require(StringUtils.isNotBlank(consumerTopic))
   require(StringUtils.isNotBlank(producerTopic))
