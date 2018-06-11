@@ -82,19 +82,6 @@ class AppConfiguration(resourceName: String) {
     // validate props
     verifyRequiredProps(streamProps)
 
-    // changelog topic specific configs
-    val producerTopicConfigMap =
-      if (producerConfig.hasPath("config"))
-        producerConfig
-          .getConfig("config")
-          .entrySet()
-          .asScala
-          .map(entry => entry.getKey -> entry.getValue.unwrapped().toString)
-          .toMap
-          .asJava
-      else
-        new java.util.HashMap[String, String]()
-
     // offset reset for kstream
     val autoOffsetReset =
       if (streamsConfig.hasPath("auto.offset.reset"))
@@ -109,7 +96,6 @@ class AppConfiguration(resourceName: String) {
     KafkaConfiguration(new StreamsConfig(streamProps),
       consumerConfig.getString("topic"),
       producerConfig.getString("topic"),
-      producerTopicConfigMap,
       autoOffsetReset,
       kafka.getLong("close.timeout.ms"),
       aggregationWindowSec,
