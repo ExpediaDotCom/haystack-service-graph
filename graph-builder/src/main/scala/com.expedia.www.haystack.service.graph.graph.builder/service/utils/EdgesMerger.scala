@@ -29,8 +29,9 @@ object EdgesMerger {
     // get latest last seen for all edges in group to lastseen for a source destination pair
     groupedEdges.map(
       (group) => group._2
-        .reduce((e1, e2) => ServiceGraphEdge(group._1.source, group._1.destination,
-          EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen)))))
+        .reduce((e1, e2) => ServiceGraphEdge(group._1.source, group._1.destination,e1.infrastructureProvider, e1.tier
+          , EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen), e1.stats
+            .errorCount + e2.stats.errorCount))))
       .toList
   }
 
@@ -44,7 +45,8 @@ object EdgesMerger {
     groupedEdges.map(
       (group) => group._2
         .reduce((e1, e2) => OperationGraphEdge(group._1.source, group._1.destination, group._1.operation,
-          EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen)))))
+          EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen), e1.stats
+            .errorCount + e2.stats.errorCount))))
       .toList
   }
 

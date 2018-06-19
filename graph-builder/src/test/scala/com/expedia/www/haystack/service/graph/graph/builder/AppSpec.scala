@@ -65,7 +65,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
     service.start()
 
     //time for kstreams to initialize completely
-    Thread.sleep(10000)
+    Thread.sleep(20000)
   }
 
   describe("graph-builder application") {

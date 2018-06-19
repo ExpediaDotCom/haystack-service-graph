@@ -17,7 +17,8 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.app
 
-import com.expedia.open.tracing.Span
+import com.expedia.open.tracing.{Span, Tag}
+import com.expedia.www.haystack.commons.entities.TagKeys
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.node.finder.model.{BottomHeavyHeap, SpanPair, WeighableSpan}
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
@@ -62,13 +63,24 @@ class SpanAccumulator(accumulatorInterval: Int) extends Processor[String, Span] 
         span.getStartTime / 1000,
         span.getServiceName,
         span.getOperationName,
-        span.getDuration, spanType)
+        span.getDuration, spanType, collectTagsForServiceGraph(span.getTagsList))
 
       //add it to the weighted queue
       weightedQueue.enqueue(weighableSpan)
 
       aggregateMeter.mark()
     }
+  }
+
+  private def collectTagsForServiceGraph(spanTags: java.util.List[Tag]) = {
+    val tags = mutable.Map[String, String]()
+    spanTags.forEach(tag => {
+      if (List(TagKeys.TIER, TagKeys.INFRASTRUCTURE_PROVIDER).contains(tag.getKey))
+        tags += (tag.getKey -> tag.getVStr)
+      else if (TagKeys.ERROR_KEY == tag.getKey)
+        tags += (tag.getKey -> tag.getVBool.toString)
+    })
+    tags.toMap
   }
 
   override def punctuate(timestamp: Long): Unit = {}

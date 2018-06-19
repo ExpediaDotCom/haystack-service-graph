@@ -20,6 +20,7 @@ package com.expedia.www.haystack.service.graph.graph.builder.stream
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 
+import com.expedia.www.haystack.commons.entities.{GraphEdge, TagKeys}
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerde
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.KafkaConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, EdgeStatsSerde}
@@ -37,6 +38,16 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
   }
 
   private def initialize(builder: StreamsBuilder): Topology = {
+
+    val initializer: Initializer[EdgeStats] = () => new EdgeStats(0, 0, 0)
+
+    val aggregator: Aggregator[GraphEdge, GraphEdge, EdgeStats] =
+          (k: GraphEdge, v: GraphEdge, va: EdgeStats) => {
+            if (v.edgeProperties.get(TagKeys.ERROR_KEY) == "true" )
+              new EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount + 1)
+            else
+              new EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount)
+          }
 
     builder
       //
@@ -60,23 +71,20 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
       )
       //
       // create tumbling windows for edges
-      .windowedBy(tumblingWindow())
-      //
+      .windowedBy(tumblingWindow()).aggregate(initializer,
       // calculate stats for edges
       // keep the resulting ktable as materialized view in memory
       // enabled logging to persist ktable changelog topic and replicated to multiple brokers
-      .aggregate(
-        () => EdgeStats(0, 0),
-        (_, _, aggregate: EdgeStats) => EdgeStats(aggregate.count + 1, System.currentTimeMillis()),
-        Materialized
-          .as(kafkaConfiguration.producerTopic)
-          .withKeySerde(new GraphEdgeSerde)
-          .withValueSerde(new EdgeStatsSerde)
-          .withCachingEnabled()
-          .withLoggingEnabled(kafkaConfiguration.producerTopicConfig)
-      )
+      aggregator, Materialized.as(kafkaConfiguration
+        .producerTopic)
+        .withKeySerde(new GraphEdgeSerde)
+        .withValueSerde(new EdgeStatsSerde)
+        .withCachingEnabled()
+        .withLoggingEnabled(kafkaConfiguration.producerTopicConfig))
+      //
 
     // build stream topology and return
     builder.build()
   }
+
 }

@@ -21,6 +21,7 @@ import java.util.UUID
 
 import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.commons.entities.{GraphEdge, MetricPoint, MetricType, TagKeys}
+import scala.collection.JavaConverters._
 
 class SpanPairSpec extends TestSpec {
   describe("an incomplete SpanPair") {
@@ -88,7 +89,9 @@ class SpanPairSpec extends TestSpec {
       val graphEdge = spanPair.getGraphEdge
       Then("it should return a valid graphEdge")
       spanPair.isComplete should be(true)
-      graphEdge.get should be(GraphEdge("foo-service", "baz-service", "bar"))
+      graphEdge.get should be(GraphEdge("foo-service", "baz-service", "bar",
+        Map(TagKeys.INFRASTRUCTURE_PROVIDER -> "Unknown", TagKeys.TIER -> "Unknown", TagKeys.ERROR_KEY -> "false")
+          .asJava))
     }
     it("should return valid metricPoints") {
       Given("a complete spanlite")

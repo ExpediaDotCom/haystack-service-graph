@@ -29,7 +29,8 @@ import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
 trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar {
 
   def newWeighableSpan(span: Span, spanType: SpanType) : WeighableSpan = {
-    WeighableSpan(span.getSpanId, span.getStartTime / 1000, span.getServiceName, span.getOperationName, span.getDuration, spanType)
+    WeighableSpan(span.getSpanId, span.getStartTime / 1000, span.getServiceName, span.getOperationName, span
+      .getDuration, spanType, Map())
   }
 
   def newSpan(serviceName: String, operation: String, duration: Long, client: Boolean, server: Boolean): (Span, SpanType) = {

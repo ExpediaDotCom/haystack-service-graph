@@ -23,4 +23,6 @@ package com.expedia.www.haystack.service.graph.graph.builder.model
   */
 case class ServiceGraph(edges: List[ServiceGraphEdge]) {
   require(edges != null)
+
+
 }
