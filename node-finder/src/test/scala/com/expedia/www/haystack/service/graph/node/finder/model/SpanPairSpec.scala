@@ -80,7 +80,7 @@ class SpanPairSpec extends TestSpec {
     it("should return a valid graphEdge") {
       Given("a complete spanlite")
       val spanId = UUID.randomUUID().toString
-      val spanPair = new SpanPair(spanId)
+      val spanPair = new SpanPair(spanId, Map("error" -> "false").asJava)
       val (clientSpan, clientSpanType) = newSpan(spanId, "foo-service", "bar", 1000, client = true, server = false)
       val (serverSpan, serverSpanType) = newSpan(spanId, "baz-service", "bar", 1000, client = false, server = true)
       spanPair.merge(newWeighableSpan(clientSpan, clientSpanType))
@@ -90,8 +90,7 @@ class SpanPairSpec extends TestSpec {
       Then("it should return a valid graphEdge")
       spanPair.isComplete should be(true)
       graphEdge.get should be(GraphEdge("foo-service", "baz-service", "bar",
-        Map(TagKeys.INFRASTRUCTURE_PROVIDER -> "Unknown", TagKeys.TIER -> "Unknown", TagKeys.ERROR_KEY -> "false")
-          .asJava))
+        Map(TagKeys.ERROR_KEY -> "false").asJava))
     }
     it("should return valid metricPoints") {
       Given("a complete spanlite")
