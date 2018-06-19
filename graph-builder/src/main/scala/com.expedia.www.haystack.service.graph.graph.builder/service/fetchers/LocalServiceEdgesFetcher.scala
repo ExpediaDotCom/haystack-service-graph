@@ -17,7 +17,7 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.fetchers
 
-import com.expedia.www.haystack.commons.entities.{GraphEdge, TagKeys}
+import com.expedia.www.haystack.commons.entities.GraphEdge
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, ServiceGraphEdge}
 import com.expedia.www.haystack.service.graph.graph.builder.service.utils.EdgesMerger._
 import org.apache.kafka.streams.kstream.Windowed
@@ -37,8 +37,8 @@ class LocalServiceEdgesFetcher(streams: KafkaStreams, storeName: String) {
 
     val serviceGraphEdges =
       for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
-          yield ServiceGraphEdge(kv.key.key.source, kv.key.key.destination, kv.key.key.edgeProperties.get(TagKeys.INFRASTRUCTURE_PROVIDER),
-            kv.key.key.edgeProperties.get(TagKeys.TIER),  kv.value)
+          yield ServiceGraphEdge(kv.key.key.source, kv.key.key.destination, kv.key.key.tags.asScala.toMap
+            ,  kv.value)
 
     getMergedServiceEdges(serviceGraphEdges.toList)
   }

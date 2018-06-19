@@ -17,8 +17,8 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.app
 
-import com.expedia.open.tracing.{Span, Tag}
-import com.expedia.www.haystack.commons.entities.TagKeys
+import com.expedia.open.tracing.Span
+import com.expedia.www.haystack.commons.entities.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.node.finder.model.{BottomHeavyHeap, SpanPair, WeighableSpan}
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
@@ -28,11 +28,17 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class SpanAccumulatorSupplier(accumulatorInterval: Int) extends ProcessorSupplier[String, Span] {
-  override def get(): Processor[String, Span] = new SpanAccumulator(accumulatorInterval)
+class SpanAccumulatorSupplier(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector = new
+    GraphEdgeTagCollector(Set())) extends
+  ProcessorSupplier[String, Span] {
+  override def get(): Processor[String, Span] = new SpanAccumulator(accumulatorInterval, tagCollector)
 }
 
-class SpanAccumulator(accumulatorInterval: Int) extends Processor[String, Span] with MetricsSupport {
+class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector = new GraphEdgeTagCollector(Set()))
+  extends
+  Processor[String, Span]
+with
+  MetricsSupport {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[SpanAccumulator])
   private val processMeter = metricRegistry.meter("span.accumulator.process")
@@ -63,24 +69,13 @@ class SpanAccumulator(accumulatorInterval: Int) extends Processor[String, Span] 
         span.getStartTime / 1000,
         span.getServiceName,
         span.getOperationName,
-        span.getDuration, spanType, collectTagsForServiceGraph(span.getTagsList))
+        span.getDuration, spanType, tagCollector.collectTags(span))
 
       //add it to the weighted queue
       weightedQueue.enqueue(weighableSpan)
 
       aggregateMeter.mark()
     }
-  }
-
-  private def collectTagsForServiceGraph(spanTags: java.util.List[Tag]) = {
-    val tags = mutable.Map[String, String]()
-    spanTags.forEach(tag => {
-      if (List(TagKeys.TIER, TagKeys.INFRASTRUCTURE_PROVIDER).contains(tag.getKey))
-        tags += (tag.getKey -> tag.getVStr)
-      else if (TagKeys.ERROR_KEY == tag.getKey)
-        tags += (tag.getKey -> tag.getVBool.toString)
-    })
-    tags.toMap
   }
 
   override def punctuate(timestamp: Long): Unit = {}
