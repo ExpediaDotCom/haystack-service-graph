@@ -34,6 +34,7 @@ import org.apache.kafka.streams.processor.TimestampExtractor
   * @param timestampExtractor instance of timestamp extractor
   * @param accumulatorInterval interval to aggregate spans to look for client and server spans
   * @param closeTimeoutInMs time for closing a kafka topic
+  * @param collectorTags Tags to be collected when generating graph edges
   */
 case class KafkaConfiguration(streamsConfig: StreamsConfig,
                               metricsTopic: String,
@@ -43,7 +44,8 @@ case class KafkaConfiguration(streamsConfig: StreamsConfig,
                               autoOffsetReset: AutoOffsetReset,
                               timestampExtractor: TimestampExtractor,
                               accumulatorInterval: Int,
-                              closeTimeoutInMs: Long) {
+                              closeTimeoutInMs: Long,
+                              collectorTags: List[String]) {
   require(streamsConfig != null)
   require(StringUtils.isNotBlank(metricsTopic))
   require(StringUtils.isNotBlank(serviceCallTopic))
@@ -51,4 +53,5 @@ case class KafkaConfiguration(streamsConfig: StreamsConfig,
   require(autoOffsetReset != null)
   require(timestampExtractor != null)
   require(closeTimeoutInMs > 0)
+  require(collectorTags != null)
 }
