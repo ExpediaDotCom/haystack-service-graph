@@ -36,13 +36,17 @@ import scala.util.Try
   * Optionally this class can check the presence of consuming topic
   *
   * @param topologySupplier A supplier that creates and returns a Kafka Stream Topology
+  * @param healthController health controller
   * @param streamsConfig    Configuration instance for KafkaStreams
   * @param consumerTopic    Optional consuming topic name
   */
-class StreamSupplier(topologySupplier: Supplier[Topology], healthStatusController: HealthStatusController, streamsConfig: StreamsConfig, consumerTopic: String) extends Supplier[KafkaStreams] {
+class StreamSupplier(topologySupplier: Supplier[Topology],
+                     healthController: HealthStatusController,
+                     streamsConfig: StreamsConfig,
+                     consumerTopic: String) extends Supplier[KafkaStreams] {
 
   require(topologySupplier != null, "streamsBuilder is required")
-  require(healthStatusController != null, "healthStatusController is required")
+  require(healthController != null, "healthStatusController is required")
   require(streamsConfig != null, "streamsConfig is required")
   require(consumerTopic != null && !consumerTopic.isEmpty, "consumerTopic is required")
 
@@ -56,7 +60,7 @@ class StreamSupplier(topologySupplier: Supplier[Topology], healthStatusControlle
   override def get(): KafkaStreams = {
     checkConsumerTopic()
 
-    val listener = new StateChangeListener(healthStatusController)
+    val listener = new StateChangeListener(healthController)
     val streams = new KafkaStreams(topologySupplier.get(), streamsConfig)
     streams.setStateListener(listener)
     streams.setUncaughtExceptionHandler(listener)

@@ -79,8 +79,7 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
         .producerTopic)
         .withKeySerde(new GraphEdgeSerde)
         .withValueSerde(new EdgeStatsSerde)
-        .withCachingEnabled()
-        .withLoggingEnabled(kafkaConfiguration.producerTopicConfig))
+        .withCachingEnabled())
 
     // build stream topology and return
     builder.build()
