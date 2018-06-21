@@ -18,7 +18,7 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.open.tracing.Span
-import com.expedia.www.haystack.commons.entities.GraphEdgeTagCollector
+import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.node.finder.model.{BottomHeavyHeap, SpanPair, WeighableSpan}
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}

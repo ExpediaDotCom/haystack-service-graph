@@ -93,7 +93,9 @@ class AppConfiguration(resourceName: String) {
     //set timestamp extractor
     props.setProperty("timestamp.extractor", timestampExtractor.getClass.getName)
 
-    val collectorTags = kafka.getStringList("collectorTags").asScala.toList
+    val collectorTags: List[String] = if (kafka.hasPath("collectorTags")) kafka.getStringList("collectorTags").asScala
+      .toList
+    else List()
 
     KafkaConfiguration(new StreamsConfig(props),
       producerConfig.getString("metrics.topic"),

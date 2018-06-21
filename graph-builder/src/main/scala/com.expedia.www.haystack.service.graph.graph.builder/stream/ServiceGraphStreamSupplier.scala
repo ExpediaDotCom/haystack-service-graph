@@ -39,15 +39,15 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
 
   private def initialize(builder: StreamsBuilder): Topology = {
 
-    val initializer: Initializer[EdgeStats] = () => new EdgeStats(0, 0, 0)
+    val initializer: Initializer[EdgeStats] = () => EdgeStats(0, 0, 0)
 
     val aggregator: Aggregator[GraphEdge, GraphEdge, EdgeStats] =
-          (k: GraphEdge, v: GraphEdge, va: EdgeStats) => {
-            if (v.tags.getOrDefault(TagKeys.ERROR_KEY, "false").eq("true"))
-              new EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount + 1)
-            else
-              new EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount)
-          }
+      (k: GraphEdge, v: GraphEdge, va: EdgeStats) => {
+        if (v.source.tags.getOrDefault(TagKeys.ERROR_KEY, "false") == "true")
+            EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount + 1)
+        else
+            EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount)
+      }
 
     builder
       //

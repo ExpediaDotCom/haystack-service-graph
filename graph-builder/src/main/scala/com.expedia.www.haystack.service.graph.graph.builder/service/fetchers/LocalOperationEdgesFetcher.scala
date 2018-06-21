@@ -33,7 +33,7 @@ class LocalOperationEdgesFetcher(streams: KafkaStreams, storeName: String) {
     val iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = store.fetchAll(from, to)
 
     val edges = for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
-      yield OperationGraphEdge(kv.key.key.source, kv.key.key.destination, kv.key.key.operation, kv.value)
+      yield OperationGraphEdge(kv.key.key.source.name, kv.key.key.destination.name, kv.key.key.operation, kv.value)
 
     edges.toList
   }

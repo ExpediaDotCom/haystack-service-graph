@@ -20,7 +20,7 @@ package com.expedia.www.haystack.service.graph.graph.builder
 
 import java.util.Properties
 
-import com.expedia.www.haystack.commons.entities.GraphEdge
+import com.expedia.www.haystack.commons.entities.{GraphEdge, GraphVertex}
 import com.expedia.www.haystack.commons.health.HealthStatusController
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
 import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfiguration
@@ -92,7 +92,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       stream.store(appConfig.kafkaConfig.producerTopic, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
       val storeIterator = store.all()
-      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key == GraphEdge(source, destination, operation))
+      val filteredEdges = storeIterator.asScala.toList.filter(
+        edge => edge.key.key == GraphEdge(GraphVertex(source), GraphVertex(destination), operation))
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(1)
@@ -120,7 +121,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
         stream.store(appConfig.kafkaConfig.producerTopic, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
       val storeIterator = store.all()
-      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key == GraphEdge(source, destination, operation))
+      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key ==
+        GraphEdge(GraphVertex(source), GraphVertex(destination), operation))
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(3)
@@ -151,7 +153,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
       val serviceGraph = Serialization.read[ServiceGraph](edgeJson)
       val filteredEdges = serviceGraph.edges.filter(
-        edge => edge.source == source && edge.destination == destination)
+        edge => edge.source.name == source && edge.destination.name == destination)
 
       filteredEdges.length should be(1)
     }
@@ -223,7 +225,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
   }
 
   private def sendRecord(producer: KafkaProducer[GraphEdge, GraphEdge], source: String, destination: String, operation: String): Unit = {
-    val edge = GraphEdge(source, destination, operation)
+    val edge = GraphEdge(GraphVertex(source), GraphVertex(destination), operation)
     producer.send(new ProducerRecord[GraphEdge, GraphEdge](appConfig.kafkaConfig.consumerTopic, edge, edge))
   }
 }

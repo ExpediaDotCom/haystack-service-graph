@@ -41,8 +41,8 @@ class GraphNodeProducerSpec extends TestSpec {
       val edge = captured.getValue
       Then("it should produce a valid GraphNode object")
       verify(context)
-      edge.source should be("foo-service")
-      edge.destination should be("baz-service")
+      edge.source.name should be("foo-service")
+      edge.destination.name should be("baz-service")
       edge.operation should be("bar")
     }
     it("should emit no graph nodes for incomplete SpanLit") {

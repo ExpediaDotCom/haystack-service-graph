@@ -20,7 +20,8 @@ package com.expedia.www.haystack.service.graph.node.finder.model
 import java.util.UUID
 
 import com.expedia.www.haystack.TestSpec
-import com.expedia.www.haystack.commons.entities.{GraphEdge, MetricPoint, MetricType, TagKeys}
+import com.expedia.www.haystack.commons.entities._
+
 import scala.collection.JavaConverters._
 
 class SpanPairSpec extends TestSpec {
@@ -80,7 +81,7 @@ class SpanPairSpec extends TestSpec {
     it("should return a valid graphEdge") {
       Given("a complete spanlite")
       val spanId = UUID.randomUUID().toString
-      val spanPair = new SpanPair(spanId, Map("error" -> "false").asJava)
+      val spanPair = new SpanPair(spanId)
       val (clientSpan, clientSpanType) = newSpan(spanId, "foo-service", "bar", 1000, client = true, server = false)
       val (serverSpan, serverSpanType) = newSpan(spanId, "baz-service", "bar", 1000, client = false, server = true)
       spanPair.merge(newWeighableSpan(clientSpan, clientSpanType))
@@ -89,8 +90,7 @@ class SpanPairSpec extends TestSpec {
       val graphEdge = spanPair.getGraphEdge
       Then("it should return a valid graphEdge")
       spanPair.isComplete should be(true)
-      graphEdge.get should be(GraphEdge("foo-service", "baz-service", "bar",
-        Map(TagKeys.ERROR_KEY -> "false").asJava))
+      graphEdge.get should be(GraphEdge(GraphVertex("foo-service"), GraphVertex("baz-service"), "bar"))
     }
     it("should return valid metricPoints") {
       Given("a complete spanlite")

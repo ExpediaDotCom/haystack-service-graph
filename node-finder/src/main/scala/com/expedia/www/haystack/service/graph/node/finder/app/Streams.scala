@@ -19,7 +19,7 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 
 import java.util.function.Supplier
 
-import com.expedia.www.haystack.commons.entities.GraphEdgeTagCollector
+import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.kstreams.serde.SpanSerde
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
