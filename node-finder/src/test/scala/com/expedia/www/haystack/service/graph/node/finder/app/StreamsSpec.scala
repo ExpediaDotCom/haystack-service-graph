@@ -36,7 +36,7 @@ class StreamsSpec extends TestSpec {
       val kafkaConfig = KafkaConfiguration(streamsConfig,
         "metrics", new PeriodReplacementEncoder(), "service-call",
         "proto-spans", Topology.AutoOffsetReset.LATEST,
-        new SpanTimestampExtractor, 10000, 10000, List())
+        new SpanTimestampExtractor, 10000, 10000, List("tier"))
       val streams = new Streams(kafkaConfig)
       val topology = mock[Topology]
       When("initialize is invoked with a topology")

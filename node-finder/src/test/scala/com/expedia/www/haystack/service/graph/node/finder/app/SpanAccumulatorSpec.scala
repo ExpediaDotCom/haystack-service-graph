@@ -19,6 +19,8 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.TestSpec
+import com.expedia.www.haystack.commons.entities.TagKeys
+import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.service.graph.node.finder.model.SpanPair
 import org.apache.kafka.streams.processor.{Cancellable, ProcessorContext, PunctuationType, Punctuator}
 import org.easymock.EasyMock._
@@ -34,7 +36,7 @@ class SpanAccumulatorSpec extends TestSpec {
           .once()
       }
       replay(context)
-      val accumulator = new SpanAccumulator(1000)
+      val accumulator = new SpanAccumulator(1000, new GraphEdgeTagCollector())
       When("accumulator is initialized")
       accumulator.init(context)
       Then("it should schedule punctuation")
@@ -43,7 +45,7 @@ class SpanAccumulatorSpec extends TestSpec {
 
     it("should collect all Client or Server Spans provided for processing") {
       Given("an accumulator")
-      val accumulator = new SpanAccumulator(1000)
+      val accumulator = new SpanAccumulator(1000, new GraphEdgeTagCollector())
       When("10 server, 10 client and 10 other spans are processed")
       val producers = List[(Long, (Span) => Unit) => Unit](produceSimpleSpan,
         produceServerSpan, produceClientSpan)
@@ -54,7 +56,7 @@ class SpanAccumulatorSpec extends TestSpec {
 
     it("should emit SpanPair instances only for pairs of server and client spans") {
       Given("an accumulator and initialized with a processor context")
-      val accumulator = new SpanAccumulator(1000)
+      val accumulator = new SpanAccumulator(1000, new GraphEdgeTagCollector())
       val context = mock[ProcessorContext]
       expecting {
         context.schedule(anyLong(), isA(classOf[PunctuationType]), isA(classOf[Punctuator]))
@@ -79,7 +81,7 @@ class SpanAccumulatorSpec extends TestSpec {
   describe("span accumulator supplier") {
     it("should supply a valid accumulator") {
       Given("a supplier instance")
-      val supplier = new SpanAccumulatorSupplier(1000)
+      val supplier = new SpanAccumulatorSupplier(1000, new GraphEdgeTagCollector())
       When("an accumulator instance is request")
       val producer = supplier.get()
       Then("should yield a valid producer")

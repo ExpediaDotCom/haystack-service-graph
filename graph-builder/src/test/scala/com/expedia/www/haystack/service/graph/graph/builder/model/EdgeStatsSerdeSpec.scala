@@ -55,6 +55,7 @@ class EdgeStatsSerdeSpec extends TestSpec {
       deserializedEdgeStats should not be null
       deserializedEdgeStats.count should be(1)
       deserializedEdgeStats.lastSeen should be(1)
+      deserializedEdgeStats.errorCount should be(1)
     }
   }
 }

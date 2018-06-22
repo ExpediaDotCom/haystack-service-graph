@@ -28,17 +28,13 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class SpanAccumulatorSupplier(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector = new
-    GraphEdgeTagCollector(Set())) extends
+class SpanAccumulatorSupplier(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector) extends
   ProcessorSupplier[String, Span] {
   override def get(): Processor[String, Span] = new SpanAccumulator(accumulatorInterval, tagCollector)
 }
 
-class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector = new GraphEdgeTagCollector(Set()))
-  extends
-  Processor[String, Span]
-with
-  MetricsSupport {
+class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector)
+  extends Processor[String, Span] with MetricsSupport {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[SpanAccumulator])
   private val processMeter = metricRegistry.meter("span.accumulator.process")

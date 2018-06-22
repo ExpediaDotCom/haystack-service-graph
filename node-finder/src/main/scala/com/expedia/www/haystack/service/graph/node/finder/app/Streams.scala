@@ -132,7 +132,9 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
 
   private def addAccumulator(accumulatorName: String, topology: Topology, sourceName: String) : Unit = {
 
-    val tags = if (kafkaConfiguration.collectorTags != null) kafkaConfiguration.collectorTags.toSet[String] else
+    val tags = if (kafkaConfiguration.collectorTags != null)
+      kafkaConfiguration.collectorTags.toSet[String]
+    else
       Set[String]()
     topology.addProcessor(
       accumulatorName,
