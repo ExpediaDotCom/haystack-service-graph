@@ -44,8 +44,6 @@ object SpanUtils {
   private val TWELVE = FOUR | EIGHT
 
   private val SPAN_MARKERS = Map(
-    CLIENT -> Flag(TWO),
-    SERVER -> Flag(FOUR),
     CLIENT_SEND_EVENT -> Flag(ONE),
     CLIENT_RECV_EVENT -> Flag(TWO),
     SERVER_SEND_EVENT -> Flag(FOUR),
