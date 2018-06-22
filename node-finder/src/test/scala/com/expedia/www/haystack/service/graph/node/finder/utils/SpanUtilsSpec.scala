@@ -17,6 +17,7 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.utils
 
+import com.expedia.open.tracing.Tag
 import com.expedia.www.haystack.TestSpec
 
 class SpanUtilsSpec extends TestSpec {
@@ -44,6 +45,46 @@ class SpanUtilsSpec extends TestSpec {
       val spanType = SpanUtils.getSpanType(span)
       Then("it is marked as SERVER")
       spanType should be (SpanType.SERVER)
+    }
+
+    it("should return client when 'cr', 'cs', 'sr' and 'ss' are present but span.kind tag is present") {
+      Given("a span with no 'cr', cs', 'sr' and 'ss' event logs")
+      var (span, _) = newSpan("foo-service", "bar", 6000, client = false, server = false)
+      span = span.toBuilder.addTags(Tag.newBuilder().setKey("span.kind").setVStr("client")).build()
+      When("getSpanType is called")
+      val spanType = SpanUtils.getSpanType(span)
+      Then("it is marked as CLIENT")
+      spanType should be (SpanType.CLIENT)
+    }
+
+    it("should return server when 'cr', 'cs', 'sr' and 'ss' are present but span.kind tag is present") {
+      Given("a span with no 'cr', 'cs', 'sr' and 'ss' event logs")
+      var (span, _) = newSpan("foo-service", "bar", 6000, client = false, server = false)
+      span = span.toBuilder.addTags(Tag.newBuilder().setKey("span.kind").setVStr("server")).build()
+      When("getSpanType is called")
+      val spanType = SpanUtils.getSpanType(span)
+      Then("it is marked as SERVER")
+      spanType should be (SpanType.SERVER)
+    }
+
+    it("should return server when 'sr' and 'ss' are present and span.kind tag is also present") {
+      Given("a span with 'sr' and 'ss' event logs and span.kind tag as 'server'")
+      var (span, _) = newSpan("foo-service", "bar", 6000, client = false, server = true)
+      span = span.toBuilder.addTags(Tag.newBuilder().setKey("span.kind").setVStr("server")).build()
+      When("getSpanType is called")
+      val spanType = SpanUtils.getSpanType(span)
+      Then("it is marked as SERVER")
+      spanType should be (SpanType.SERVER)
+    }
+
+    it("should return client when 'cr' and 'cs' are present and span.kind tag is also present") {
+      Given("a span with 'cr' and 'cs' event logs and span.kind tag as 'client'")
+      var (span, _) = newSpan("foo-service", "bar", 6000, client = true, server = false)
+      span = span.toBuilder.addTags(Tag.newBuilder().setKey("span.kind").setVStr("client")).build()
+      When("getSpanType is called")
+      val spanType = SpanUtils.getSpanType(span)
+      Then("it is marked as CLIENT")
+      spanType should be (SpanType.CLIENT)
     }
   }
 
