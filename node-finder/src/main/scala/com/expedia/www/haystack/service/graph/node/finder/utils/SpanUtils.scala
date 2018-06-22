@@ -21,7 +21,7 @@ import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType.SpanType
 import org.apache.commons.lang3.StringUtils
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 /**
   * Object with utility methods to process a Span
@@ -32,18 +32,22 @@ object SpanUtils {
   val SERVER_RECV_EVENT = "sr"
   val CLIENT_SEND_EVENT = "cs"
   val CLIENT_RECV_EVENT = "cr"
+  val CLIENT = "client"
+  val SERVER = "server"
 
-  private val ONE = math.pow(2, 0).asInstanceOf[Int]
-  private val TWO = math.pow(2, 1).asInstanceOf[Int]
-  private val FOUR = math.pow(2, 2).asInstanceOf[Int]
-  private val EIGHT = math.pow(2, 3).asInstanceOf[Int]
+  private val ONE = 1
+  private val TWO = 1 << 1
+  private val FOUR = 1 << 2
+  private val EIGHT = 1 << 3
 
   private val THREE = ONE | TWO
   private val TWELVE = FOUR | EIGHT
 
   private val SPAN_MARKERS = Map(
-    CLIENT_SEND_EVENT -> Flag(ONE), CLIENT_RECV_EVENT -> Flag(TWO),
-    SERVER_SEND_EVENT -> Flag(FOUR), SERVER_RECV_EVENT -> Flag(EIGHT))
+    CLIENT_SEND_EVENT -> Flag(ONE),
+    CLIENT_RECV_EVENT -> Flag(TWO),
+    SERVER_SEND_EVENT -> Flag(FOUR),
+    SERVER_RECV_EVENT -> Flag(EIGHT))
 
   private val SPAN_TYPE_MAP = Map(Flag(THREE) -> SpanType.CLIENT, Flag(TWELVE) -> SpanType.SERVER)
 
@@ -68,13 +72,23 @@ object SpanUtils {
   def getSpanType(span: Span): SpanType = {
     var flag = Flag(0)
     span.getLogsList.forEach(log => {
-      log.getFieldsList.foreach(tag => {
+      log.getFieldsList.asScala.foreach(tag => {
         if (tag.getKey.equalsIgnoreCase("event") && StringUtils.isNotEmpty(tag.getVStr)) {
           flag = flag | SPAN_MARKERS.getOrElse(tag.getVStr.toLowerCase, Flag(0))
         }
       })
     })
-    SPAN_TYPE_MAP.getOrElse(flag, SpanType.OTHER)
+
+    // if event log tag is absent in the span object, decide the span type using `span.kind` tag key
+    // possible values for span.kind are `client` and `server`
+    // See <a href="https://github.com/opentracing/specification/blob/master/semantic_conventions.md">opentracing conventions</a>
+    SPAN_TYPE_MAP.getOrElse(flag, {
+      span.getTagsList.asScala.find(_.getKey == "span.kind").map(_.getVStr.toLowerCase) match {
+        case Some("client") => SpanType.CLIENT
+        case Some("server") => SpanType.SERVER
+        case _ => SpanType.OTHER
+      }
+    })
   }
 
   /**
@@ -85,8 +99,8 @@ object SpanUtils {
     * @return Some(Long) of the timestamp read or None
     */
   def getEventTimestamp(span: Span, eventValue: String): Option[Long] =
-    span.getLogsList.find(log => {
-      log.getFieldsList.exists(tag => {
+    span.getLogsList.asScala.find(log => {
+      log.getFieldsList.asScala.exists(tag => {
         tag.getKey.equalsIgnoreCase("event") && StringUtils.isNotEmpty(tag.getVStr) &&
           tag.getVStr.equalsIgnoreCase(eventValue)
       })
