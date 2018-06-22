@@ -17,20 +17,21 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.utils
 
-import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, OperationGraphEdge, ServiceGraphEdge}
+import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, OperationGraphEdge, ServiceGraphEdge, ServiceGraphVertex}
 
 object EdgesMerger {
   def getMergedServiceEdges(serviceGraphEdges: List[ServiceGraphEdge]): List[ServiceGraphEdge] = {
     // group by source and destination service
-    val groupedEdges = serviceGraphEdges.groupBy((edge) => ServicePair(edge.source, edge.destination))
+    val groupedEdges = serviceGraphEdges.groupBy((edge) => ServicePair(edge.source.name, edge.destination.name))
 
     // go through edges grouped by source and destination
     // add counts for all edges in group to get total count for a source destination pair
     // get latest last seen for all edges in group to lastseen for a source destination pair
     groupedEdges.map(
-      (group) => group._2
-        .reduce((e1, e2) => ServiceGraphEdge(group._1.source, group._1.destination,
-          EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen)))))
+      (group) => group._2.reduce((e1, e2) => ServiceGraphEdge(ServiceGraphVertex(group._1.source, e1.source.tags),
+        ServiceGraphVertex(group._1.destination, e2.destination.tags),
+        EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen), e1.stats
+          .errorCount + e2.stats.errorCount))))
       .toList
   }
 
@@ -44,7 +45,8 @@ object EdgesMerger {
     groupedEdges.map(
       (group) => group._2
         .reduce((e1, e2) => OperationGraphEdge(group._1.source, group._1.destination, group._1.operation,
-          EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen)))))
+          EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen), e1.stats
+            .errorCount + e2.stats.errorCount))))
       .toList
   }
 

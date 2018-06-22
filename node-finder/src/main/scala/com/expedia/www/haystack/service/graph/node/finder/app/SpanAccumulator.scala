@@ -18,6 +18,7 @@
 package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.open.tracing.Span
+import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.node.finder.model.{BottomHeavyHeap, SpanPair, WeighableSpan}
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
@@ -27,11 +28,13 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class SpanAccumulatorSupplier(accumulatorInterval: Int) extends ProcessorSupplier[String, Span] {
-  override def get(): Processor[String, Span] = new SpanAccumulator(accumulatorInterval)
+class SpanAccumulatorSupplier(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector) extends
+  ProcessorSupplier[String, Span] {
+  override def get(): Processor[String, Span] = new SpanAccumulator(accumulatorInterval, tagCollector)
 }
 
-class SpanAccumulator(accumulatorInterval: Int) extends Processor[String, Span] with MetricsSupport {
+class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector)
+  extends Processor[String, Span] with MetricsSupport {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[SpanAccumulator])
   private val processMeter = metricRegistry.meter("span.accumulator.process")
@@ -62,7 +65,7 @@ class SpanAccumulator(accumulatorInterval: Int) extends Processor[String, Span] 
         span.getStartTime / 1000,
         span.getServiceName,
         span.getOperationName,
-        span.getDuration, spanType)
+        span.getDuration, spanType, tagCollector.collectTags(span))
 
       //add it to the weighted queue
       weightedQueue.enqueue(weighableSpan)

@@ -19,6 +19,7 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 
 import java.util.function.Supplier
 
+import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.kstreams.serde.SpanSerde
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
@@ -130,9 +131,14 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
   }
 
   private def addAccumulator(accumulatorName: String, topology: Topology, sourceName: String) : Unit = {
+
+    val tags = if (kafkaConfiguration.collectorTags != null)
+      kafkaConfiguration.collectorTags.toSet[String]
+    else
+      Set[String]()
     topology.addProcessor(
       accumulatorName,
-      new SpanAccumulatorSupplier(kafkaConfiguration.accumulatorInterval),
+      new SpanAccumulatorSupplier(kafkaConfiguration.accumulatorInterval, new GraphEdgeTagCollector(tags)),
       sourceName
     )
   }

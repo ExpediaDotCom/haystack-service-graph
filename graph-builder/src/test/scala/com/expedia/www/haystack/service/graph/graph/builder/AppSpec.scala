@@ -20,7 +20,7 @@ package com.expedia.www.haystack.service.graph.graph.builder
 
 import java.util.Properties
 
-import com.expedia.www.haystack.commons.entities.GraphEdge
+import com.expedia.www.haystack.commons.entities.{GraphEdge, GraphVertex}
 import com.expedia.www.haystack.commons.health.HealthStatusController
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
 import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfiguration
@@ -30,7 +30,7 @@ import com.expedia.www.haystack.service.graph.graph.builder.service.HttpService
 import org.apache.http.client.fluent.Request
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.streams.KafkaStreams
-import org.apache.kafka.streams.state.{QueryableStoreTypes, ReadOnlyKeyValueStore, ReadOnlyWindowStore}
+import org.apache.kafka.streams.state.{QueryableStoreTypes, ReadOnlyWindowStore}
 import org.expedia.www.haystack.commons.scalatest.IntegrationSuite
 import org.json4s.DefaultFormats
 import org.json4s.jackson.Serialization
@@ -65,7 +65,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
     service.start()
 
     //time for kstreams to initialize completely
-    Thread.sleep(10000)
+    Thread.sleep(20000)
   }
 
   describe("graph-builder application") {
@@ -92,7 +92,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       stream.store(appConfig.kafkaConfig.producerTopic, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
       val storeIterator = store.all()
-      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key == GraphEdge(source, destination, operation))
+      val filteredEdges = storeIterator.asScala.toList.filter(
+        edge => edge.key.key == GraphEdge(GraphVertex(source), GraphVertex(destination), operation))
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(1)
@@ -120,7 +121,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
         stream.store(appConfig.kafkaConfig.producerTopic, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
       val storeIterator = store.all()
-      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key == GraphEdge(source, destination, operation))
+      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key ==
+        GraphEdge(GraphVertex(source), GraphVertex(destination), operation))
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(3)
@@ -140,7 +142,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       val destination = random.nextInt().toString
       val operation = random.nextString(4)
       //send sample data
-      produceRecord(producer, source, destination, operation)
+      produceRecord(producer, source, destination, operation, Map("tag1" -> "testtagval1"))
 
       Then("servicegraph endpoint should return the new edge")
       val edgeJson = Request
@@ -151,9 +153,11 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
       val serviceGraph = Serialization.read[ServiceGraph](edgeJson)
       val filteredEdges = serviceGraph.edges.filter(
-        edge => edge.source == source && edge.destination == destination)
+        edge => edge.source.name == source && edge.destination.name == destination)
 
       filteredEdges.length should be(1)
+      filteredEdges.head.source.tags.keys.size should be(1)
+      filteredEdges.head.source.tags.get("tag1") should be (Some("testtagval1"))
     }
 
     it("should make operationgraph queriable through http") {
@@ -206,8 +210,9 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
     new KafkaController(kafkaProperties, zkProperties)
   }
 
-  private def produceRecord(producer: KafkaProducer[GraphEdge, GraphEdge], source: String, destination: String, operation: String): Unit = {
-    sendRecord(producer, source, destination, operation)
+  private def produceRecord(producer: KafkaProducer[GraphEdge, GraphEdge], source: String, destination: String,
+                            operation: String, sourceEdgetags: Map[String, String] = Map()): Unit = {
+    sendRecord(producer, source, destination, operation, sourceEdgetags)
 
     // flush and sleep for couple of seconds for streams to process
     producer.flush()
@@ -222,8 +227,9 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
     Thread.sleep(2000)
   }
 
-  private def sendRecord(producer: KafkaProducer[GraphEdge, GraphEdge], source: String, destination: String, operation: String): Unit = {
-    val edge = GraphEdge(source, destination, operation)
+  private def sendRecord(producer: KafkaProducer[GraphEdge, GraphEdge], source: String, destination: String,
+                         operation: String, sourceEdgeTags: Map[String, String] = Map()): Unit = {
+    val edge = GraphEdge(GraphVertex(source, sourceEdgeTags.asJava), GraphVertex(destination), operation)
     producer.send(new ProducerRecord[GraphEdge, GraphEdge](appConfig.kafkaConfig.consumerTopic, edge, edge))
   }
 }

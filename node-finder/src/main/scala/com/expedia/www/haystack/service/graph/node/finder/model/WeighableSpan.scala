@@ -19,7 +19,7 @@ case class WeighableSpan(spanId: String,
                          serviceName: String,
                          operationName: String,
                          duration: Long,
-                         spanType: SpanType) extends Weighable {
+                         spanType: SpanType, tags: Map[String, String]) extends Weighable {
   require(StringUtils.isNotBlank(spanId))
   require(time > 0)
   require(StringUtils.isNotBlank(serviceName))

@@ -17,9 +17,11 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.model
 
-import com.expedia.www.haystack.commons.entities.{GraphEdge, MetricPoint, MetricType, TagKeys}
+import com.expedia.www.haystack.commons.entities._
 import com.expedia.www.haystack.service.graph.node.finder.utils.{Flag, SpanType}
 import org.slf4j.LoggerFactory
+
+import scala.collection.JavaConverters._
 
 /**
   * An instance of SpanPair can contain data from both server and client spans.
@@ -79,7 +81,9 @@ class SpanPair(val spanId: String) {
     */
   def getGraphEdge: Option[GraphEdge] = {
     if (isComplete) {
-      Some(GraphEdge(clientSpan.serviceName, serverSpan.serviceName, clientSpan.operationName))
+      val clientVertex = GraphVertex(clientSpan.serviceName, clientSpan.tags.asJava)
+      val serverVertex = GraphVertex(serverSpan.serviceName, serverSpan.tags.asJava)
+      Some(GraphEdge(clientVertex, serverVertex, clientSpan.operationName))
     } else {
       None
     }

@@ -17,16 +17,16 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.model
 
-import org.apache.commons.lang3.StringUtils
-
 /**
   * A graph edge representing relationship between two services over an operation
   * @param source source service
   * @param destination destination service
   * @param stats stats around the edge
   */
-case class ServiceGraphEdge(source: String, destination: String, stats: EdgeStats)  {
-  require(StringUtils.isNotEmpty(source))
-  require(StringUtils.isNotEmpty(destination))
+case class ServiceGraphEdge(source: ServiceGraphVertex, destination: ServiceGraphVertex, stats: EdgeStats)  {
+  require(source != null)
+  require(destination != null)
   require(stats != null)
 }
+
+case class ServiceGraphVertex(name: String, tags: Map[String, String])

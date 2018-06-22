@@ -26,7 +26,7 @@ class GraphNodeProducerSpec extends TestSpec {
   describe("producing graph nodes") {
     it("should emit a valid graph node for a give complete SpanPair") {
       Given("a valid SpanPair instance")
-      val spanPair = validSpanPair()
+      val spanPair = validSpanPair(Map("testtag" -> "true"))
       val context = mock[ProcessorContext]
       val graphNodeProducer = new GraphNodeProducer
       val captured = newCapture[GraphEdge]()
@@ -41,9 +41,11 @@ class GraphNodeProducerSpec extends TestSpec {
       val edge = captured.getValue
       Then("it should produce a valid GraphNode object")
       verify(context)
-      edge.source should be("foo-service")
-      edge.destination should be("baz-service")
+      edge.source.name should be("foo-service")
+      edge.destination.name should be("baz-service")
       edge.operation should be("bar")
+      edge.source.tags.get("testtag") should be ("true")
+      edge.destination.tags.get("testtag") should be ("true")
     }
     it("should emit no graph nodes for incomplete SpanLit") {
       Given("an incomplete SpanPair instance")

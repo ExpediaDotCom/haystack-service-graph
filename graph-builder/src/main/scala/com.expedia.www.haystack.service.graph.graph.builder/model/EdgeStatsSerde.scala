@@ -44,7 +44,7 @@ class EdgeStatsSerializer extends Serializer[EdgeStats] {
 
 class EdgeStatsDeserializer extends Deserializer[EdgeStats] {
   override def deserialize(topic: String, data: Array[Byte]): EdgeStats = {
-    if(data == null) EdgeStats(0, 0)
+    if(data == null) EdgeStats(0, 0, 0)
     else new Gson().fromJson(new String(data), classOf[EdgeStats])
   }
 
