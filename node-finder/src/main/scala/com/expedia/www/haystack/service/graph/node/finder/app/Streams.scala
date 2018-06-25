@@ -19,6 +19,7 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 
 import java.util.function.Supplier
 
+import com.expedia.www.haystack.commons.entities.encoders.Encoder
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.kstreams.serde.SpanSerde
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
@@ -110,7 +111,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     addGraphNodeProducer(GRAPH_NODE_PRODUCER, topology, SPAN_ACCUMULATOR)
 
     //add sink for latency producer
-    addMetricSink(METRIC_SINK, kafkaConfiguration.metricsTopic, topology, LATENCY_PRODUCER)
+    addMetricSink(METRIC_SINK, kafkaConfiguration.metricsTopic,kafkaConfiguration.metricPointEncoder, topology, LATENCY_PRODUCER)
 
     //add sink for graph node producer
     addGraphNodeSink(GRAPH_NODE_SINK, kafkaConfiguration.serviceCallTopic, topology, GRAPH_NODE_PRODUCER)
@@ -159,13 +160,13 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     )
   }
 
-  private def addMetricSink(metricSinkName: String, metricsTopic: String, topology: Topology,
+  private def addMetricSink(metricSinkName: String, metricsTopic: String,metricPointEncoder:Encoder, topology: Topology,
                             latencyProducerName: String) : Unit = {
     topology.addSink(
       metricSinkName,
       metricsTopic,
       new StringSerializer,
-      new MetricPointSerializer,
+      new MetricPointSerializer(metricPointEncoder),
       latencyProducerName
     )
   }
