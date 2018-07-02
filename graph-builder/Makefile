@@ -11,4 +11,4 @@ docker-image: all
 	docker build -t $(DOCKER_IMAGE_NAME) -f build/docker/Dockerfile .
 
 release: docker-image
-	../.travis/publish-to-docker-hub.sh
+	../scripts/publish-to-docker-hub.sh
