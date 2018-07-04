@@ -140,6 +140,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       val source = random.nextInt().toString
       val destination = random.nextInt().toString
       val operation = random.nextString(4)
+
       //send sample data
       produceRecord(producer, source, destination, operation, Map("tag1" -> "testtagval1"))
 
@@ -155,8 +156,6 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
         edge => edge.source.name == source && edge.destination.name == destination)
 
       filteredEdges.length should be(1)
-      filteredEdges.head.source.tags.keys.size should be(1)
-      filteredEdges.head.source.tags.get("tag1") should be (Some("testtagval1"))
     }
 
     it("should make operationgraph queriable through http") {

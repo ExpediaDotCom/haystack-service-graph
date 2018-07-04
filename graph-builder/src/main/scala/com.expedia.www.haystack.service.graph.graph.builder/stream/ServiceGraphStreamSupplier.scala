@@ -43,10 +43,12 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
 
     val aggregator: Aggregator[GraphEdge, GraphEdge, EdgeStats] =
       (_: GraphEdge, v: GraphEdge, va: EdgeStats) => {
-        if (v.source.tags.getOrDefault(TagKeys.ERROR_KEY, "false") == "true")
-            EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount + 1)
-        else
-            EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount)
+        if (v.source.tags.getOrDefault(TagKeys.ERROR_KEY, "false") == "true") {
+          EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount + 1)
+        }
+        else {
+          EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount)
+        }
       }
 
     builder
