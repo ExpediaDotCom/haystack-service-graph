@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 
 import com.expedia.www.haystack.commons.entities.{GraphEdge, TagKeys}
-import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerde
+import com.expedia.www.haystack.commons.kstreams.serde.graph.{GraphEdgeKeySerde, GraphEdgeValueSerde}
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.KafkaConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, EdgeStatsSerde}
 import org.apache.kafka.streams.kstream._
@@ -42,11 +42,13 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
     val initializer: Initializer[EdgeStats] = () => EdgeStats(0, 0, 0)
 
     val aggregator: Aggregator[GraphEdge, GraphEdge, EdgeStats] =
-      (k: GraphEdge, v: GraphEdge, va: EdgeStats) => {
-        if (v.source.tags.getOrDefault(TagKeys.ERROR_KEY, "false") == "true")
-            EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount + 1)
-        else
-            EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount)
+      (_: GraphEdge, v: GraphEdge, va: EdgeStats) => {
+        if (v.source.tags.getOrDefault(TagKeys.ERROR_KEY, "false") == "true") {
+          EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount + 1)
+        }
+        else {
+          EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount)
+        }
       }
 
     builder
@@ -57,8 +59,8 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
       .stream(
         kafkaConfiguration.consumerTopic,
         Consumed.`with`(
-          new GraphEdgeSerde,
-          new GraphEdgeSerde,
+          new GraphEdgeKeySerde,
+          new GraphEdgeValueSerde,
           new WallclockTimestampExtractor,
           kafkaConfiguration.autoOffsetReset
         )
@@ -67,7 +69,7 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
       // group by key for doing aggregations on edges
       // this will not cause any repartition
       .groupByKey(
-        Serialized.`with`(new GraphEdgeSerde, new GraphEdgeSerde)
+        Serialized.`with`(new GraphEdgeKeySerde, new GraphEdgeValueSerde)
       )
       //
       // create tumbling windows for edges
@@ -77,7 +79,7 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
       // enabled logging to persist ktable changelog topic and replicated to multiple brokers
       aggregator, Materialized.as(kafkaConfiguration
         .producerTopic)
-        .withKeySerde(new GraphEdgeSerde)
+        .withKeySerde(new GraphEdgeKeySerde)
         .withValueSerde(new EdgeStatsSerde)
         .withCachingEnabled())
 
