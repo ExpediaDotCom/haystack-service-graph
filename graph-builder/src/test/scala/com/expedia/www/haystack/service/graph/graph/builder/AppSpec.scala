@@ -22,7 +22,7 @@ import java.util.Properties
 
 import com.expedia.www.haystack.commons.entities.{GraphEdge, GraphVertex}
 import com.expedia.www.haystack.commons.health.HealthStatusController
-import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
+import com.expedia.www.haystack.commons.kstreams.serde.graph.{GraphEdgeKeySerde, GraphEdgeValueSerde}
 import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.kafka.KafkaController
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, OperationGraph, ServiceGraph}
@@ -76,7 +76,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       //send test data to source topic
       val producer = kafkaController.createProducer(
         appConfig.kafkaConfig.consumerTopic,
-        classOf[GraphEdgeSerializer], classOf[GraphEdgeSerializer]
+        new GraphEdgeKeySerde().serializer(), new GraphEdgeValueSerde().serializer()
       )
 
       val random = new Random
@@ -106,8 +106,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       //send test data to source topic
       val producer = kafkaController.createProducer(
         appConfig.kafkaConfig.consumerTopic,
-        classOf[GraphEdgeSerializer], classOf[GraphEdgeSerializer]
-      )
+        new GraphEdgeKeySerde().serializer(), new GraphEdgeValueSerde().serializer())
+
       val random = new Random
       val source = random.nextString(4)
       val destination = random.nextString(4)
@@ -135,8 +135,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       //send test data to source topic
       val producer = kafkaController.createProducer(
         appConfig.kafkaConfig.consumerTopic,
-        classOf[GraphEdgeSerializer], classOf[GraphEdgeSerializer]
-      )
+        new GraphEdgeKeySerde().serializer(), new GraphEdgeValueSerde().serializer())
       val random = new Random
       val source = random.nextInt().toString
       val destination = random.nextInt().toString
@@ -167,8 +166,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       //send test data to source topic
       val producer = kafkaController.createProducer(
         appConfig.kafkaConfig.consumerTopic,
-        classOf[GraphEdgeSerializer], classOf[GraphEdgeSerializer]
-      )
+        new GraphEdgeKeySerde().serializer(), new GraphEdgeValueSerde().serializer())
       val random = new Random
       val source = random.nextInt().toString
       val destination = random.nextInt().toString
