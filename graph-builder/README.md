@@ -39,9 +39,6 @@ kafka {
   streams {
     bootstrap.servers = "localhost:9092"
   }
-  accumulator {
-      interval = 1000
-  }
 }
 ```
 * Build graph-builder application locally (graph-builder app root)

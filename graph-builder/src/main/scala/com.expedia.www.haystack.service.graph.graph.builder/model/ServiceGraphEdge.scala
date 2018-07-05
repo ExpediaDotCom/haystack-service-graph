@@ -17,16 +17,52 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.model
 
+import scala.collection.mutable
 /**
   * A graph edge representing relationship between two services over an operation
+  *
   * @param source source service
   * @param destination destination service
   * @param stats stats around the edge
   */
-case class ServiceGraphEdge(source: ServiceGraphVertex, destination: ServiceGraphVertex, stats: EdgeStats)  {
+case class ServiceGraphEdge(source: ServiceGraphVertex, destination: ServiceGraphVertex, stats: ServiceEdgeStats)  {
   require(source != null)
   require(destination != null)
   require(stats != null)
+
+  def mergeTags(first: Map[String, String], second: Map[String, String]): Map[String, String] = {
+    val merged = new mutable.HashMap[String, mutable.HashSet[String]]()
+
+    def merge(tags: Map[String, String]) {
+      tags.foreach {
+        case (key, value) =>
+          val valueSet = merged.getOrElseUpdate(key, new mutable.HashSet[String]())
+          valueSet.add(value)
+      }
+    }
+
+    merge(first)
+    merge(second)
+
+    merged.mapValues(_.mkString(",")).toMap
+  }
+
+  def +(other: ServiceGraphEdge): ServiceGraphEdge = {
+    val sourceVertex = this.source.copy(tags = mergeTags(other.source.tags, this.source.tags))
+    val destinationVertex = this.source.copy(tags = mergeTags(other.destination.tags, this.destination.tags))
+    ServiceGraphEdge(sourceVertex, destinationVertex, this.stats + other.stats)
+  }
 }
 
 case class ServiceGraphVertex(name: String, tags: Map[String, String] = Map())
+
+case class ServiceEdgeStats(count: Long,
+                            lastSeen: Long,
+                            errorCount: Long) {
+  def +(other: ServiceEdgeStats): ServiceEdgeStats = {
+    ServiceEdgeStats(
+      this.count + other.count,
+      Math.max(this.lastSeen, other.lastSeen),
+      this.errorCount + other.errorCount)
+  }
+}
