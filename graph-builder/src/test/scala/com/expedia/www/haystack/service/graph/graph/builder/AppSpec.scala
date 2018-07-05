@@ -156,6 +156,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
         edge => edge.source.name == source && edge.destination.name == destination)
 
       filteredEdges.length should be(1)
+      filteredEdges.head.source.tags.size should be(1)
+      filteredEdges.head.source.tags.get("tag1") should be (Some("testtagval1"))
     }
 
     it("should make operationgraph queriable through http") {

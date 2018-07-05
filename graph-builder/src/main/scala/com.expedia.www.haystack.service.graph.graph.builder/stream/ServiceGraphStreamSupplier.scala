@@ -20,7 +20,7 @@ package com.expedia.www.haystack.service.graph.graph.builder.stream
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 
-import com.expedia.www.haystack.commons.entities.{GraphEdge, TagKeys}
+import com.expedia.www.haystack.commons.entities.GraphEdge
 import com.expedia.www.haystack.commons.kstreams.serde.graph.{GraphEdgeKeySerde, GraphEdgeValueSerde}
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.KafkaConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, EdgeStatsSerde}
@@ -41,15 +41,9 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
 
     val initializer: Initializer[EdgeStats] = () => EdgeStats(0, 0, 0)
 
-    val aggregator: Aggregator[GraphEdge, GraphEdge, EdgeStats] =
-      (_: GraphEdge, v: GraphEdge, va: EdgeStats) => {
-        if (v.source.tags.getOrDefault(TagKeys.ERROR_KEY, "false") == "true") {
-          EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount + 1)
-        }
-        else {
-          EdgeStats(va.count + 1, System.currentTimeMillis(), va.errorCount)
-        }
-      }
+    val aggregator: Aggregator[GraphEdge, GraphEdge, EdgeStats] = {
+      (_: GraphEdge, v: GraphEdge, stats: EdgeStats) => stats.updateStatsForEdge(v)
+    }
 
     builder
       //
@@ -73,7 +67,8 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
       )
       //
       // create tumbling windows for edges
-      .windowedBy(tumblingWindow()).aggregate(initializer,
+      .windowedBy(tumblingWindow()).aggregate(
+      initializer,
       // calculate stats for edges
       // keep the resulting ktable as materialized view in memory
       // enabled logging to persist ktable changelog topic and replicated to multiple brokers
@@ -86,5 +81,4 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
     // build stream topology and return
     builder.build()
   }
-
 }
