@@ -84,11 +84,12 @@ class AppConfiguration(resourceName: String) {
 
     // offset reset for kstream
     val autoOffsetReset =
-      if (streamsConfig.hasPath("auto.offset.reset"))
+      if (streamsConfig.hasPath("auto.offset.reset")) {
         AutoOffsetReset.valueOf(streamsConfig.getString("auto.offset.reset").toUpperCase)
-      else
+      } else {
         AutoOffsetReset.LATEST
-
+      }
+    
     val aggregation = kafka.getConfig("aggregate")
     val aggregationWindowSec = aggregation.getInt("window.sec")
     val aggregationRetentionDays = aggregation.getInt("retention.days")

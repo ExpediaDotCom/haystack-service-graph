@@ -29,4 +29,4 @@ case class ServiceGraphEdge(source: ServiceGraphVertex, destination: ServiceGrap
   require(stats != null)
 }
 
-case class ServiceGraphVertex(name: String, tags: Map[String, String])
+case class ServiceGraphVertex(name: String, tags: Map[String, String] = Map())

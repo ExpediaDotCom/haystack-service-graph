@@ -22,7 +22,7 @@ import java.util.function.Supplier
 import com.expedia.www.haystack.commons.entities.encoders.Encoder
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.kstreams.serde.SpanSerde
-import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeSerializer
+import com.expedia.www.haystack.commons.kstreams.serde.graph.{GraphEdgeKeySerde, GraphEdgeValueSerde}
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
 import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
 import com.netflix.servo.util.VisibleForTesting
@@ -176,8 +176,8 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     topology.addSink(
       graphNodeSinkName,
       serviceCallTopic,
-      new GraphEdgeSerializer,
-      new GraphEdgeSerializer,
+      new GraphEdgeKeySerde().serializer(),
+      new GraphEdgeValueSerde().serializer(),
       graphNodeProducerName
     )
   }

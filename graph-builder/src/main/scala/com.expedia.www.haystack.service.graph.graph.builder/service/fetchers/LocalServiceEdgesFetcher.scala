@@ -31,8 +31,6 @@ class LocalServiceEdgesFetcher(streams: KafkaStreams, storeName: String) {
     streams.store(storeName, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
   def fetchEdges(from: Long, to: Long): List[ServiceGraphEdge] = {
-    println(from)
-    println(to)
     val iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = store.fetchAll(from, to)
 
     val serviceGraphEdges =
