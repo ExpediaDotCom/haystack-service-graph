@@ -33,9 +33,11 @@ case class EdgeStats(count: Long,
                      errorCount: Long,
                      sourceTags: java.util.Map[String, String] = new util.HashMap[String, String](),
                      destinationTags: java.util.Map[String, String] = new util.HashMap[String, String]()) {
-  def updateStatsForEdge(e: GraphEdge): EdgeStats = {
+  def update(e: GraphEdge): EdgeStats = {
     this.sourceTags.putAll(e.source.tags)
+    this.sourceTags.remove(TagKeys.ERROR_KEY)
     this.destinationTags.putAll(e.destination.tags)
+    this.destinationTags.remove(TagKeys.ERROR_KEY)
 
     val incrErrorCountBy = if (e.source.tags.getOrDefault(TagKeys.ERROR_KEY, "false") == "true") 1 else 0
     EdgeStats(

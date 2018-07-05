@@ -20,7 +20,7 @@ package com.expedia.www.haystack.service.graph.graph.builder
 
 import java.util.Properties
 
-import com.expedia.www.haystack.commons.entities.{GraphEdge, GraphVertex}
+import com.expedia.www.haystack.commons.entities.{GraphEdge, GraphVertex, TagKeys}
 import com.expedia.www.haystack.commons.health.HealthStatusController
 import com.expedia.www.haystack.commons.kstreams.serde.graph.{GraphEdgeKeySerde, GraphEdgeValueSerde}
 import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfiguration
@@ -142,7 +142,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       val operation = random.nextString(4)
 
       //send sample data
-      produceRecord(producer, source, destination, operation, Map("tag1" -> "testtagval1"))
+      produceRecord(producer, source, destination, operation, Map("tag1" -> "testtagval1", TagKeys.ERROR_KEY -> "true"))
 
       Then("servicegraph endpoint should return the new edge")
       val edgeJson = Request
@@ -156,6 +156,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
         edge => edge.source.name == source && edge.destination.name == destination)
 
       filteredEdges.length should be(1)
+      filteredEdges.head.stats.count shouldBe 1
+      filteredEdges.head.stats.errorCount shouldBe 1
       filteredEdges.head.source.tags.size should be(1)
       filteredEdges.head.source.tags.get("tag1") should be (Some("testtagval1"))
     }

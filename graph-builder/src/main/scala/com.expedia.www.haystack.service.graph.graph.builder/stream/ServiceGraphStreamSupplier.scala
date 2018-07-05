@@ -42,7 +42,7 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
     val initializer: Initializer[EdgeStats] = () => EdgeStats(0, 0, 0)
 
     val aggregator: Aggregator[GraphEdge, GraphEdge, EdgeStats] = {
-      (_: GraphEdge, v: GraphEdge, stats: EdgeStats) => stats.updateStatsForEdge(v)
+      (_: GraphEdge, v: GraphEdge, stats: EdgeStats) => stats.update(v)
     }
 
     builder
