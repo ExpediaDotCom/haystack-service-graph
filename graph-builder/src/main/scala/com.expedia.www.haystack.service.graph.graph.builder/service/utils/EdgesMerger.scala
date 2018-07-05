@@ -15,9 +15,10 @@
  *      limitations under the License.
  *
  */
+
 package com.expedia.www.haystack.service.graph.graph.builder.service.utils
 
-import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, OperationGraphEdge, ServiceGraphEdge, ServiceGraphVertex}
+import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, OperationGraphEdge, ServiceGraphEdge}
 
 object EdgesMerger {
   def getMergedServiceEdges(serviceGraphEdges: List[ServiceGraphEdge]): List[ServiceGraphEdge] = {
@@ -27,12 +28,9 @@ object EdgesMerger {
     // go through edges grouped by source and destination
     // add counts for all edges in group to get total count for a source destination pair
     // get latest last seen for all edges in group to lastseen for a source destination pair
-    groupedEdges.map(
-      (group) => group._2.reduce((e1, e2) => ServiceGraphEdge(ServiceGraphVertex(group._1.source, e1.source.tags),
-        ServiceGraphVertex(group._1.destination, e2.destination.tags),
-        EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen), e1.stats
-          .errorCount + e2.stats.errorCount))))
-      .toList
+    groupedEdges.map {
+      case (_, edge) => edge.reduce((e1, e2) => e1 + e2)
+    }.toList
   }
 
   def getMergedOperationEdge(operationGraphEdges: List[OperationGraphEdge]): List[OperationGraphEdge] = {

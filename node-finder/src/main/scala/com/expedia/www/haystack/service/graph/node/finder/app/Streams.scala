@@ -181,5 +181,4 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
       graphNodeProducerName
     )
   }
-
 }

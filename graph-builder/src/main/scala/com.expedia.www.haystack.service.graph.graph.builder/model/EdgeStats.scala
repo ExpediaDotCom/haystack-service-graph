@@ -17,6 +17,10 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.model
 
+import java.util
+
+import com.expedia.www.haystack.commons.entities.{GraphEdge, TagKeys}
+
 /**
   * Object to hold stats for graph edges
  *
@@ -24,4 +28,23 @@ package com.expedia.www.haystack.service.graph.graph.builder.model
   * @param lastSeen timestamp the edge was last seen, in ms
   * @param errorCount error rate for this specific operation
   */
-case class EdgeStats(count: Long, lastSeen: Long, errorCount: Long)
+case class EdgeStats(count: Long,
+                     lastSeen: Long,
+                     errorCount: Long,
+                     sourceTags: java.util.Map[String, String] = new util.HashMap[String, String](),
+                     destinationTags: java.util.Map[String, String] = new util.HashMap[String, String]()) {
+  def update(e: GraphEdge): EdgeStats = {
+    this.sourceTags.putAll(e.source.tags)
+    this.sourceTags.remove(TagKeys.ERROR_KEY)
+    this.destinationTags.putAll(e.destination.tags)
+    this.destinationTags.remove(TagKeys.ERROR_KEY)
+
+    val incrErrorCountBy = if (e.source.tags.getOrDefault(TagKeys.ERROR_KEY, "false") == "true") 1 else 0
+    EdgeStats(
+      count + 1,
+      System.currentTimeMillis(),
+      errorCount + incrErrorCountBy,
+      sourceTags,
+      destinationTags)
+  }
+}
