@@ -49,7 +49,7 @@ case class ServiceGraphEdge(source: ServiceGraphVertex, destination: ServiceGrap
 
   def +(other: ServiceGraphEdge): ServiceGraphEdge = {
     val sourceVertex = this.source.copy(tags = mergeTags(other.source.tags, this.source.tags))
-    val destinationVertex = this.source.copy(tags = mergeTags(other.destination.tags, this.destination.tags))
+    val destinationVertex = this.destination.copy(tags = mergeTags(other.destination.tags, this.destination.tags))
     ServiceGraphEdge(sourceVertex, destinationVertex, this.stats + other.stats)
   }
 }
