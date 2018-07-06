@@ -37,7 +37,7 @@ case class ServiceGraphEdge(source: ServiceGraphVertex, destination: ServiceGrap
       tags.foreach {
         case (key, value) =>
           val valueSet = merged.getOrElseUpdate(key, new mutable.HashSet[String]())
-          valueSet.add(value)
+          valueSet ++= value.split(",")
       }
     }
 
