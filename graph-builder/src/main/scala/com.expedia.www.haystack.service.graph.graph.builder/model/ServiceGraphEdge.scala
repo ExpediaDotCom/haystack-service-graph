@@ -57,7 +57,12 @@ case class ServiceGraphEdge(source: ServiceGraphVertex,
   def +(other: ServiceGraphEdge): ServiceGraphEdge = {
     val sourceVertex = this.source.copy(tags = mergeTags(other.source.tags, this.source.tags))
     val destinationVertex = this.destination.copy(tags = mergeTags(other.destination.tags, this.destination.tags))
-    ServiceGraphEdge(sourceVertex, destinationVertex, this.stats + other.stats, this.effectiveFrom, this.effectiveTo)
+    ServiceGraphEdge(
+      sourceVertex,
+      destinationVertex,
+      this.stats + other.stats,
+      Math.min(this.effectiveFrom, other.effectiveFrom),
+      Math.max(this.effectiveTo, other.effectiveTo))
   }
 }
 

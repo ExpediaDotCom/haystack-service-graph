@@ -94,6 +94,7 @@ class AppConfigurationSpec extends TestSpec {
       blockConfig.blockCacheSize() shouldBe 16777216l
       blockConfig.blockSize() shouldBe 16384l
       blockConfig.cacheIndexAndFilterBlocks() shouldBe true
+      rocksDbOptions.maxWriteBufferNumber() shouldBe 2
     }
   }
 }

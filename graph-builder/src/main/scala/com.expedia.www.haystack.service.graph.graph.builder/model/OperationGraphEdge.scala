@@ -24,8 +24,15 @@ import org.apache.commons.lang3.StringUtils
   * @param source source service
   * @param destination destination service
   * @param stats stats around the edge
+  * @param effectiveFrom start timestamp from which stats are collected
+  * @param effectiveTo end timestamp till which stats are collected
   */
-case class OperationGraphEdge(source: String, destination: String, operation: String, stats: EdgeStats)  {
+case class OperationGraphEdge(source: String,
+                              destination: String,
+                              operation: String,
+                              stats: EdgeStats,
+                              effectiveFrom: Long,
+                              effectiveTo: Long)  {
   require(StringUtils.isNotEmpty(source))
   require(StringUtils.isNotEmpty(destination))
   require(StringUtils.isNotEmpty(operation))

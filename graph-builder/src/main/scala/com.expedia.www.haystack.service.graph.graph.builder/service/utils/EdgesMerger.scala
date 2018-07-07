@@ -44,7 +44,7 @@ object EdgesMerger {
       (group) => group._2
         .reduce((e1, e2) => OperationGraphEdge(group._1.source, group._1.destination, group._1.operation,
           EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen), e1.stats
-            .errorCount + e2.stats.errorCount))))
+            .errorCount + e2.stats.errorCount), Math.min(e1.effectiveFrom, e2.effectiveFrom), Math.max(e1.effectiveTo, e2.effectiveTo))))
       .toList
   }
 
