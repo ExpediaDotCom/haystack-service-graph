@@ -19,6 +19,7 @@ package com.expedia.www.haystack.service.graph.graph.builder.service.fetchers
 
 import com.expedia.www.haystack.commons.entities.GraphEdge
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, OperationGraphEdge}
+import com.expedia.www.haystack.service.graph.graph.builder.service.utils.IOUtils
 import org.apache.kafka.streams.kstream.Windowed
 import org.apache.kafka.streams.state.{KeyValueIterator, QueryableStoreTypes, ReadOnlyWindowStore}
 import org.apache.kafka.streams.{KafkaStreams, KeyValue}
@@ -30,11 +31,14 @@ class LocalOperationEdgesFetcher(streams: KafkaStreams, storeName: String) {
     streams.store(storeName, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
   def fetchEdges(from: Long, to: Long): List[OperationGraphEdge] = {
-    val iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = store.fetchAll(from, to)
-
-    val edges = for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
-      yield OperationGraphEdge(kv.key.key.source.name, kv.key.key.destination.name, kv.key.key.operation, kv.value)
-
-    edges.toList
+    var iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = null
+    try {
+      iterator = store.fetchAll(from, to)
+      val edges = for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
+        yield OperationGraphEdge(kv.key.key.source.name, kv.key.key.destination.name, kv.key.key.operation, kv.value)
+      edges.toList
+    } finally {
+      IOUtils.closeSafely(iterator)
+    }
   }
 }
