@@ -34,16 +34,16 @@ class LocalServiceEdgesFetcher(streams: KafkaStreams, storeName: String) {
   def fetchEdges(from: Long, to: Long): List[ServiceGraphEdge] = {
     var iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = null
     try {
-      iterator = store.fetchAll(from, to)
+        iterator = store.fetchAll(from, to)
+        val serviceGraphEdges =
+          for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
+            yield ServiceGraphEdge(
+              ServiceGraphVertex(kv.key.key.source.name, kv.value.sourceTags.asScala.toMap),
+              ServiceGraphVertex(kv.key.key.destination.name, kv.value.destinationTags.asScala.toMap),
+              ServiceEdgeStats(kv.value.count, kv.value.lastSeen, kv.value.errorCount),
+             kv.key.window().start(), kv.key.window().end())
 
-      val serviceGraphEdges =
-        for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
-          yield ServiceGraphEdge(
-            ServiceGraphVertex(kv.key.key.source.name, kv.value.sourceTags.asScala.toMap),
-            ServiceGraphVertex(kv.key.key.destination.name, kv.value.destinationTags.asScala.toMap),
-            ServiceEdgeStats(kv.value.count, kv.value.lastSeen, kv.value.errorCount))
-
-      getMergedServiceEdges(serviceGraphEdges.toList)
+        getMergedServiceEdges(serviceGraphEdges.toList)
     } finally {
       IOUtils.closeSafely(iterator)
     }

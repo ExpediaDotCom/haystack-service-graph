@@ -28,17 +28,17 @@ class ServiceGraphEdgeSpec extends TestSpec {
       val serviceGraph1 = ServiceGraphEdge(
         ServiceGraphVertex("src", Map("X-HAYSTACK-INFRASTRUCTURE-PROVIDER" -> "aws")),
         ServiceGraphVertex("dest", Map("X-HAYSTACK-INFRASTRUCTURE-PROVIDER" -> "dc")),
-        ServiceEdgeStats(10, 15000, 3))
+        ServiceEdgeStats(10, 15000, 3), 0, 10000)
 
       val serviceGraph2 = ServiceGraphEdge(
         ServiceGraphVertex("src", Map("X-HAYSTACK-INFRASTRUCTURE-PROVIDER" -> "dc")),
         ServiceGraphVertex("dest", Map("X-HAYSTACK-INFRASTRUCTURE-PROVIDER" -> "dc")),
-        ServiceEdgeStats(15, 16000, 5))
+        ServiceEdgeStats(15, 16000, 5), 0, 10000)
 
       val serviceGraph3 = ServiceGraphEdge(
         ServiceGraphVertex("src", Map("X-HAYSTACK-INFRASTRUCTURE-PROVIDER" -> "aws")),
         ServiceGraphVertex("dest", Map("X-HAYSTACK-INFRASTRUCTURE-PROVIDER" -> "dc")),
-        ServiceEdgeStats(20, 17000, 8))
+        ServiceEdgeStats(20, 17000, 8), 0, 10000)
 
       When("Merging service graph objects")
       val serviceGraph4 = serviceGraph1 + serviceGraph2
