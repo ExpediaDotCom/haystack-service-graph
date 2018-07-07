@@ -20,6 +20,7 @@ package com.expedia.www.haystack.service.graph.graph.builder.service.fetchers
 import com.expedia.www.haystack.commons.entities.GraphEdge
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, ServiceEdgeStats, ServiceGraphEdge, ServiceGraphVertex}
 import com.expedia.www.haystack.service.graph.graph.builder.service.utils.EdgesMerger._
+import com.expedia.www.haystack.service.graph.graph.builder.service.utils.IOUtils
 import org.apache.kafka.streams.kstream.Windowed
 import org.apache.kafka.streams.state.{KeyValueIterator, QueryableStoreTypes, ReadOnlyWindowStore}
 import org.apache.kafka.streams.{KafkaStreams, KeyValue}
@@ -31,15 +32,20 @@ class LocalServiceEdgesFetcher(streams: KafkaStreams, storeName: String) {
     streams.store(storeName, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
   def fetchEdges(from: Long, to: Long): List[ServiceGraphEdge] = {
-    val iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = store.fetchAll(from, to)
+    var iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = null
+    try {
+      iterator = store.fetchAll(from, to)
 
-    val serviceGraphEdges =
-      for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
+      val serviceGraphEdges =
+        for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
           yield ServiceGraphEdge(
             ServiceGraphVertex(kv.key.key.source.name, kv.value.sourceTags.asScala.toMap),
             ServiceGraphVertex(kv.key.key.destination.name, kv.value.destinationTags.asScala.toMap),
             ServiceEdgeStats(kv.value.count, kv.value.lastSeen, kv.value.errorCount))
 
-    getMergedServiceEdges(serviceGraphEdges.toList)
+      getMergedServiceEdges(serviceGraphEdges.toList)
+    } finally {
+      IOUtils.closeSafely(iterator)
+    }
   }
 }

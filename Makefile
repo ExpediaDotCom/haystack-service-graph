@@ -1,4 +1,4 @@
-.PHONY: all clean build report-coverage build-node-finder build-graph-builder release
+.PHONY: all clean build report-coverage node-finder graph-builder release
 
 PWD := $(shell pwd)
 
@@ -8,16 +8,16 @@ clean:
 build: clean
 	mvn package
 
-build-node-finder:
+node-finder:
 	mvn verify -DfinalName=haystack-service-graph-node-finder -pl node-finder -am
 
-build-graph-builder:
+graph-builder:
 	mvn verify -DfinalName=haystack-service-graph-graph-builder -pl graph-builder -am
 
-all: clean build-node-finder build-graph-builder
+all: clean node-finder graph-builder
 
 # build all and release
-release: clean build-node-finder build-graph-builder
+release: clean node-finder graph-builder
 	cd node-finder && $(MAKE) release
 	cd graph-builder && $(MAKE) release
 	./.travis/deploy.sh
