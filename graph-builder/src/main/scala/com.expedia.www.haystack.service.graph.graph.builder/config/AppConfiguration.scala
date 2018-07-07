@@ -80,8 +80,10 @@ class AppConfiguration(resourceName: String) {
     streamProps.setProperty(StreamsConfig.APPLICATION_SERVER_CONFIG,
       s"${config.getString("service.host")}:${config.getInt("service.http.port")}")
 
-    CustomRocksDBConfig.setRocksDbConfig(kafka.getConfig("rocksdb"))
-    streamProps.put(StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS_CONFIG, classOf[CustomRocksDBConfig])
+    if (kafka.hasPath("rocksdb")) {
+      CustomRocksDBConfig.setRocksDbConfig(kafka.getConfig("rocksdb"))
+      streamProps.put(StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS_CONFIG, classOf[CustomRocksDBConfig])
+    }
 
     // validate props
     verifyRequiredProps(streamProps)
