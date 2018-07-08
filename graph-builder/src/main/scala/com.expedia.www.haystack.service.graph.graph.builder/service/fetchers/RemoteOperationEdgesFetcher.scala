@@ -17,6 +17,8 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.fetchers
 
+import java.util.concurrent.Executors
+
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceClientConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.{OperationGraph, OperationGraphEdge}
 import org.apache.http.client.fluent.Request
@@ -24,10 +26,17 @@ import org.apache.http.client.utils.URIBuilder
 import org.json4s.DefaultFormats
 import org.json4s.jackson.Serialization
 
-class RemoteOperationEdgesFetcher(clientConfig: ServiceClientConfiguration) {
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
+
+class RemoteOperationEdgesFetcher(clientConfig: ServiceClientConfiguration) extends AutoCloseable {
+
+  private val dispatcher = ExecutionContext.fromExecutorService(
+    Executors.newFixedThreadPool(Math.min(Runtime.getRuntime.availableProcessors(), 2)))
+
   implicit val formats = DefaultFormats
 
-  def fetchEdges(host: String, port: Int): List[OperationGraphEdge] = {
+  def fetchEdges(host: String, port: Int): Future[Seq[OperationGraphEdge]] = {
     val request = new URIBuilder()
       .setScheme("http")
       .setPath("/operationgraph/local")
@@ -35,13 +44,19 @@ class RemoteOperationEdgesFetcher(clientConfig: ServiceClientConfiguration) {
       .setPort(port)
       .build()
 
-    val response = Request.Get(request)
-      .connectTimeout(clientConfig.connectionTimeout)
-      .socketTimeout(clientConfig.socketTimeout)
-      .execute()
-      .returnContent()
-      .asString()
+    Future {
+      val response = Request.Get(request)
+        .connectTimeout(clientConfig.connectionTimeout)
+        .socketTimeout(clientConfig.socketTimeout)
+        .execute()
+        .returnContent()
+        .asString()
 
-    Serialization.read[OperationGraph](response).edges
+      Serialization.read[OperationGraph](response).edges
+    }(dispatcher)
+  }
+
+  override def close(): Unit = {
+    Try(this.dispatcher.shutdown())
   }
 }

@@ -40,7 +40,7 @@
     </licenses>
 
     <properties>
-        <kafka-version>1.1.0</kafka-version>
+        <kafka-version>1.0.0</kafka-version>
         <mainClass>com.expedia.www.haystack.service.graph.node.finder.App</mainClass>
         <finalName>${project.artifactId}-${project.version}</finalName>
     </properties>

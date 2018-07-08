@@ -21,7 +21,7 @@ package com.expedia.www.haystack.service.graph.graph.builder.service.utils
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, OperationGraphEdge, ServiceGraphEdge}
 
 object EdgesMerger {
-  def getMergedServiceEdges(serviceGraphEdges: List[ServiceGraphEdge]): List[ServiceGraphEdge] = {
+  def getMergedServiceEdges(serviceGraphEdges: Seq[ServiceGraphEdge]): Seq[ServiceGraphEdge] = {
     // group by source and destination service
     val groupedEdges = serviceGraphEdges.groupBy((edge) => ServicePair(edge.source.name, edge.destination.name))
 
@@ -30,10 +30,10 @@ object EdgesMerger {
     // get latest last seen for all edges in group to lastseen for a source destination pair
     groupedEdges.map {
       case (_, edge) => edge.reduce((e1, e2) => e1 + e2)
-    }.toList
+    }.toSeq
   }
 
-  def getMergedOperationEdge(operationGraphEdges: List[OperationGraphEdge]): List[OperationGraphEdge] = {
+  def getMergedOperationEdge(operationGraphEdges: Seq[OperationGraphEdge]): Seq[OperationGraphEdge] = {
     // group by source and destination service
     val groupedEdges = operationGraphEdges.groupBy((edge) => OperationPair(edge.source, edge.destination, edge.operation))
 
@@ -45,7 +45,7 @@ object EdgesMerger {
         .reduce((e1, e2) => OperationGraphEdge(group._1.source, group._1.destination, group._1.operation,
           EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen), e1.stats
             .errorCount + e2.stats.errorCount), Math.min(e1.effectiveFrom, e2.effectiveFrom), Math.max(e1.effectiveTo, e2.effectiveTo))))
-      .toList
+      .toSeq
   }
 
   private case class ServicePair(source: String, destination: String)

@@ -21,6 +21,6 @@ package com.expedia.www.haystack.service.graph.graph.builder.model
   * Service graph
   * @param edges list of edges in the graph
   */
-case class OperationGraph(edges: List[OperationGraphEdge]) {
+case class OperationGraph(edges: Seq[OperationGraphEdge]) {
   require(edges != null)
 }

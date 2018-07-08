@@ -31,7 +31,7 @@ class LocalServiceEdgesFetcher(streams: KafkaStreams, storeName: String) {
   private lazy val store: ReadOnlyWindowStore[GraphEdge, EdgeStats] =
     streams.store(storeName, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
-  def fetchEdges(from: Long, to: Long): List[ServiceGraphEdge] = {
+  def fetchEdges(from: Long, to: Long): Seq[ServiceGraphEdge] = {
     var iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = null
     try {
         iterator = store.fetchAll(from, to)
@@ -43,7 +43,7 @@ class LocalServiceEdgesFetcher(streams: KafkaStreams, storeName: String) {
               ServiceEdgeStats(kv.value.count, kv.value.lastSeen, kv.value.errorCount),
               kv.key.window().start(), Math.min(System.currentTimeMillis(), to))
 
-        getMergedServiceEdges(serviceGraphEdges.toList)
+        getMergedServiceEdges(serviceGraphEdges.toSeq)
     } finally {
       IOUtils.closeSafely(iterator)
     }
