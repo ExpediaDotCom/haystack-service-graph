@@ -61,11 +61,10 @@ class GlobalOperationGraphResource(streams: KafkaStreams,
         }
       })
 
-    val result = Future
-      .sequence(edgesListFuture)
-      .map(_.foldLeft(mutable.ListBuffer[OperationGraphEdge]())((buffer, coll) => buffer ++= coll))
-
-    val edgesList = Await.result(result, serviceConfig.client.socketTimeout.millis)
+    val singleResultFuture = Future.sequence(edgesListFuture)
+    val edgesList = Await
+      .result(singleResultFuture, serviceConfig.client.socketTimeout.millis)
+      .foldLeft(mutable.ListBuffer[OperationGraphEdge]())((buffer, coll) => buffer ++= coll)
 
     globalEdgeCount.update(edgesList.length)
     OperationGraph(edgesList)

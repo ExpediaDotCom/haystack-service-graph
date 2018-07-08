@@ -63,14 +63,12 @@ class GlobalServiceGraphResource(streams: KafkaStreams,
         }
       })
 
-    val result = Future
-      .sequence(edgesListFuture)
-      .map(_.foldLeft(mutable.ListBuffer[ServiceGraphEdge]())((buffer, coll) => buffer ++= coll))
-
-    val edges = Await.result(result, serviceConfig.client.socketTimeout.millis)
+    val singleResultFuture = Future.sequence(edgesListFuture)
+    val edges = Await
+      .result(singleResultFuture, serviceConfig.client.socketTimeout.millis)
+      .foldLeft(mutable.ListBuffer[ServiceGraphEdge]())((buffer, coll) => buffer ++= coll)
 
     val mergedEdgeList = getMergedServiceEdges(edges)
-
     globalEdgeCount.update(mergedEdgeList.length)
     ServiceGraph(mergedEdgeList)
   }
