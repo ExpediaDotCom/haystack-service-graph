@@ -41,7 +41,7 @@ class LocalServiceEdgesFetcher(streams: KafkaStreams, storeName: String) {
               ServiceGraphVertex(kv.key.key.source.name, kv.value.sourceTags.asScala.toMap),
               ServiceGraphVertex(kv.key.key.destination.name, kv.value.destinationTags.asScala.toMap),
               ServiceEdgeStats(kv.value.count, kv.value.lastSeen, kv.value.errorCount),
-             kv.key.window().start(), System.currentTimeMillis())
+              kv.key.window().start(), Math.min(System.currentTimeMillis(), to))
 
         getMergedServiceEdges(serviceGraphEdges.toList)
     } finally {
