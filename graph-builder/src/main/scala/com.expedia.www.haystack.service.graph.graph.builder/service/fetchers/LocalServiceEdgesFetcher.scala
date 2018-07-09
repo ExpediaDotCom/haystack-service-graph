@@ -31,19 +31,19 @@ class LocalServiceEdgesFetcher(streams: KafkaStreams, storeName: String) {
   private lazy val store: ReadOnlyWindowStore[GraphEdge, EdgeStats] =
     streams.store(storeName, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
-  def fetchEdges(from: Long, to: Long): List[ServiceGraphEdge] = {
+  def fetchEdges(from: Long, to: Long): Seq[ServiceGraphEdge] = {
     var iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = null
     try {
-      iterator = store.fetchAll(from, to)
+        iterator = store.fetchAll(from, to)
+        val serviceGraphEdges =
+          for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
+            yield ServiceGraphEdge(
+              ServiceGraphVertex(kv.key.key.source.name, kv.value.sourceTags.asScala.toMap),
+              ServiceGraphVertex(kv.key.key.destination.name, kv.value.destinationTags.asScala.toMap),
+              ServiceEdgeStats(kv.value.count, kv.value.lastSeen, kv.value.errorCount),
+              kv.key.window().start(), Math.min(System.currentTimeMillis(), to))
 
-      val serviceGraphEdges =
-        for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
-          yield ServiceGraphEdge(
-            ServiceGraphVertex(kv.key.key.source.name, kv.value.sourceTags.asScala.toMap),
-            ServiceGraphVertex(kv.key.key.destination.name, kv.value.destinationTags.asScala.toMap),
-            ServiceEdgeStats(kv.value.count, kv.value.lastSeen, kv.value.errorCount))
-
-      getMergedServiceEdges(serviceGraphEdges.toList)
+        getMergedServiceEdges(serviceGraphEdges.toSeq)
     } finally {
       IOUtils.closeSafely(iterator)
     }

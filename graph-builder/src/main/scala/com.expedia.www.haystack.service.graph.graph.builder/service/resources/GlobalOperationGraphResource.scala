@@ -20,13 +20,17 @@ package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 import javax.servlet.http.HttpServletRequest
 
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceConfiguration
-import com.expedia.www.haystack.service.graph.graph.builder.model.OperationGraph
+import com.expedia.www.haystack.service.graph.graph.builder.model.{OperationGraph, OperationGraphEdge}
 import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalOperationEdgesFetcher, RemoteOperationEdgesFetcher}
 import com.expedia.www.haystack.service.graph.graph.builder.service.utils.TimestampUtils
 import org.apache.kafka.streams.KafkaStreams
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 class GlobalOperationGraphResource(streams: KafkaStreams,
                                    storeName: String,
@@ -44,21 +48,23 @@ class GlobalOperationGraphResource(streams: KafkaStreams,
     // get list of all hosts containing service-graph store
     // fetch local service graphs from all hosts
     // and merge local graphs to create global graph
-    val edgesList = streams
+    val edgesListFuture: Iterable[Future[Seq[OperationGraphEdge]]] = streams
       .allMetadataForStore(storeName)
       .asScala
-      .flatMap(host => {
+      .map(host => {
         if (host.host() == serviceConfig.host) {
-          val localEdges = localEdgesFetcher.fetchEdges(from, to)
-          LOGGER.info(s"graph from local returned ${localEdges.size} edges")
-          localEdges
+          LOGGER.info(s"operation graph from local returned is ivnoked")
+          Future(localEdgesFetcher.fetchEdges(from, to))
+        } else {
+          LOGGER.info(s"operation graph from ${host.host()} is invoked")
+          remoteEdgesFetcher.fetchEdges(host.host(), host.port())
         }
-        else {
-          val remoteEdges = remoteEdgesFetcher.fetchEdges(host.host(), host.port())
-          LOGGER.info(s"graph from ${host.host()} returned ${remoteEdges.size} edges")
-          remoteEdges
-        }
-      }).toList
+      })
+
+    val singleResultFuture = Future.sequence(edgesListFuture)
+    val edgesList = Await
+      .result(singleResultFuture, serviceConfig.client.socketTimeout.millis)
+      .foldLeft(mutable.ListBuffer[OperationGraphEdge]())((buffer, coll) => buffer ++= coll)
 
     globalEdgeCount.update(edgesList.length)
     OperationGraph(edgesList)

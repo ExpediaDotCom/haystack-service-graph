@@ -24,8 +24,15 @@ import scala.collection.mutable
   * @param source source service
   * @param destination destination service
   * @param stats stats around the edge
+  * @param effectiveFrom start timestamp from which stats are collected
+  * @param effectiveTo end timestamp till which stats are collected
+  *
   */
-case class ServiceGraphEdge(source: ServiceGraphVertex, destination: ServiceGraphVertex, stats: ServiceEdgeStats)  {
+case class ServiceGraphEdge(source: ServiceGraphVertex,
+                            destination: ServiceGraphVertex,
+                            stats: ServiceEdgeStats,
+                            effectiveFrom: Long,
+                            effectiveTo: Long)  {
   require(source != null)
   require(destination != null)
   require(stats != null)
@@ -50,7 +57,12 @@ case class ServiceGraphEdge(source: ServiceGraphVertex, destination: ServiceGrap
   def +(other: ServiceGraphEdge): ServiceGraphEdge = {
     val sourceVertex = this.source.copy(tags = mergeTags(other.source.tags, this.source.tags))
     val destinationVertex = this.destination.copy(tags = mergeTags(other.destination.tags, this.destination.tags))
-    ServiceGraphEdge(sourceVertex, destinationVertex, this.stats + other.stats)
+    ServiceGraphEdge(
+      sourceVertex,
+      destinationVertex,
+      this.stats + other.stats,
+      Math.min(this.effectiveFrom, other.effectiveFrom),
+      Math.max(this.effectiveTo, other.effectiveTo))
   }
 }
 
