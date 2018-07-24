@@ -18,6 +18,7 @@
 package com.expedia.www.haystack.service.graph.node.finder.utils
 
 import com.expedia.open.tracing.Span
+import com.expedia.www.haystack.service.graph.node.finder.model.LightSpan
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType.SpanType
 import org.apache.commons.lang3.StringUtils
 
@@ -128,6 +129,15 @@ case class Flag(value: Int) {
 
   override def equals(obj: scala.Any): Boolean = {
     obj.asInstanceOf[Flag].value == value
+  }
+}
+
+object ParentChildOrdering extends Ordering[LightSpan] {
+  override def compare(x: LightSpan, y: LightSpan): Int = {
+    if (x.spanId.equalsIgnoreCase(y.parentSpanId))
+      1
+    else
+      -1
   }
 }
 
