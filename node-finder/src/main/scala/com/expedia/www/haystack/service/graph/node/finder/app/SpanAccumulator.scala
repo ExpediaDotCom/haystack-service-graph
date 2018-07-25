@@ -42,9 +42,9 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
   private val forwardMeter = metricRegistry.meter("span.accumulator.emit")
   private val aggregateHistogram = metricRegistry.histogram("span.accumulator.buffered.spans")
 
-  //Bottom-heavy heap is the opposite of a top-heavy heap data structure
-  //in here, heaviest object will be at the end of the queue. dequeue will
-  //return the lightest element first - this is backed by a PriorityQueue
+  //PriorityQueue to store the incoming spans. Order here will ensure that parent is always stored before child.
+  //So, if two Spans with spanId and parentId: (I3,I1) and (I1, I2) arrives in whatever order. (I1, I2) will always
+  //be ahead of (I3, I1) in queue
   private val spanQueue = mutable.PriorityQueue[LightSpan]()(ParentChildOrdering)
 
   override def init(context: ProcessorContext): Unit = {
@@ -92,15 +92,18 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
   private def drainQueueAndMapAsSpanPairs(): Iterable[SpanPair] = {
     val mapOfSpanPairs = mutable.Map[String, SpanPair]()
 
-    //dequeue everything and add to map. if the span is already there, then merge it.
+    //dequeue everything and add to map
     while (spanQueue.nonEmpty) {
       val selectedSpan = spanQueue.dequeue()
-      val spanPair = mapOfSpanPairs.get(selectedSpan.spanId)
+      LOGGER.debug(s"Dequeue span: " + selectedSpan)
 
-      if(spanPair.isDefined) {
+      val spanPair = mapOfSpanPairs.get(selectedSpan.spanId)
+      if(spanPair.isDefined) {  //if the span is already there in map then merge it
         spanPair.get.mergeUsingSpanType(selectedSpan)
-      } else {
+      } else {  //span not present in map, lets add it and check if parent for this span is present
         mapOfSpanPairs.put(selectedSpan.spanId, new SpanPair(selectedSpan.spanId, selectedSpan))
+
+        //selectedSpan.parentSpanId might be null for root span
         val parentSpan = mapOfSpanPairs.get(selectedSpan.parentSpanId)
 
         if (parentSpan.isDefined
@@ -127,8 +130,9 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
 
       LOGGER.debug(s"Punctuate called with $timestamp. CutOff is $cutOffTime. Queue size is ${spanQueue.size} spans")
 
-      //dequeue weighableSpans and add to map of [spanId, SpanPair]
+      //dequeue lightSpans and add to map of [spanId, SpanPair]
       //if a span is already there, then merge it
+      // otherwise, add and check for parentId in map
       val spanPairs : Iterable[SpanPair] = drainQueueAndMapAsSpanPairs()
 
       //iterate map values and forward all complete spans. If the incomplete one is within
@@ -142,7 +146,7 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
         }
         else {
           spanPair.getBackingSpans.foreach({
-            weighableSpan => if (weighableSpan.isLaterThan(cutOffTime)) spanQueue.enqueue(weighableSpan)
+            lightSpan => if (lightSpan.isLaterThan(cutOffTime)) spanQueue.enqueue(lightSpan)
           })
         }
       })

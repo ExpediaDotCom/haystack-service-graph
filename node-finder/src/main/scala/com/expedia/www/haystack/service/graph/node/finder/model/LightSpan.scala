@@ -28,5 +28,10 @@ case class LightSpan(spanId: String,
   require(StringUtils.isNoneBlank(operationName))
   require(spanType != null)
 
+  /**
+    * check whether this light span is later than the given cutOffTime
+    * @param cutOffTime time to be compared
+    * @return true if this span is later than the given cutOffTime time else false
+    */
   def isLaterThan(cutOffTime: Long): Boolean = (time - cutOffTime) > 0
 }

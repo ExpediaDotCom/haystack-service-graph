@@ -53,7 +53,7 @@ object SpanUtils {
   private val SPAN_TYPE_MAP = Map(Flag(THREE) -> SpanType.CLIENT, Flag(TWELVE) -> SpanType.SERVER)
 
   /**
-    * Given a span check if it is eligible for accumulation and can be a weighable span
+    * Given a span check if it is eligible for accumulation and can be a light span
     * @param span span to validate
     * @return
     */
@@ -132,6 +132,9 @@ case class Flag(value: Int) {
   }
 }
 
+//This order here will ensure that parent is always stored before child.So, if two Spans with
+//spanId and parentId: (I3,I1) and (I1, I2) arrives in whatever order. (I1, I2) will always
+//be ahead of (I3, I1) in queue
 object ParentChildOrdering extends Ordering[LightSpan] {
   override def compare(x: LightSpan, y: LightSpan): Int = {
     if (x.spanId.equalsIgnoreCase(y.parentSpanId))
