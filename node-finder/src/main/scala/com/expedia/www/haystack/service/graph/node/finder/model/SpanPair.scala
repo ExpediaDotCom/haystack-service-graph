@@ -18,6 +18,7 @@
 package com.expedia.www.haystack.service.graph.node.finder.model
 
 import com.expedia.www.haystack.commons.entities._
+import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType.SpanType
 import com.expedia.www.haystack.service.graph.node.finder.utils.{Flag, SpanType}
 import org.slf4j.LoggerFactory
 
@@ -26,50 +27,89 @@ import scala.collection.JavaConverters._
 /**
   * An instance of SpanPair can contain data from both server and client spans.
   * SpanPair is considered "complete" if it has data fields from both server and client span of the same SpanId
+  *
   * @param spanId Unique identifier of a Span
   */
-class SpanPair(val spanId: String) {
+class SpanPair(val spanId: String, var uncategorizedSpan: LightSpan) {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[SpanPair])
 
   require(spanId != null)
 
-  private var clientSpan : WeighableSpan = _
-  private var serverSpan : WeighableSpan = _
+  private var clientSpan: LightSpan = _
+  private var serverSpan: LightSpan = _
   private var flag = Flag(0)
 
   /**
     * Returns true of the current instance has data from both server and client spans
     * of the same SpanId
+    *
     * @return true or false
     */
   def isComplete: Boolean = flag.equals(Flag(3))
 
   /**
-    * Returns the backing WeighableSpan objects
-    * @return list of WeighableSpan objects or an empty list
+    * Returns the backing LightSpan objects
+    *
+    * @return list of LightSpan objects or an empty list
     */
-  def getBackingSpans : List[WeighableSpan] = {
-    List(clientSpan, serverSpan).filter(w => w != null)
+  def getBackingSpans : List[LightSpan] = {
+    List(clientSpan, serverSpan, uncategorizedSpan).filter(w => w != null)
   }
 
   /**
-    * Merges the given span into the current instance of the SpanPair. If the spanId of
-    * the given span matches the spanId of the SpanPair, then it is held by the LighSpan
+    * Merges the given span into the current instance of the SpanPair using spanType. If the spanId of
+    * the given span matches the spanId of the SpanPair, then it should be the part of of this span pair
     * to produce {@link #getGraphEdge} and {@link #getLatency} data
-    * @param weighableSpan WeighableSpan to be merged with the current SpanPair
+    *
+    * @param incomingSpan lightSpan to be merged with the current SpanPair
     */
-  def merge(weighableSpan: WeighableSpan): Unit = {
-    if (weighableSpan.spanId.equals(spanId)) {
-      LOGGER.debug(s"received a matching span of type ${weighableSpan.spanType}")
-      weighableSpan.spanType match {
-        case SpanType.CLIENT =>
-          this.clientSpan = weighableSpan
-          flag = flag | Flag(1)
-        case SpanType.SERVER =>
-          this.serverSpan = weighableSpan
-          flag = flag | Flag(2)
-      }
+  def mergeUsingSpanType(incomingSpan: LightSpan): Unit = {
+    matchSpanType(incomingSpan.spanType, incomingSpan)
+    matchSpanType(uncategorizedSpan.spanType, uncategorizedSpan)
+    uncategorizedSpan = null
+
+    LOGGER.debug(s"created span pair: \n" +
+    "client: " + clientSpan + " \n" +
+    "server: " + serverSpan)
+  }
+
+  /**
+    * Merges the given client span and server span into the current instance of the SpanPair. Id parentSpanId of
+    * given span matches spanId in this pair then it should be part of this span pair
+    * to produce {@link #getGraphEdge} and {@link #getLatency} data
+    *
+    * @param clientSpan client light span for this SpanPair
+    * @param serverSpan server light span for this SpanPair
+    */
+  def mergeUsingIds(clientSpan: LightSpan, serverSpan: LightSpan) = {
+
+    //from the parentId and spanId relation we come to about about the type of span
+    matchSpanType(SpanType.CLIENT, clientSpan)
+    matchSpanType(SpanType.SERVER, serverSpan)
+    uncategorizedSpan = null
+
+    LOGGER.debug(s"created span pair: \n" +
+      "client: " + clientSpan + " \n" +
+      "server: " + serverSpan)  }
+
+
+  /**
+    * set clientSpan or serverSpan depending upon the value of spanType being passed
+    * @param spanType client, server or Other type
+    * @param span span which needs to be set to clientSpan or serverSpan
+    */
+  private def matchSpanType(spanType: SpanType, span: LightSpan) = {
+    spanType match {
+      case SpanType.CLIENT =>
+        span.spanType = SpanType.CLIENT
+        this.clientSpan = span
+        flag = flag | Flag(1)
+      case SpanType.SERVER =>
+        span.spanType = SpanType.SERVER
+        this.serverSpan = span
+        flag = flag | Flag(2)
+      case SpanType.OTHER =>
     }
   }
 
@@ -77,6 +117,7 @@ class SpanPair(val spanId: String) {
     * Returns an instance of GraphEdge if the current SpanPair is complete. A GraphEdge
     * contains the client span's ServiceName, it's OperationName and the corresponding server
     * span's ServiceName. These three data points acts as the two nodes and edge of a graph relationship
+    *
     * @return an instance of GraphEdge or None if the current SpanPair is inComplete
     */
   def getGraphEdge: Option[GraphEdge] = {
@@ -93,6 +134,7 @@ class SpanPair(val spanId: String) {
     * Returns an instance of MetricPoint that measures the latency of the current Span. Latency of the current
     * Span is computed as client span's duration minus it's corresponding server span's duration. MetricPoint instance
     * returned will be of type Gauge tagged with the current (client span's) service name and operation name.
+    *
     * @return an instance of MetricPoint or None if the current spanPair instance is incomplete
     */
   def getLatency: Option[MetricPoint] = {

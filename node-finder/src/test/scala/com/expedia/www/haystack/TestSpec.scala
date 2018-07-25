@@ -21,7 +21,7 @@ import java.util.UUID
 
 import com.expedia.open.tracing.Tag.TagType
 import com.expedia.open.tracing.{Log, Span, Tag}
-import com.expedia.www.haystack.service.graph.node.finder.model.{SpanPair, WeighableSpan}
+import com.expedia.www.haystack.service.graph.node.finder.model.{SpanPair, LightSpan}
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType.SpanType
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
 import org.scalatest.easymock.EasyMockSugar
@@ -29,9 +29,13 @@ import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
 
 trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar {
 
-  def newWeighableSpan(span: Span, spanType: SpanType, tags: Map[String, String] = Map()) : WeighableSpan = {
-    WeighableSpan(span.getSpanId, span.getStartTime / 1000, span.getServiceName, span.getOperationName, span
-      .getDuration, spanType, tags)
+  def newLightSpan(spanId: String, parentSpanId: String, startTimeInMillis: Long, serviceName: String, operationName: String,
+                   duration: Long, spanType: SpanType, tags: Map[String, String] = Map()) : LightSpan = {
+    LightSpan(spanId, parentSpanId, startTimeInMillis, serviceName, operationName, duration, spanType, tags)
+  }
+
+  def randomLightSpan(): LightSpan = {
+    LightSpan(UUID.randomUUID().toString, UUID.randomUUID().toString, System.currentTimeMillis(), "svc", "oper", 1000, SpanType.CLIENT, Map())
   }
 
   def newSpan(serviceName: String, operation: String, duration: Long, client: Boolean, server: Boolean): (Span, SpanType) = {
@@ -77,7 +81,7 @@ trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSug
       spanType = SpanType.SERVER
     }
     if (tags.nonEmpty) {
-      val tagBuilder = Tag.newBuilder();
+      val tagBuilder = Tag.newBuilder()
       tags.foreach(tag => {
         tagBuilder.setKey(tag._1).setVStr(tag._2).setType(TagType.STRING)
         spanBuilder.addTags(tagBuilder.build())
@@ -130,9 +134,9 @@ trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSug
 
   def inCompleteSpanPair(): SpanPair = {
     val spanId = UUID.randomUUID().toString
-    val spanPair = new SpanPair(spanId)
-    val (span, spanType) = newSpan(spanId, "foo-service", "bar", 1000, client = true, server = false)
-    spanPair.merge(newWeighableSpan(span, spanType))
+    val parentSpanId = UUID.randomUUID().toString
+    val clientLightSpan = newLightSpan(spanId, parentSpanId, System.currentTimeMillis(), "foo-service", "bar", 1000, SpanType.CLIENT)
+    val spanPair = new SpanPair(spanId, clientLightSpan)
     spanPair
   }
 
@@ -140,13 +144,12 @@ trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSug
     val clientSend = System.currentTimeMillis()
     val serverReceive = clientSend + 500
     val spanId = UUID.randomUUID().toString
-    val spanPair = new SpanPair(spanId)
-    val (clientSpan, clientSpanType) = newSpan(spanId, clientSend, "foo-service", "bar", 1500, client = true, server
-      = false, tags)
-    val (serverSpan, serverSpanType) = newSpan(spanId, serverReceive, "baz-service", "bar", 500, client = false,
-      server = true, tags)
-    spanPair.merge(newWeighableSpan(clientSpan, clientSpanType, tags))
-    spanPair.merge(newWeighableSpan(serverSpan, serverSpanType, tags))
+    val parentSpanId = UUID.randomUUID().toString
+    val clientLightSpan = newLightSpan(spanId, parentSpanId, clientSend, "foo-service", "bar", 1500, SpanType.CLIENT, tags)
+    val serverLightSpan = newLightSpan(spanId, parentSpanId, serverReceive, "baz-service", "bar", 500, SpanType.SERVER, tags)
+
+    val spanPair = new SpanPair(spanId, clientLightSpan)
+    spanPair.mergeUsingSpanType(serverLightSpan)
     spanPair
   }
 }

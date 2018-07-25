@@ -20,8 +20,8 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.expedia.www.haystack.service.graph.node.finder.model.{BottomHeavyHeap, SpanPair, WeighableSpan}
-import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
+import com.expedia.www.haystack.service.graph.node.finder.model.{LightSpan, SpanPair}
+import com.expedia.www.haystack.service.graph.node.finder.utils.{ParentChildOrdering, SpanUtils}
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.streams.processor._
 import org.slf4j.LoggerFactory
@@ -42,10 +42,10 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
   private val forwardMeter = metricRegistry.meter("span.accumulator.emit")
   private val aggregateHistogram = metricRegistry.histogram("span.accumulator.buffered.spans")
 
-  //Bottom-heavy heap is the opposite of a top-heavy heap data structure
-  //in here, heaviest object will be at the end of the queue. dequeue will
-  //return the lightest element first - this is backed by a PriorityQueue
-  private val weightedQueue = BottomHeavyHeap[WeighableSpan]()
+  //PriorityQueue to store the incoming spans. Order here will ensure that parent is always stored before child.
+  //So, if two Spans with spanId and parentId: (I3,I1) and (I1, I2) arrives in whatever order. (I1, I2) will always
+  //be ahead of (I3, I1) in queue
+  private val spanQueue = mutable.PriorityQueue[LightSpan]()(ParentChildOrdering)
 
   override def init(context: ProcessorContext): Unit = {
     context.schedule(accumulatorInterval, PunctuationType.STREAM_TIME, getPunctuator(context))
@@ -58,17 +58,20 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
     //find the span type
     val spanType = SpanUtils.getSpanType(span)
 
-    if (spanType != SpanType.OTHER && SpanUtils.isAccumulableSpan(span)) {
+    if (SpanUtils.isAccumulableSpan(span)) {
 
       //startTime is in microseconds, so divide it by 1000 to send MS
-      val weighableSpan = WeighableSpan(span.getSpanId,
+      val lightSpan = LightSpan(span.getSpanId,
+        span.getParentSpanId,
         span.getStartTime / 1000,
         span.getServiceName,
         span.getOperationName,
-        span.getDuration, spanType, tagCollector.collectTags(span))
+        span.getDuration,
+        spanType,
+        tagCollector.collectTags(span))
 
-      //add it to the weighted queue
-      weightedQueue.enqueue(weighableSpan)
+      //add it to the queue
+      spanQueue.enqueue(lightSpan)
 
       aggregateMeter.mark()
     }
@@ -82,18 +85,34 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(s"Forwarding complete SpanPair: $spanPair")
     }
-    context.forward(spanPair.spanId, spanPair)
+    context.forward(spanPair. spanId, spanPair)
     forwardMeter.mark()
   }
 
   private def drainQueueAndMapAsSpanPairs(): Iterable[SpanPair] = {
     val mapOfSpanPairs = mutable.Map[String, SpanPair]()
 
-    //dequeue everything and add to map. if the span is already there, then merge it.
-    while (weightedQueue.nonEmpty) {
-      val weighableSpan = weightedQueue.dequeue()
-      val spanPair = mapOfSpanPairs.getOrElseUpdate(weighableSpan.spanId, new SpanPair(weighableSpan.spanId))
-      spanPair.merge(weighableSpan)
+    //dequeue everything and add to map
+    while (spanQueue.nonEmpty) {
+      val selectedSpan = spanQueue.dequeue()
+      LOGGER.debug(s"Dequeue span: " + selectedSpan)
+
+      val spanPair = mapOfSpanPairs.get(selectedSpan.spanId)
+      if(spanPair.isDefined) {  //if the span is already there in map then merge it
+        spanPair.get.mergeUsingSpanType(selectedSpan)
+      } else {  //span not present in map, lets add it and check if parent for this span is present
+        mapOfSpanPairs.put(selectedSpan.spanId, new SpanPair(selectedSpan.spanId, selectedSpan))
+
+        //selectedSpan.parentSpanId might be null for root span
+        val parentSpan = mapOfSpanPairs.get(selectedSpan.parentSpanId)
+
+        if (parentSpan.isDefined
+          && ! parentSpan.get.isComplete
+          && ! selectedSpan.serviceName.equalsIgnoreCase(parentSpan.get.uncategorizedSpan.serviceName)) {
+
+          parentSpan.get.mergeUsingIds(parentSpan.get.uncategorizedSpan, selectedSpan)
+        }
+      }
     }
 
     mapOfSpanPairs.values
@@ -109,10 +128,11 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
       //if they get their matching span pair in the next punctuation
       val cutOffTime = timestamp - (accumulatorInterval * 0.5).asInstanceOf[Long]
 
-      LOGGER.debug(s"Punctuate called with $timestamp. CutOff is $cutOffTime. Queue size is ${weightedQueue.size} spans")
+      LOGGER.debug(s"Punctuate called with $timestamp. CutOff is $cutOffTime. Queue size is ${spanQueue.size} spans")
 
-      //dequeue weighableSpans and add to map of [spanId, SpanPair]
+      //dequeue lightSpans and add to map of [spanId, SpanPair]
       //if a span is already there, then merge it
+      // otherwise, add and check for parentId in map
       val spanPairs : Iterable[SpanPair] = drainQueueAndMapAsSpanPairs()
 
       //iterate map values and forward all complete spans. If the incomplete one is within
@@ -126,7 +146,7 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
         }
         else {
           spanPair.getBackingSpans.foreach({
-            weighableSpan => if (weighableSpan.isLaterThan(cutOffTime)) weightedQueue.enqueue(weighableSpan)
+            lightSpan => if (lightSpan.isLaterThan(cutOffTime)) spanQueue.enqueue(lightSpan)
           })
         }
       })
@@ -137,5 +157,5 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
   }
 
   @VisibleForTesting
-  def spanCount: Int = weightedQueue.size
+  def spanCount: Int = spanQueue.size
 }

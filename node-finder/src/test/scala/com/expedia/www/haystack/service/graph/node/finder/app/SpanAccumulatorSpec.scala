@@ -43,15 +43,18 @@ class SpanAccumulatorSpec extends TestSpec {
       verify(context)
     }
 
-    it("should collect all Client or Server Spans provided for processing") {
+    it("should collect all types of Spans (Client or Server or Other) provided for processing") {
       Given("an accumulator")
       val accumulator = new SpanAccumulator(1000, new GraphEdgeTagCollector())
+      val noOfSpansOfEachType = 10
+
       When("10 server, 10 client and 10 other spans are processed")
       val producers = List[(Long, (Span) => Unit) => Unit](produceSimpleSpan,
         produceServerSpan, produceClientSpan)
-      producers.foreach(producer => writeSpans(10, 1000, producer, (span) => accumulator.process(span.getSpanId, span)))
+      producers.foreach(producer => writeSpans(noOfSpansOfEachType, 1000, producer, (span) => accumulator.process(span.getSpanId, span)))
+
       Then("accumulator should hold only the 10 client and 10 server spans")
-      accumulator.spanCount should be (20)
+      accumulator.spanCount should be (noOfSpansOfEachType * producers.length)
     }
 
     it("should emit SpanPair instances only for pairs of server and client spans") {
