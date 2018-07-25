@@ -20,6 +20,7 @@ package com.expedia.www.haystack.service.graph.graph.builder.config
 import com.expedia.www.haystack.service.graph.graph.builder.TestSpec
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.CustomRocksDBConfig
 import com.typesafe.config.ConfigException
+import org.apache.kafka.streams.StreamsConfig
 import org.apache.kafka.streams.processor.WallclockTimestampExtractor
 import org.rocksdb.{BlockBasedTableConfig, Options}
 
@@ -95,6 +96,18 @@ class AppConfigurationSpec extends TestSpec {
       blockConfig.blockSize() shouldBe 16384l
       blockConfig.cacheIndexAndFilterBlocks() shouldBe true
       rocksDbOptions.maxWriteBufferNumber() shouldBe 2
+      config.kafkaConfig.streamsConfig.values().get(StreamsConfig.APPLICATION_SERVER_CONFIG).toString shouldBe "localhost:8080"
+    }
+
+    it("should allow for the application server to be set in the config file") {
+      Given("a test configuration file")
+      val file = "test/test_application_server_set.conf"
+
+      When("Application configuration is loaded and KafkaConfiguration is obtained")
+      val config = new AppConfiguration(file)
+
+      Then("it should load the application.server expected")
+      config.kafkaConfig.streamsConfig.values().get(StreamsConfig.APPLICATION_SERVER_CONFIG).toString shouldBe "127.0.0.1:1002"
     }
   }
 }
