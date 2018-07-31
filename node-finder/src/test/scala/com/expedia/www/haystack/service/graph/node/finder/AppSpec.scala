@@ -64,7 +64,7 @@ class AppSpec extends TestSpec with BeforeAndAfter {
     it("should process spans from kafka and produce latency metrics and graph edges") {
       //send test data to source topic
       val producer = kafkaController.createProducer(appConfig.kafkaConfig.protoSpanTopic,
-        classOf[StringSerializer], classOf[SpanSerializer])
+        classOf[StringSerializer], classOf[SpanSerializer], appConfig.kafkaConfig.producerLingerMs)
 
       //send sample data
       sendRecords(producer, 5)

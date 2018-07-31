@@ -110,7 +110,9 @@ class AppConfiguration(resourceName: String) {
       },
       timestampExtractor,
       kafka.getInt("accumulator.interval"),
-      kafka.getLong("close.timeout.ms"), collectorTags)
+      kafka.getLong("close.timeout.ms"),
+      producerConfig.getLong("linger.ms"),
+      collectorTags)
 
   }
 }

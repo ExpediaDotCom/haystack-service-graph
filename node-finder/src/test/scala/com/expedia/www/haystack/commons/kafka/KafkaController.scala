@@ -71,12 +71,15 @@ class KafkaController(kafkaProperties: Properties, zooKeeperProperties: Properti
     }
   }
 
-  def createProducer[K, V] (topic: String, keySerializer: Class[_ <: Serializer[K]],
-                            valueSerializer: Class[_ <: Serializer[V]]) : KafkaProducer[K, V] = {
+  def createProducer[K, V](topic: String,
+                           keySerializer: Class[_ <: Serializer[K]],
+                           valueSerializer: Class[_ <: Serializer[V]],
+                           producerLingerMs: Long): KafkaProducer[K, V] = {
     val properties = getBootstrapProperties
     properties.put(ProducerConfig.CLIENT_ID_CONFIG, topic + "Producer")
     properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, keySerializer.getName)
     properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSerializer.getName)
+    properties.put(ProducerConfig.LINGER_MS_CONFIG, producerLingerMs.toString)
     new KafkaProducer[K, V](properties)
   }
 
