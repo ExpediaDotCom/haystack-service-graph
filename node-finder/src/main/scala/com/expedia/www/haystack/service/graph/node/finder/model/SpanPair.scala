@@ -18,7 +18,7 @@
 package com.expedia.www.haystack.service.graph.node.finder.model
 
 import com.expedia.www.haystack.commons.entities._
-import com.expedia.www.haystack.service.graph.node.finder.utils.{Flag, SpanType}
+import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
@@ -35,13 +35,13 @@ class SpanPair() {
   private var serverSpan: LightSpan = _
 
   /**
-    * Returns true of the current instance has data from both server and client spans
-    * of the same SpanId
+    * Returns true of the current instance has data for both server and client spans
+    * and their services are different
     *
     * @return true or false
     */
   def isComplete: Boolean = {
-    clientSpan != null && serverSpan != null
+    clientSpan != null && serverSpan != null && clientSpan.serviceName != serverSpan.serviceName
   }
 
   /**
@@ -64,12 +64,10 @@ class SpanPair() {
   def merge(spanOne: LightSpan, spanTwo: LightSpan): Unit = {
     if (spanOne.spanType != SpanType.OTHER && spanTwo.spanType != SpanType.OTHER) {
       setSpans(spanOne, spanTwo)
-    } else if (!spanOne.serviceName.equalsIgnoreCase(spanTwo.serviceName)) {
-      if (spanOne.spanId.equalsIgnoreCase(spanTwo.parentSpanId)) {
-        setSpans(LightSpanBuilder.updateSpanType(spanOne, SpanType.CLIENT), LightSpanBuilder.updateSpanType(spanTwo, SpanType.SERVER))
-      } else if (spanOne.parentSpanId.equalsIgnoreCase(spanTwo.spanId)) {
-        setSpans(LightSpanBuilder.updateSpanType(spanOne, SpanType.SERVER), LightSpanBuilder.updateSpanType(spanTwo, SpanType.CLIENT))
-      }
+    } else if (spanOne.spanId.equalsIgnoreCase(spanTwo.parentSpanId)) {
+      setSpans(LightSpanBuilder.updateSpanType(spanOne, SpanType.CLIENT), LightSpanBuilder.updateSpanType(spanTwo, SpanType.SERVER))
+    } else if (spanOne.parentSpanId.equalsIgnoreCase(spanTwo.spanId)) {
+      setSpans(LightSpanBuilder.updateSpanType(spanOne, SpanType.SERVER), LightSpanBuilder.updateSpanType(spanTwo, SpanType.CLIENT))
     }
 
     LOGGER.debug(s"created a span pair: \n" +
@@ -78,7 +76,7 @@ class SpanPair() {
   }
 
   /**
-    * set clientSpan or serverSpan depending upon the value of spanType being passed
+    * set clientSpan or serverSpan depending upon the value of spanType in LightSpan
     *
     * @param spanOne span which needs to be set to clientSpan or serverSpan
     * @param spanTwo span which needs to be set to clientSpan or serverSpan
@@ -121,7 +119,6 @@ class SpanPair() {
     */
   def getLatency: Option[MetricPoint] = {
     if (isComplete) {
-
       val tags = Map(
         TagKeys.SERVICE_NAME_KEY -> clientSpan.serviceName,
         TagKeys.OPERATION_NAME_KEY -> clientSpan.operationName
@@ -134,7 +131,7 @@ class SpanPair() {
     }
   }
 
-  def getId: String = s"($clientSpan.spanId)_($serverSpan.spanId)"
+  def getId: String = s"($clientSpan.spanId)"
 
   override def toString = s"SpanPair($isComplete, $clientSpan, $serverSpan)"
 }

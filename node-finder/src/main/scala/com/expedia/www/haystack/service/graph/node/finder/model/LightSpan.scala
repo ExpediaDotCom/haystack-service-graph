@@ -43,7 +43,17 @@ case class LightSpan(spanId: String,
   }
 }
 
+/**
+  * Builder class for LightSpan
+  */
 object LightSpanBuilder {
+
+  /**
+    * update span type to an existing span
+    * @param span span to be updated
+    * @param spanType span type to be updated in a given span
+    * @return
+    */
   def updateSpanType(span: LightSpan, spanType: SpanType): LightSpan = {
     LightSpan(span.spanId,
       span.parentSpanId,
