@@ -20,9 +20,10 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.expedia.www.haystack.service.graph.node.finder.model.{BottomHeavyHeap, SpanPair, WeighableSpan}
-import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanType, SpanUtils}
+import com.expedia.www.haystack.service.graph.node.finder.model.{LightSpan, SpanPair, SpanPairBuilder}
+import com.expedia.www.haystack.service.graph.node.finder.utils.SpanUtils
 import com.netflix.servo.util.VisibleForTesting
+import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.processor._
 import org.slf4j.LoggerFactory
 
@@ -42,12 +43,16 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
   private val forwardMeter = metricRegistry.meter("span.accumulator.emit")
   private val aggregateHistogram = metricRegistry.histogram("span.accumulator.buffered.spans")
 
-  //Bottom-heavy heap is the opposite of a top-heavy heap data structure
-  //in here, heaviest object will be at the end of the queue. dequeue will
-  //return the lightest element first - this is backed by a PriorityQueue
-  private val weightedQueue = BottomHeavyHeap[WeighableSpan]()
+  // map to store spanId -> span data. Used for checking child-parent relationship
+  private var spanMap = mutable.HashMap[String, mutable.HashSet[LightSpan]]()
+
+  // map to store parentSpanId -> span data. Used for checking child-parent relationship
+  private var parentSpanMap = mutable.HashMap[String, LightSpan]()
+
+  private var processorContext: ProcessorContext = _
 
   override def init(context: ProcessorContext): Unit = {
+    processorContext = context
     context.schedule(accumulatorInterval, PunctuationType.STREAM_TIME, getPunctuator(context))
     LOGGER.info(s"${this.getClass.getSimpleName} initialized")
   }
@@ -58,19 +63,27 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
     //find the span type
     val spanType = SpanUtils.getSpanType(span)
 
-    if (spanType != SpanType.OTHER && SpanUtils.isAccumulableSpan(span)) {
+    if (SpanUtils.isAccumulableSpan(span)) {
 
-      //startTime is in microseconds, so divide it by 1000 to send MS
-      val weighableSpan = WeighableSpan(span.getSpanId,
-        span.getStartTime / 1000,
+      val lightSpan = LightSpan(span.getSpanId,
+        span.getParentSpanId,
+        span.getStartTime / 1000, //startTime is in microseconds, so divide it by 1000 to send MS
         span.getServiceName,
         span.getOperationName,
-        span.getDuration, spanType, tagCollector.collectTags(span))
+        span.getDuration,
+        spanType,
+        tagCollector.collectTags(span))
 
-      //add it to the weighted queue
-      weightedQueue.enqueue(weighableSpan)
+      //add new light span to the span map and parent map
+      spanMap.getOrElseUpdate(span.getSpanId, mutable.HashSet[LightSpan]()).add(lightSpan)
+      if (StringUtils.isNotEmpty(span.getParentSpanId)) parentSpanMap.put(span.getParentSpanId, lightSpan)
 
-      aggregateMeter.mark()
+      processSpan(lightSpan) foreach {
+        spanPair =>
+          cleanupSpanMap(spanPair)
+          forward(processorContext, spanPair)
+          aggregateMeter.mark()
+      }
     }
   }
 
@@ -78,25 +91,43 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
 
   override def close(): Unit = {}
 
+  //forward all complete spans
   private def forward(context: ProcessorContext, spanPair: SpanPair): Unit = {
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(s"Forwarding complete SpanPair: $spanPair")
+    if (spanPair.isComplete) {
+      LOGGER.debug("Forwarding complete SpanPair: {}", spanPair)
+      context.forward(spanPair.getId, spanPair)
+      forwardMeter.mark()
     }
-    context.forward(spanPair.spanId, spanPair)
-    forwardMeter.mark()
   }
 
-  private def drainQueueAndMapAsSpanPairs(): Iterable[SpanPair] = {
-    val mapOfSpanPairs = mutable.Map[String, SpanPair]()
+  /**
+    * process the given light span to check whether it can form a span pair
+    *
+    * @param span incoming span to be processed
+    * @return sequence of span pair whether complete or incomplete
+    */
+  private def processSpan(span: LightSpan): Seq[SpanPair] = {
+    val possibleSpanPairs = spanMap(span.spanId)
 
-    //dequeue everything and add to map. if the span is already there, then merge it.
-    while (weightedQueue.nonEmpty) {
-      val weighableSpan = weightedQueue.dequeue()
-      val spanPair = mapOfSpanPairs.getOrElseUpdate(weighableSpan.spanId, new SpanPair(weighableSpan.spanId))
-      spanPair.merge(weighableSpan)
+    //matched span, whether complete or incomplete based on their service
+    val spanPairs = mutable.ListBuffer[SpanPair]()
+
+    //same spanId is present in spanMap
+    if (possibleSpanPairs.size > 1) {
+      spanPairs += SpanPairBuilder.createSpanPair(possibleSpanPairs.head, possibleSpanPairs.tail.head)
+    } else {
+      //look for its parent ie if its parentId is in span map
+      spanMap.get(span.parentSpanId) match {
+        case Some(parentSpan) => spanPairs += SpanPairBuilder.createSpanPair(parentSpan.head, span)
+        case _ =>
+      }
+      //look for its child ie if its spanId is in parent map
+      parentSpanMap.get(span.spanId) match {
+        case Some(childSpan) => spanPairs += SpanPairBuilder.createSpanPair(childSpan, span)
+        case _ =>
+      }
     }
-
-    mapOfSpanPairs.values
+    spanPairs
   }
 
   @VisibleForTesting
@@ -105,31 +136,18 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
       //add gauge
       aggregateHistogram.update(spanCount)
 
-      //we process only until cutoff time and leave the rest in place and see
-      //if they get their matching span pair in the next punctuation
-      val cutOffTime = timestamp - (accumulatorInterval * 0.5).asInstanceOf[Long]
+      //we keep a span only until timeToKeep time and leave the rest in place and see
+      //if they get their matching span pair before timeToKeep
+      val timeToKeep = timestamp - accumulatorInterval  //in milliSec
+      LOGGER.debug(s"Punctuate called with $timestamp. TimeToKeep is $timeToKeep. Map sizes are ${spanMap.values.flatten[LightSpan].size} & ${parentSpanMap.size}")
 
-      LOGGER.debug(s"Punctuate called with $timestamp. CutOff is $cutOffTime. Queue size is ${weightedQueue.size} spans")
-
-      //dequeue weighableSpans and add to map of [spanId, SpanPair]
-      //if a span is already there, then merge it
-      val spanPairs : Iterable[SpanPair] = drainQueueAndMapAsSpanPairs()
-
-      //iterate map values and forward all complete spans. If the incomplete one is within
-      //the last few TimeUnits, we will retain it by enqueuing again to see if there is a matching
-      //span in the next batch. If the incomplete one is over the time limit, we will discard them
-      var count = 0
-      spanPairs.foreach(spanPair => {
-        if (spanPair.isComplete) {
-          forward(context, spanPair)
-          count += 1
-        }
-        else {
-          spanPair.getBackingSpans.foreach({
-            weighableSpan => if (weighableSpan.isLaterThan(cutOffTime)) weightedQueue.enqueue(weighableSpan)
-          })
-        }
-      })
+      //if the span is within the time limit, we will keep them, otherwise discard
+      spanMap = spanMap.filter {
+        case (_, ls) => ls.exists(sp => sp.isLaterThan(timeToKeep))
+      }
+      parentSpanMap = parentSpanMap.filter {
+        case (_, ls) => ls.isLaterThan(timeToKeep)
+      }
 
       // commit the current processing progress
       context.commit()
@@ -137,5 +155,17 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
   }
 
   @VisibleForTesting
-  def spanCount: Int = weightedQueue.size
+  def spanCount: Int = spanMap.values.flatten[LightSpan].size
+
+  /**
+    * spans in a span pair to be cleaned up from the data structures
+    *
+    * @param spanPair span pair with client / server  spans
+    */
+  private def cleanupSpanMap(spanPair: SpanPair): Unit = {
+    spanPair.getBackingSpans.foreach(ls => {
+      spanMap.remove(ls.parentSpanId)
+      parentSpanMap.remove(ls.spanId)
+    })
+  }
 }

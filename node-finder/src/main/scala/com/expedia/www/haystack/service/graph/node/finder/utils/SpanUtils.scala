@@ -52,7 +52,7 @@ object SpanUtils {
   private val SPAN_TYPE_MAP = Map(Flag(THREE) -> SpanType.CLIENT, Flag(TWELVE) -> SpanType.SERVER)
 
   /**
-    * Given a span check if it is eligible for accumulation and can be a weighable span
+    * Given a span check if it is eligible for accumulation and can be a light span
     * @param span span to validate
     * @return
     */

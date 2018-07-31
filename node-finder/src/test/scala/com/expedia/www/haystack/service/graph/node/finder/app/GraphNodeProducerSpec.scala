@@ -37,7 +37,7 @@ class GraphNodeProducerSpec extends TestSpec {
       }
       replay(context)
       graphNodeProducer.init(context)
-      graphNodeProducer.process(spanPair.spanId, spanPair)
+      graphNodeProducer.process(spanPair.getId, spanPair)
       val edge = captured.getValue
       Then("it should produce a valid GraphNode object")
       verify(context)
@@ -47,9 +47,9 @@ class GraphNodeProducerSpec extends TestSpec {
       edge.source.tags.get("testtag") should be ("true")
       edge.destination.tags.get("testtag") should be ("true")
     }
-    it("should emit no graph nodes for incomplete SpanLit") {
+    it("should emit no graph nodes for invalid light spans") {
       Given("an incomplete SpanPair instance")
-      val spanPair = inCompleteSpanPair()
+      val spanPair = invalidSpanPair()
       val context = mock[ProcessorContext]
       val graphNodeProducer = new GraphNodeProducer
       When("process is called on GraphNodeProducer with it")
@@ -58,7 +58,7 @@ class GraphNodeProducerSpec extends TestSpec {
       }
       replay(context)
       graphNodeProducer.init(context)
-      graphNodeProducer.process(spanPair.spanId, spanPair)
+      graphNodeProducer.process(spanPair.getId, spanPair)
       Then("it should produce no graph node in the context")
       verify(context)
     }
