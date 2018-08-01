@@ -41,7 +41,6 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
   private val processMeter = metricRegistry.meter("span.accumulator.process")
   private val aggregateMeter = metricRegistry.meter("span.accumulator.aggregate")
   private val forwardMeter = metricRegistry.meter("span.accumulator.emit")
-  private val aggregateHistogram = metricRegistry.histogram("span.accumulator.buffered.spans")
 
   // map to store spanId -> span data. Used for checking child-parent relationship
   private var spanMap = mutable.HashMap[String, mutable.HashSet[LightSpan]]()
@@ -135,9 +134,6 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
   @VisibleForTesting
   def getPunctuator(context: ProcessorContext): Punctuator = {
     (timestamp: Long) => {
-      //add gauge
-      aggregateHistogram.update(spanCount)
-
       //we keep a span only until timeToKeep time and leave the rest in place and see
       //if they get their matching span pair before timeToKeep
       val timeToKeep = timestamp - accumulatorInterval  //in milliSec

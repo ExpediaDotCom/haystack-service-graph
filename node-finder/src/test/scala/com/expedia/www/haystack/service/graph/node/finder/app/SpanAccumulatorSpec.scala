@@ -117,6 +117,41 @@ class SpanAccumulatorSpec extends TestSpec {
       accumulator.spanCount should be(0)
     }
 
+    it("should emit SpanPair instances for parent-child relation using ids with server spans") {
+
+      Given("an accumulator and initialized with a processor context")
+      val accumulator = new SpanAccumulator(1000, new GraphEdgeTagCollector())
+      val context = mock[ProcessorContext]
+      expecting {
+        context.schedule(anyLong(), isA(classOf[PunctuationType]), isA(classOf[Punctuator]))
+          .andReturn(mock[Cancellable]).once()
+        context.forward(anyString(), isA(classOf[SpanPair])).times(4)
+        context.commit().once()
+      }
+      replay(context)
+      accumulator.init(context)
+      And("spans from 5 services")
+      val spanList = List(
+        newSpan("I1", "I2", "svc1", "oper1", 1000, false, true),  // server
+        newSpan("I4", "I1", "svc2", "oper1", 1000, false, true),  // server
+        newSpan("I5", "I4", "svc2", "oper1", 1000, true, false),
+        newSpan("I6", "I5", "svc3", "oper1", 1000, false, true),  // server
+        newSpan("I8", "I6", "svc4", "oper1", 1000, false, true),  // server
+        newSpan("I9", "I8", "svc4", "oper1", 1000, true, false),
+        newSpan("I10", "I9", "svc5", "oper1", 1000, true, false),
+        newSpan("I11", "I10", "svc5", "oper1", 1000, true, false)
+      )
+      spanList.foreach(span => accumulator.process(span._1.getSpanId, span._1))
+
+      When("punctuate is called")
+      accumulator.getPunctuator(context).punctuate(System.currentTimeMillis())
+
+      Then("it should produce 10 SpanPair instances as expected")
+      verify(context)
+      And("the accumulator's collection should be empty")
+      accumulator.spanCount should be(0)
+    }
+
     it("should emit SpanPair instances for parent-child relation using ids even if spanId and parentId is same") {
 
       Given("an accumulator and initialized with a processor context")
