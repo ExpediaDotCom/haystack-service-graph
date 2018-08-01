@@ -62,17 +62,15 @@ class SpanPair() {
     * @param spanTwo lightSpan to be merged with the current SpanPair
     */
   def merge(spanOne: LightSpan, spanTwo: LightSpan): Unit = {
-    if (spanOne.spanType != SpanType.OTHER && spanTwo.spanType != SpanType.OTHER) {
-      setSpans(spanOne, spanTwo)
-    } else if (spanOne.spanId.equalsIgnoreCase(spanTwo.parentSpanId)) {
+    if (spanOne.spanId.equalsIgnoreCase(spanTwo.parentSpanId)) {
       setSpans(LightSpanBuilder.updateSpanType(spanOne, SpanType.CLIENT), LightSpanBuilder.updateSpanType(spanTwo, SpanType.SERVER))
     } else if (spanOne.parentSpanId.equalsIgnoreCase(spanTwo.spanId)) {
       setSpans(LightSpanBuilder.updateSpanType(spanOne, SpanType.SERVER), LightSpanBuilder.updateSpanType(spanTwo, SpanType.CLIENT))
+    } else {
+      setSpans(spanOne, spanTwo)
     }
 
-    LOGGER.debug(s"created a span pair: \n" +
-      "client: " + clientSpan + " \n" +
-      "server: " + serverSpan)
+    LOGGER.debug("created a span pair: client: {}, server: {}", List(clientSpan, serverSpan):_*)
   }
 
   /**
