@@ -45,6 +45,7 @@ case class KafkaConfiguration(streamsConfig: StreamsConfig,
                               timestampExtractor: TimestampExtractor,
                               accumulatorInterval: Int,
                               closeTimeoutInMs: Long,
+                              producerLingerMs: Long,
                               collectorTags: List[String]) {
   require(streamsConfig != null)
   require(StringUtils.isNotBlank(metricsTopic))
