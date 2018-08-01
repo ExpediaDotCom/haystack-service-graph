@@ -47,7 +47,7 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
   private var spanMap = mutable.HashMap[String, mutable.HashSet[LightSpan]]()
 
   // map to store parentSpanId -> span data. Used for checking child-parent relationship
-  private var parentSpanMap = mutable.HashMap[String, LightSpan]()
+  private var parentSpanMap = mutable.HashMap[String, mutable.HashSet[LightSpan]]()
 
   private var processorContext: ProcessorContext = _
 
@@ -76,7 +76,9 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
 
       //add new light span to the span map and parent map
       spanMap.getOrElseUpdate(span.getSpanId, mutable.HashSet[LightSpan]()).add(lightSpan)
-      if (StringUtils.isNotEmpty(span.getParentSpanId)) parentSpanMap.put(span.getParentSpanId, lightSpan)
+      if (StringUtils.isNotEmpty(span.getParentSpanId)) {
+        parentSpanMap.getOrElseUpdate(span.getParentSpanId, mutable.HashSet[LightSpan]()).add(lightSpan)
+      }
 
       processSpan(lightSpan) foreach {
         spanPair =>
@@ -123,7 +125,7 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
       }
       //look for its child ie if its spanId is in parent map
       parentSpanMap.get(span.spanId) match {
-        case Some(childSpan) => spanPairs += SpanPairBuilder.createSpanPair(childSpan, span)
+        case Some(childSpans) => spanPairs ++= childSpans.map(childSpan => SpanPairBuilder.createSpanPair(childSpan, span))
         case _ =>
       }
     }
@@ -146,7 +148,7 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
         case (_, ls) => ls.exists(sp => sp.isLaterThan(timeToKeep))
       }
       parentSpanMap = parentSpanMap.filter {
-        case (_, ls) => ls.isLaterThan(timeToKeep)
+        case (_, ls) => ls.exists(sp => sp.isLaterThan(timeToKeep))
       }
 
       // commit the current processing progress
@@ -164,7 +166,6 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
     */
   private def cleanupSpanMap(spanPair: SpanPair): Unit = {
     spanPair.getBackingSpans.foreach(ls => {
-      spanMap.remove(ls.parentSpanId)
       parentSpanMap.remove(ls.spanId)
     })
   }
