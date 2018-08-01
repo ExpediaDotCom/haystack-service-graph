@@ -160,7 +160,8 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
   def spanCount: Int = spanMap.values.flatten[LightSpan].size
 
   /**
-    * spans in a span pair to be cleaned up from the data structures
+    * spans in a span pair to be cleaned up from the parent span map.
+    * Not removing it from spanMap since there could be multiple children for it in case of same service.
     *
     * @param spanPair span pair with client / server  spans
     */
