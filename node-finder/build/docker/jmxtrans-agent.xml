@@ -66,6 +66,9 @@
         <query objectName="metrics:name=graph.node.producer.process" attribute="OneMinuteRate" resultAlias="graph-node.producer.process-rate"/>
         <query objectName="metrics:name=latency.producer.emit" attribute="OneMinuteRate" resultAlias="latency.producer.emit-rate"/>
         <query objectName="metrics:name=latency.producer.process" attribute="OneMinuteRate" resultAlias="latency.producer.process-rate"/>
+        <query objectName="metrics:name=span.accumulator.process" attribute="OneMinuteRate" resultAlias="span.accumulator.process-rate"/>
+        <query objectName="metrics:name=span.accumulator.aggregate" attribute="OneMinuteRate" resultAlias="span.accumulator.aggregate-rate"/>
+        <query objectName="metrics:name=span.accumulator.emit" attribute="OneMinuteRate" resultAlias="span.accumulator.emit-rate"/>
 
     </queries>
     <outputWriter class="org.jmxtrans.agent.GraphitePlainTextTcpOutputWriter">

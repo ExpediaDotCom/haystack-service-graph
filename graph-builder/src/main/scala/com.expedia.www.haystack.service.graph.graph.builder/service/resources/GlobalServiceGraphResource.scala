@@ -20,7 +20,7 @@ package com.expedia.www.haystack.service.graph.graph.builder.service.resources
 import javax.servlet.http.HttpServletRequest
 
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceConfiguration
-import com.expedia.www.haystack.service.graph.graph.builder.model.ServiceGraph
+import com.expedia.www.haystack.service.graph.graph.builder.model.{ServiceGraph, ServiceGraphEdge}
 import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalServiceEdgesFetcher, RemoteServiceEdgesFetcher}
 import com.expedia.www.haystack.service.graph.graph.builder.service.utils.EdgesMerger._
 import com.expedia.www.haystack.service.graph.graph.builder.service.utils.TimestampUtils
@@ -28,6 +28,10 @@ import org.apache.kafka.streams.KafkaStreams
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 class GlobalServiceGraphResource(streams: KafkaStreams,
                                  storeName: String,
@@ -45,24 +49,26 @@ class GlobalServiceGraphResource(streams: KafkaStreams,
     // get list of all hosts containing service-graph store
     // fetch local service graphs from all hosts
     // and merge local graphs to create global graph
-    val edgesList = streams
+    val edgesListFuture: Iterable[Future[Seq[ServiceGraphEdge]]] = streams
       .allMetadataForStore(storeName)
       .asScala
-      .flatMap(host => {
+      .map(host => {
         if (host.host() == serviceConfig.host) {
-          val localEdges = localEdgesFetcher.fetchEdges(from, to)
-          LOGGER.info(s"graph from local returned ${localEdges.size} edges")
-          localEdges
+          LOGGER.info(s"service graph from local invoked")
+          Future(localEdgesFetcher.fetchEdges(from, to))
         }
         else {
-          val remoteEdges = remoteEdgesFetcher.fetchEdges(host.host(), host.port())
-          LOGGER.info(s"graph from ${host.host()} returned ${remoteEdges.size} edges")
-          remoteEdges
+          LOGGER.info(s"service graph from ${host.host()} for edges is invoked")
+          remoteEdgesFetcher.fetchEdges(host.host(), host.port())
         }
-      }).toList
+      })
 
-    val mergedEdgeList = getMergedServiceEdges(edgesList)
+    val singleResultFuture = Future.sequence(edgesListFuture)
+    val edges = Await
+      .result(singleResultFuture, serviceConfig.client.socketTimeout.millis)
+      .foldLeft(mutable.ListBuffer[ServiceGraphEdge]())((buffer, coll) => buffer ++= coll)
 
+    val mergedEdgeList = getMergedServiceEdges(edges)
     globalEdgeCount.update(mergedEdgeList.length)
     ServiceGraph(mergedEdgeList)
   }

@@ -18,8 +18,9 @@
 package com.expedia.www.haystack.service.graph.graph.builder.service.fetchers
 
 import com.expedia.www.haystack.commons.entities.GraphEdge
-import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, ServiceGraphEdge}
+import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, ServiceEdgeStats, ServiceGraphEdge, ServiceGraphVertex}
 import com.expedia.www.haystack.service.graph.graph.builder.service.utils.EdgesMerger._
+import com.expedia.www.haystack.service.graph.graph.builder.service.utils.IOUtils
 import org.apache.kafka.streams.kstream.Windowed
 import org.apache.kafka.streams.state.{KeyValueIterator, QueryableStoreTypes, ReadOnlyWindowStore}
 import org.apache.kafka.streams.{KafkaStreams, KeyValue}
@@ -30,15 +31,21 @@ class LocalServiceEdgesFetcher(streams: KafkaStreams, storeName: String) {
   private lazy val store: ReadOnlyWindowStore[GraphEdge, EdgeStats] =
     streams.store(storeName, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
-  def fetchEdges(from: Long, to: Long): List[ServiceGraphEdge] = {
-    println(from)
-    println(to)
-    val iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = store.fetchAll(from, to)
+  def fetchEdges(from: Long, to: Long): Seq[ServiceGraphEdge] = {
+    var iterator: KeyValueIterator[Windowed[GraphEdge], EdgeStats] = null
+    try {
+        iterator = store.fetchAll(from, to)
+        val serviceGraphEdges =
+          for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
+            yield ServiceGraphEdge(
+              ServiceGraphVertex(kv.key.key.source.name, kv.value.sourceTags.asScala.toMap),
+              ServiceGraphVertex(kv.key.key.destination.name, kv.value.destinationTags.asScala.toMap),
+              ServiceEdgeStats(kv.value.count, kv.value.lastSeen, kv.value.errorCount),
+              kv.key.window().start(), Math.min(System.currentTimeMillis(), to))
 
-    val serviceGraphEdges =
-      for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
-        yield ServiceGraphEdge(kv.key.key.source, kv.key.key.destination, kv.value)
-
-    getMergedServiceEdges(serviceGraphEdges.toList)
+        getMergedServiceEdges(serviceGraphEdges.toSeq)
+    } finally {
+      IOUtils.closeSafely(iterator)
+    }
   }
 }

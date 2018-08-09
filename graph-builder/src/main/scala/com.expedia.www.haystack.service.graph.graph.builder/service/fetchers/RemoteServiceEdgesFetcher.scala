@@ -17,6 +17,8 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.service.fetchers
 
+import java.util.concurrent.Executors
+
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceClientConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.{ServiceGraph, ServiceGraphEdge}
 import org.apache.http.client.fluent.Request
@@ -24,24 +26,35 @@ import org.apache.http.client.utils.URIBuilder
 import org.json4s.DefaultFormats
 import org.json4s.jackson.Serialization
 
-class RemoteServiceEdgesFetcher(clientConfig: ServiceClientConfiguration) {
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
+
+class RemoteServiceEdgesFetcher(clientConfig: ServiceClientConfiguration) extends AutoCloseable {
   implicit val formats = DefaultFormats
 
-  def fetchEdges(host: String, port: Int): List[ServiceGraphEdge] = {
-    val request = new URIBuilder()
+  private val dispatcher = ExecutionContext.fromExecutorService(
+    Executors.newFixedThreadPool(Math.min(Runtime.getRuntime.availableProcessors(), 2)))
+
+  def fetchEdges(host: String, port: Int): Future[Seq[ServiceGraphEdge]] = {
+    val uri = new URIBuilder()
       .setScheme("http")
       .setPath("/servicegraph/local")
       .setHost(host)
       .setPort(port)
       .build()
 
-    val response = Request.Get(request)
-      .connectTimeout(clientConfig.connectionTimeout)
-      .socketTimeout(clientConfig.socketTimeout)
-      .execute()
-      .returnContent()
-      .asString()
+    Future {
+      val response = Request.Get(uri)
+        .connectTimeout(clientConfig.connectionTimeout)
+        .socketTimeout(clientConfig.socketTimeout)
+        .execute()
+        .returnContent()
+        .asString()
+      Serialization.read[ServiceGraph](response).edges
+    }(dispatcher)
+  }
 
-    Serialization.read[ServiceGraph](response).edges
+  override def close(): Unit = {
+    Try(dispatcher.shutdown())
   }
 }

@@ -25,7 +25,7 @@ class EdgeStatsSerdeSpec extends TestSpec {
   describe("EdgeStateSerde ") {
     it("should serialize EdgeState") {
       Given("a valid EdgeState object")
-      val edgeStats = EdgeStats(0, 0)
+      val edgeStats = EdgeStats(0, 0, 0)
 
       And("EdgeState serializer")
       val serializer = new EdgeStatsSerde().serializer()
@@ -39,7 +39,7 @@ class EdgeStatsSerdeSpec extends TestSpec {
 
     it("should deserialize serialized EdgeState") {
       Given("a valid EdgeState object")
-      val edgeStats = EdgeStats(1, 1)
+      val edgeStats = EdgeStats(1, 1, 1)
 
       And("serialized EdgeState")
       val serializer = new EdgeStatsSerde().serializer()
@@ -55,6 +55,7 @@ class EdgeStatsSerdeSpec extends TestSpec {
       deserializedEdgeStats should not be null
       deserializedEdgeStats.count should be(1)
       deserializedEdgeStats.lastSeen should be(1)
+      deserializedEdgeStats.errorCount should be(1)
     }
   }
 }

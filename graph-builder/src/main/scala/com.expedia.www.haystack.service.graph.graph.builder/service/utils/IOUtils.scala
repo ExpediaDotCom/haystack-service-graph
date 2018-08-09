@@ -15,33 +15,21 @@
  *      limitations under the License.
  *
  */
+
 package com.expedia.www.haystack.service.graph.graph.builder.service.utils
 
-import java.time.Instant
-import java.time.temporal.ChronoUnit
-import javax.servlet.http.HttpServletRequest
+import java.io.Closeable
 
-import org.apache.commons.lang3.StringUtils
+import org.slf4j.{Logger, LoggerFactory}
 
-object TimestampUtils {
+object IOUtils {
+  protected val LOGGER: Logger = LoggerFactory.getLogger(IOUtils.getClass)
 
-  def toTimestamp(request: HttpServletRequest): Long = {
-    if (StringUtils.isEmpty(request.getParameter("to"))) {
-      Instant.now().toEpochMilli
-    } else {
-      extractTime(request, "to")
+  def closeSafely(resource: Closeable): Unit = {
+    try {
+      if (resource != null) resource.close()
+    } catch {
+      case ex: Exception => LOGGER.error(s"Fail to close the resource with error", ex)
     }
-  }
-
-  def fromTimestamp(request: HttpServletRequest): Long = {
-    if (StringUtils.isEmpty(request.getParameter("from"))) {
-      Instant.now().minus(24, ChronoUnit.HOURS).toEpochMilli
-    } else {
-      extractTime(request, "from")
-    }
-  }
-
-  private def extractTime(request: HttpServletRequest, key: String): Long = {
-    request.getParameter(key).toLong
   }
 }

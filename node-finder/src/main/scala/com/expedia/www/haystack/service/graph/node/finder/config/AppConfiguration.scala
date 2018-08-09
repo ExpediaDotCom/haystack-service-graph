@@ -51,7 +51,6 @@ class AppConfiguration(resourceName: String) {
     */
   val healthStatusFilePath: String = config.getString("health.status.path")
 
-
   /**
     * Instance of {@link KafkaConfiguration KafkaConfiguration} to be used by the kstreams application
     */
@@ -94,6 +93,10 @@ class AppConfiguration(resourceName: String) {
     //set timestamp extractor
     props.setProperty("timestamp.extractor", timestampExtractor.getClass.getName)
 
+    val collectorTags: List[String] = if (kafka.hasPath("collectorTags")) kafka.getStringList("collectorTags").asScala
+      .toList
+    else List()
+
     KafkaConfiguration(new StreamsConfig(props),
       producerConfig.getString("metrics.topic"),
       EncoderFactory.newInstance(producerConfig.getString("metrics.key.encoder")),
@@ -107,7 +110,7 @@ class AppConfiguration(resourceName: String) {
       },
       timestampExtractor,
       kafka.getInt("accumulator.interval"),
-      kafka.getLong("close.timeout.ms")
-    )
+      kafka.getLong("close.timeout.ms"), collectorTags)
+
   }
 }

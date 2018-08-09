@@ -48,7 +48,7 @@ class GraphNodeProducer extends Processor[String, SpanPair] with MetricsSupport 
         context.forward(graphEdge, graphEdge)
         forwardMeter.mark()
         if (LOGGER.isDebugEnabled) {
-          LOGGER.debug(s"Graph edge : (${spanPair.spanId}, $graphEdge")
+          LOGGER.debug(s"Graph edge : (${spanPair.getId}, $graphEdge")
         }
       case None =>
     }

@@ -56,7 +56,7 @@ class AppSpec extends TestSpec with BeforeAndAfter {
     //start topology
     streamsRunner.start()
 
-    //time for kstreams to initialize completely
+    //time for kstreams to initialize completely·
     waitForStreams()
   }
 

@@ -18,7 +18,7 @@
 package com.expedia.www.haystack.service.graph.graph.builder
 
 import com.codahale.metrics.JmxReporter
-import com.expedia.www.haystack.commons.health.{HealthController, HealthStatusController, UpdateHealthStatusFile}
+import com.expedia.www.haystack.commons.health.{HealthStatusController, UpdateHealthStatusFile}
 import com.expedia.www.haystack.commons.kstreams.app.ManagedKafkaStreams
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfiguration
@@ -43,27 +43,23 @@ object App extends MetricsSupport {
     // instantiate the application
     // if any exception occurs during instantiation
     // gracefully handles teardown and does system exit
-    val app = createApp(appConfiguration)
+    val app = runApp(appConfiguration)
 
-    // start the application
-    // if any exception occurs during startup
-    // gracefully handles teardown and does system exit
-    app.start()
-
-    // add a shutdown hook
-    Runtime.getRuntime.addShutdownHook(new Thread() {
-      override def run(): Unit = {
-        LOGGER.info("Shutdown hook is invoked, tearing down the application.")
-        app.stop()
-      }
-    })
-
-    // mark the status of app as 'healthy'
-    HealthController.setHealthy()
+    if (app == null) {
+      System.exit(1)
+    } else {
+      // add a shutdown hook
+      Runtime.getRuntime.addShutdownHook(new Thread() {
+        override def run(): Unit = {
+          LOGGER.info("Shutdown hook is invoked, tearing down the application.")
+          if (app != null) app.stop()
+        }
+      })
+    }
   }
 
   @VisibleForTesting
-  def createApp(appConfiguration: AppConfiguration): ManagedApplication = {
+  def runApp(appConfiguration: AppConfiguration): ManagedApplication = {
     val jmxReporter: JmxReporter = JmxReporter.forRegistry(metricRegistry).build()
     val healthStatusController = new HealthStatusController
     healthStatusController.addListener(new UpdateHealthStatusFile(appConfiguration.healthStatusFilePath))
@@ -84,30 +80,38 @@ object App extends MetricsSupport {
       // wrap service and stream in a managed application instance
       // ManagedApplication makes sure that startup/shutdown sequence is right
       // and startup/shutdow errors are handling appropriately
-      new ManagedApplication(
+      val app = new ManagedApplication(
         new ManagedHttpService(service),
         new ManagedKafkaStreams(stream),
         jmxReporter)
 
+      // start the application
+      // if any exception occurs during startup
+      // gracefully handles teardown and does system exit
+      app.start()
+
+      // mark the app as healthy
+      healthStatusController.setHealthy()
+
+      app
     } catch {
       case ex: Exception =>
         LOGGER.error("Observed fatal exception instantiating the app", ex)
         if(stream != null) stream.close()
         if(service != null) service.close()
-        System.exit(1)
         null
     }
   }
 
   @VisibleForTesting
-  def createStream(kafkaConfig: KafkaConfiguration, healthStatusController: HealthStatusController): KafkaStreams = {
+  def createStream(kafkaConfig: KafkaConfiguration, healthController: HealthStatusController): KafkaStreams = {
     // service graph kafka stream supplier
     val serviceGraphStreamSupplier = new ServiceGraphStreamSupplier(kafkaConfig)
 
     // create kstream using application topology
     val streamsSupplier = new StreamSupplier(
       serviceGraphStreamSupplier,
-      healthStatusController,
+      healthController,
       kafkaConfig.streamsConfig,
       kafkaConfig.consumerTopic)
 

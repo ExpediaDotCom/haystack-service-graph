@@ -77,31 +77,26 @@ class AppConfiguration(resourceName: String) {
     val streamProps = new Properties
     addProps(streamsConfig, streamProps)
     // add stream application server config
-    streamProps.setProperty(StreamsConfig.APPLICATION_SERVER_CONFIG,
-      s"${config.getString("service.host")}:${config.getInt("service.http.port")}")
+    if (StringUtils.isBlank(streamProps.getProperty(StreamsConfig.APPLICATION_SERVER_CONFIG))) {
+      streamProps.setProperty(StreamsConfig.APPLICATION_SERVER_CONFIG, s"${config.getString("service.host")}:${config.getInt("service.http.port")}")
+    }
+
+    if (kafka.hasPath("rocksdb")) {
+      CustomRocksDBConfig.setRocksDbConfig(kafka.getConfig("rocksdb"))
+      streamProps.put(StreamsConfig.ROCKSDB_CONFIG_SETTER_CLASS_CONFIG, classOf[CustomRocksDBConfig])
+    }
+
     // validate props
     verifyRequiredProps(streamProps)
 
-    // changelog topic specific configs
-    val producerTopicConfigMap =
-      if (producerConfig.hasPath("config"))
-        producerConfig
-          .getConfig("config")
-          .entrySet()
-          .asScala
-          .map(entry => entry.getKey -> entry.getValue.unwrapped().toString)
-          .toMap
-          .asJava
-      else
-        new java.util.HashMap[String, String]()
-
     // offset reset for kstream
     val autoOffsetReset =
-      if (streamsConfig.hasPath("auto.offset.reset"))
+      if (streamsConfig.hasPath("auto.offset.reset")) {
         AutoOffsetReset.valueOf(streamsConfig.getString("auto.offset.reset").toUpperCase)
-      else
+      } else {
         AutoOffsetReset.LATEST
-
+      }
+    
     val aggregation = kafka.getConfig("aggregate")
     val aggregationWindowSec = aggregation.getInt("window.sec")
     val aggregationRetentionDays = aggregation.getInt("retention.days")
@@ -109,7 +104,6 @@ class AppConfiguration(resourceName: String) {
     KafkaConfiguration(new StreamsConfig(streamProps),
       consumerConfig.getString("topic"),
       producerConfig.getString("topic"),
-      producerTopicConfigMap,
       autoOffsetReset,
       kafka.getLong("close.timeout.ms"),
       aggregationWindowSec,

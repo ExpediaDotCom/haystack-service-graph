@@ -17,16 +17,64 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.model
 
-import org.apache.commons.lang3.StringUtils
-
+import scala.collection.mutable
 /**
   * A graph edge representing relationship between two services over an operation
+  *
   * @param source source service
   * @param destination destination service
   * @param stats stats around the edge
+  * @param effectiveFrom start timestamp from which stats are collected
+  * @param effectiveTo end timestamp till which stats are collected
+  *
   */
-case class ServiceGraphEdge(source: String, destination: String, stats: EdgeStats)  {
-  require(StringUtils.isNotEmpty(source))
-  require(StringUtils.isNotEmpty(destination))
+case class ServiceGraphEdge(source: ServiceGraphVertex,
+                            destination: ServiceGraphVertex,
+                            stats: ServiceEdgeStats,
+                            effectiveFrom: Long,
+                            effectiveTo: Long)  {
+  require(source != null)
+  require(destination != null)
   require(stats != null)
+
+  def mergeTags(first: Map[String, String], second: Map[String, String]): Map[String, String] = {
+    val merged = new mutable.HashMap[String, mutable.HashSet[String]]()
+
+    def merge(tags: Map[String, String]) {
+      tags.foreach {
+        case (key, value) =>
+          val valueSet = merged.getOrElseUpdate(key, new mutable.HashSet[String]())
+          valueSet ++= value.split(",")
+      }
+    }
+
+    merge(first)
+    merge(second)
+
+    merged.mapValues(_.mkString(",")).toMap
+  }
+
+  def +(other: ServiceGraphEdge): ServiceGraphEdge = {
+    val sourceVertex = this.source.copy(tags = mergeTags(other.source.tags, this.source.tags))
+    val destinationVertex = this.destination.copy(tags = mergeTags(other.destination.tags, this.destination.tags))
+    ServiceGraphEdge(
+      sourceVertex,
+      destinationVertex,
+      this.stats + other.stats,
+      Math.min(this.effectiveFrom, other.effectiveFrom),
+      Math.max(this.effectiveTo, other.effectiveTo))
+  }
+}
+
+case class ServiceGraphVertex(name: String, tags: Map[String, String] = Map())
+
+case class ServiceEdgeStats(count: Long,
+                            lastSeen: Long,
+                            errorCount: Long) {
+  def +(other: ServiceEdgeStats): ServiceEdgeStats = {
+    ServiceEdgeStats(
+      this.count + other.count,
+      Math.max(this.lastSeen, other.lastSeen),
+      this.errorCount + other.errorCount)
+  }
 }

@@ -37,13 +37,13 @@ class LatencyProducerSpec extends TestSpec {
       }
       replay(context)
       latencyProducer.init(context)
-      latencyProducer.process(spanPair.spanId, spanPair)
+      latencyProducer.process(spanPair.getId, spanPair)
       Then("it should produce a metric point in the context")
       verify(context)
     }
-    it("should produce no metrics for incomplete SpanPair") {
+    it("should produce no metrics for invalid SpanPair") {
       Given("an incomplete SpanPair instance")
-      val spanPair = inCompleteSpanPair()
+      val spanPair = invalidSpanPair()
       val context = mock[ProcessorContext]
       val latencyProducer = new LatencyProducer(new PeriodReplacementEncoder)
       When("process is invoked with a complete SpanPair")
@@ -52,7 +52,7 @@ class LatencyProducerSpec extends TestSpec {
       }
       replay(context)
       latencyProducer.init(context)
-      latencyProducer.process(spanPair.spanId, spanPair)
+      latencyProducer.process(spanPair.getId, spanPair)
       Then("it should produce no metric points in the context")
       verify(context)
     }
