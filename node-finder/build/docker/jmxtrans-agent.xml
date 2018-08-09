@@ -12,20 +12,20 @@
         <query objectName="java.lang:type=Threading" attribute="ThreadCount" resultAlias="jvm.thread"/>
 
         <!-- useG1GC metrics -->
-        <query objectName="type=MemoryPool,name=G1 Eden Space" attribute="Usage" key="used"
-               resultAlias="jvm.g1EdenSpace.used" />
-        <query objectName="type=MemoryPool,name=G1 Eden Space" attribute="Usage" key="max"
-               resultAlias="jvm.g1EdenSpace.max" />
+        <!--<query objectName="type=MemoryPool,name=G1 Eden Space" attribute="Usage" key="used"-->
+               <!--resultAlias="jvm.g1EdenSpace.used" />-->
+        <!--<query objectName="type=MemoryPool,name=G1 Eden Space" attribute="Usage" key="max"-->
+               <!--resultAlias="jvm.g1EdenSpace.max" />-->
 
-        <query objectName="type=MemoryPool,name=G1 Old Gen" attribute="Usage" key="used"
-               resultAlias="jvm.g1OldGen.used" />
-        <query objectName="type=MemoryPool,name=G1 Old Gen" attribute="Usage" key="max"
-               resultAlias="jvm.g1OldGen.max" />
+        <!--<query objectName="type=MemoryPool,name=G1 Old Gen" attribute="Usage" key="used"-->
+               <!--resultAlias="jvm.g1OldGen.used" />-->
+        <!--<query objectName="type=MemoryPool,name=G1 Old Gen" attribute="Usage" key="max"-->
+               <!--resultAlias="jvm.g1OldGen.max" />-->
 
-        <query objectName="type=MemoryPool,name=G1 Survivor Space" attribute="Usage" key="max"
-               resultAlias="jvm.g1SurvivorSpace.max" />
-        <query objectName="type=MemoryPool,name=G1 Survivor Space" attribute="Usage" key="used"
-               resultAlias="jvm.g1SurvivorSpace.used" />
+        <!--<query objectName="type=MemoryPool,name=G1 Survivor Space" attribute="Usage" key="max"-->
+               <!--resultAlias="jvm.g1SurvivorSpace.max" />-->
+        <!--<query objectName="type=MemoryPool,name=G1 Survivor Space" attribute="Usage" key="used"-->
+               <!--resultAlias="jvm.g1SurvivorSpace.used" />-->
 
 
         <!-- kafka producer metrics -->
