@@ -102,7 +102,7 @@ class SpanPair() {
     if (isComplete) {
       val clientVertex = GraphVertex(clientSpan.serviceName, clientSpan.tags.asJava)
       val serverVertex = GraphVertex(serverSpan.serviceName, serverSpan.tags.asJava)
-      Some(GraphEdge(clientVertex, serverVertex, clientSpan.operationName))
+      Some(GraphEdge(clientVertex, serverVertex, clientSpan.operationName, clientSpan.time))
     } else {
       None
     }
