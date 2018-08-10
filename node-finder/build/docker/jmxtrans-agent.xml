@@ -27,6 +27,10 @@
         <query objectName="java.lang:type=MemoryPool,name=G1 Survivor Space" attribute="Usage" key="used"
                resultAlias="jvm.g1SurvivorSpace.used" />
 
+        <query objectName="java.lang:type=GarbageCollector" attribute="LastGcInfo" key="duration"
+               resultAlias="jvm.gc.duration" />
+        <query objectName="java.lang:type=GarbageCollector" attribute="CollectionTime"
+               resultAlias="jvm.gc.collection.time" />
 
         <!-- kafka producer metrics -->
         <query objectName="kafka.producer:type=producer-metrics,client-id=*" attribute="record-send-rate" resultAlias="kafka-producer.record-send.rate"/>
