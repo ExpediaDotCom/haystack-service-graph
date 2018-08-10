@@ -21,11 +21,11 @@ import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 
 import com.expedia.www.haystack.commons.entities.GraphEdge
+import com.expedia.www.haystack.commons.kstreams.GraphEdgeTimestampExtractor
 import com.expedia.www.haystack.commons.kstreams.serde.graph.{GraphEdgeKeySerde, GraphEdgeValueSerde}
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.KafkaConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, EdgeStatsSerde}
 import org.apache.kafka.streams.kstream._
-import org.apache.kafka.streams.processor.WallclockTimestampExtractor
 import org.apache.kafka.streams.{Consumed, StreamsBuilder, Topology}
 
 class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
@@ -55,7 +55,7 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
         Consumed.`with`(
           new GraphEdgeKeySerde,
           new GraphEdgeValueSerde,
-          new WallclockTimestampExtractor,
+          new GraphEdgeTimestampExtractor,
           kafkaConfiguration.autoOffsetReset
         )
       )

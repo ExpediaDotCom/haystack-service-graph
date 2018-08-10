@@ -83,8 +83,10 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       val source = random.nextString(4)
       val destination = random.nextString(4)
       val operation = random.nextString(4)
+      val time = System.currentTimeMillis()
+
       //send sample data
-      produceRecord(producer, source, destination, operation)
+      produceRecord(producer, source, destination, operation, time)
 
       Then("edges should be added to edges ktable")
       //read data from ktable to validate
@@ -93,7 +95,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
       val storeIterator = store.all()
       val filteredEdges = storeIterator.asScala.toList.filter(
-        edge => edge.key.key == GraphEdge(GraphVertex(source), GraphVertex(destination), operation))
+        edge => edge.key.key == GraphEdge(GraphVertex(source), GraphVertex(destination), operation, time))
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(1)
@@ -112,8 +114,10 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       val source = random.nextString(4)
       val destination = random.nextString(4)
       val operation = random.nextString(4)
+      val time = System.currentTimeMillis()
+
       //send sample data
-      produceDuplicateRecord(producer, 3, source, destination, operation)
+      produceDuplicateRecord(producer, 3, source, destination, operation, time)
 
       Then("only one edge should be added to edges ktable")
       //read data from ktable to validate
@@ -122,7 +126,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
       val storeIterator = store.all()
       val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key ==
-        GraphEdge(GraphVertex(source), GraphVertex(destination), operation))
+        GraphEdge(GraphVertex(source), GraphVertex(destination), operation, time))
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(3)
@@ -140,9 +144,10 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       val source = random.nextInt().toString
       val destination = random.nextInt().toString
       val operation = random.nextString(4)
+      val time = System.currentTimeMillis()
 
       //send sample data
-      produceRecord(producer, source, destination, operation, Map("tag1" -> "testtagval1", TagKeys.ERROR_KEY -> "true"))
+      produceRecord(producer, source, destination, operation, time, Map("tag1" -> "testtagval1", TagKeys.ERROR_KEY -> "true"))
 
       Then("servicegraph endpoint should return the new edge")
       val edgeJson = Request
@@ -174,8 +179,10 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
       val source = random.nextInt().toString
       val destination = random.nextInt().toString
       val operation = random.nextInt().toString
+      val time = System.currentTimeMillis()
+
       //send sample data
-      produceRecord(producer, source, destination, operation)
+      produceRecord(producer, source, destination, operation, time)
 
       Then("operationgraph endpoint should return the new edge")
       val edgeJson = Request
@@ -212,16 +219,16 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
   }
 
   private def produceRecord(producer: KafkaProducer[GraphEdge, GraphEdge], source: String, destination: String,
-                            operation: String, sourceEdgetags: Map[String, String] = Map()): Unit = {
-    sendRecord(producer, source, destination, operation, sourceEdgetags)
+                            operation: String, time: Long, sourceEdgetags: Map[String, String] = Map()): Unit = {
+    sendRecord(producer, source, destination, operation, time, sourceEdgetags)
 
     // flush and sleep for couple of seconds for streams to process
     producer.flush()
     Thread.sleep(2000)
   }
 
-  private def produceDuplicateRecord(producer: KafkaProducer[GraphEdge, GraphEdge], count: Int, source: String, destination: String, operation: String): Unit = {
-    for (i <- 0 until count) sendRecord(producer, source, destination, operation)
+  private def produceDuplicateRecord(producer: KafkaProducer[GraphEdge, GraphEdge], count: Int, source: String, destination: String, operation: String, time: Long): Unit = {
+    for (i <- 0 until count) sendRecord(producer, source, destination, operation, time)
 
     // flush and sleep for couple of seconds for streams to process
     producer.flush()
@@ -229,8 +236,8 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
   }
 
   private def sendRecord(producer: KafkaProducer[GraphEdge, GraphEdge], source: String, destination: String,
-                         operation: String, sourceEdgeTags: Map[String, String] = Map()): Unit = {
-    val edge = GraphEdge(GraphVertex(source, sourceEdgeTags.asJava), GraphVertex(destination), operation)
+                         operation: String, time: Long, sourceEdgeTags: Map[String, String] = Map()): Unit = {
+    val edge = GraphEdge(GraphVertex(source, sourceEdgeTags.asJava), GraphVertex(destination), operation, time)
     producer.send(new ProducerRecord[GraphEdge, GraphEdge](appConfig.kafkaConfig.consumerTopic, edge, edge))
   }
 }

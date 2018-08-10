@@ -29,7 +29,9 @@ class SpanPairSpec extends TestSpec {
       Given("a complete spanlite")
       val spanId = UUID.randomUUID().toString
       val parentSpanId = UUID.randomUUID().toString
-      val clientSpan = newLightSpan(spanId, parentSpanId, "foo-service", "bar", SpanType.CLIENT)
+      val clientTime = System.currentTimeMillis()
+
+      val clientSpan = newLightSpan(spanId, parentSpanId, "foo-service", "bar", clientTime, 1000,  SpanType.CLIENT)
       val serverSpan = newLightSpan(spanId, parentSpanId, "baz-service", "bar", SpanType.SERVER)
       val spanPair = SpanPairBuilder.createSpanPair(clientSpan, serverSpan)
 
@@ -38,13 +40,15 @@ class SpanPairSpec extends TestSpec {
 
       Then("it should return a valid graphEdge")
       spanPair.isComplete should be(true)
-      graphEdge.get should be(GraphEdge(GraphVertex("foo-service"), GraphVertex("baz-service"), "bar"))
+      graphEdge.get should be(GraphEdge(GraphVertex("foo-service"), GraphVertex("baz-service"), "bar", clientTime))
     }
 
     it("should return a valid graphEdge for open tracing compliant spans") {
       Given("a complete spanlite")
       val spanId = UUID.randomUUID().toString
-      val clientSpan = newLightSpan(spanId, UUID.randomUUID().toString, "foo-service", "bar", SpanType.OTHER)
+      val clientTime = System.currentTimeMillis()
+
+      val clientSpan = newLightSpan(spanId, UUID.randomUUID().toString, "foo-service", "bar", clientTime, 1000, SpanType.OTHER)
       val serverSpan = newLightSpan(UUID.randomUUID().toString, spanId, "baz-service", "bar", SpanType.OTHER)
       val spanPair = SpanPairBuilder.createSpanPair(clientSpan, serverSpan)
 
@@ -53,7 +57,7 @@ class SpanPairSpec extends TestSpec {
 
       Then("it should return a valid graphEdge")
       spanPair.isComplete should be(true)
-      graphEdge.get should be(GraphEdge(GraphVertex("foo-service"), GraphVertex("baz-service"), "bar"))
+      graphEdge.get should be(GraphEdge(GraphVertex("foo-service"), GraphVertex("baz-service"), "bar", clientTime))
     }
     it("should return valid metricPoints") {
       Given("a complete spanlite")
