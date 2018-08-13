@@ -24,7 +24,7 @@ import scala.collection.mutable
   * @param source source service
   * @param destination destination service
   * @param stats stats around the edge
-  * @param effectiveFrom start timestamp from which stats are collected
+  * @param  effectiveFrom start timestamp from which stats are collected
   * @param effectiveTo end timestamp till which stats are collected
   *
   */
