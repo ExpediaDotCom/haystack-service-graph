@@ -95,7 +95,10 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
       val storeIterator = store.all()
       val filteredEdges = storeIterator.asScala.toList.filter(
-        edge => edge.key.key == GraphEdge(GraphVertex(source), GraphVertex(destination), operation, time))
+        edge => {
+          val gEdge = edge.key.key
+          gEdge.source == GraphVertex(source) && gEdge.destination == GraphVertex(destination) && gEdge.operation == operation && gEdge.sourceTimestamp == 0
+        })
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(1)
@@ -125,8 +128,11 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
         stream.store(appConfig.kafkaConfig.producerTopic, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
       val storeIterator = store.all()
-      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key ==
-        GraphEdge(GraphVertex(source), GraphVertex(destination), operation, time))
+      val filteredEdges = storeIterator.asScala.toList.filter(
+        edge => {
+          val gEdge = edge.key.key
+          gEdge.source == GraphVertex(source) && gEdge.destination == GraphVertex(destination) && gEdge.operation == operation && gEdge.sourceTimestamp == 0
+        })
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(3)

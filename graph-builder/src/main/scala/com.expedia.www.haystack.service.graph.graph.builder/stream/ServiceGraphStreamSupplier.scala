@@ -49,7 +49,7 @@ class ServiceGraphStreamSupplier(kafkaConfiguration: KafkaConfiguration) extends
       //
       // read edges from graph-nodes topic
       // graphEdge is both the key and value
-      // use wallclock time
+      // use graph edge timestamp
       .stream(
         kafkaConfiguration.consumerTopic,
         Consumed.`with`(
