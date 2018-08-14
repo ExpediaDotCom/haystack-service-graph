@@ -17,11 +17,9 @@
  */
 package com.expedia.www.haystack.service.graph.graph.builder.model
 
-import java.util
-
 import com.expedia.www.haystack.commons.entities.{GraphEdge, TagKeys}
 
-import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 /**
   * Object to hold stats for graph edges
@@ -33,12 +31,12 @@ import scala.collection.JavaConverters._
 case class EdgeStats(count: Long,
                      lastSeen: Long,
                      errorCount: Long,
-                     sourceTags: java.util.Map[String, String] = new util.HashMap[String, String](),
-                     destinationTags: java.util.Map[String, String] = new util.HashMap[String, String]()) {
+                     sourceTags: mutable.Map[String, String] = mutable.HashMap[String, String](),
+                     destinationTags:  mutable.Map[String, String] = mutable.HashMap[String, String]()) {
   def update(e: GraphEdge): EdgeStats = {
-    this.sourceTags.putAll(e.source.tags.asJava)
+    this.sourceTags ++= e.source.tags
     this.sourceTags.remove(TagKeys.ERROR_KEY)
-    this.destinationTags.putAll(e.destination.tags.asJava)
+    this.destinationTags ++= e.destination.tags
     this.destinationTags.remove(TagKeys.ERROR_KEY)
 
     val incrErrorCountBy = if (e.source.tags.getOrElse(TagKeys.ERROR_KEY, "false") == "true") 1 else 0
