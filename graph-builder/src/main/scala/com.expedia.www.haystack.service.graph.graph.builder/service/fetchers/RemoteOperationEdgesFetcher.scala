@@ -36,10 +36,10 @@ class RemoteOperationEdgesFetcher(clientConfig: ServiceClientConfiguration) exte
 
   implicit val formats = DefaultFormats
 
-  def fetchEdges(host: String, port: Int): Future[Seq[OperationGraphEdge]] = {
+  def fetchEdges(host: String, port: Int, from: Long, to: Long): Future[Seq[OperationGraphEdge]] = {
     val request = new URIBuilder()
       .setScheme("http")
-      .setPath("/operationgraph/local")
+      .setPath("/operationgraph/local?from="+from+"&to="+to)
       .setHost(host)
       .setPort(port)
       .build()

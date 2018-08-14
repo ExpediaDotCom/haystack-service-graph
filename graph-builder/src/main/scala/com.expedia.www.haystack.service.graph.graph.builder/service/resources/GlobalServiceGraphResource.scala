@@ -59,7 +59,7 @@ class GlobalServiceGraphResource(streams: KafkaStreams,
         }
         else {
           LOGGER.info(s"service graph from ${host.host()} for edges is invoked")
-          remoteEdgesFetcher.fetchEdges(host.host(), host.port())
+          remoteEdgesFetcher.fetchEdges(host.host(), host.port(), from, to)
         }
       })
 

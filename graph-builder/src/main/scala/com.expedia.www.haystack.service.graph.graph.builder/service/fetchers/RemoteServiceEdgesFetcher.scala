@@ -35,10 +35,10 @@ class RemoteServiceEdgesFetcher(clientConfig: ServiceClientConfiguration) extend
   private val dispatcher = ExecutionContext.fromExecutorService(
     Executors.newFixedThreadPool(Math.min(Runtime.getRuntime.availableProcessors(), 2)))
 
-  def fetchEdges(host: String, port: Int): Future[Seq[ServiceGraphEdge]] = {
+  def fetchEdges(host: String, port: Int, from: Long, to: Long): Future[Seq[ServiceGraphEdge]] = {
     val uri = new URIBuilder()
       .setScheme("http")
-      .setPath("/servicegraph/local")
+      .setPath("/servicegraph/local?from="+from+"&to="+to)
       .setHost(host)
       .setPort(port)
       .build()

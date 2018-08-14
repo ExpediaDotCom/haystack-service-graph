@@ -57,7 +57,7 @@ class GlobalOperationGraphResource(streams: KafkaStreams,
           Future(localEdgesFetcher.fetchEdges(from, to))
         } else {
           LOGGER.info(s"operation graph from ${host.host()} is invoked")
-          remoteEdgesFetcher.fetchEdges(host.host(), host.port())
+          remoteEdgesFetcher.fetchEdges(host.host(), host.port(), from, to)
         }
       })
 
