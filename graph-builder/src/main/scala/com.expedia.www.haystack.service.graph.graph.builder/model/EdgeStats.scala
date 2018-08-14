@@ -21,6 +21,8 @@ import java.util
 
 import com.expedia.www.haystack.commons.entities.{GraphEdge, TagKeys}
 
+import scala.collection.JavaConverters._
+
 /**
   * Object to hold stats for graph edges
  *
@@ -34,17 +36,21 @@ case class EdgeStats(count: Long,
                      sourceTags: java.util.Map[String, String] = new util.HashMap[String, String](),
                      destinationTags: java.util.Map[String, String] = new util.HashMap[String, String]()) {
   def update(e: GraphEdge): EdgeStats = {
-    this.sourceTags.putAll(e.source.tags)
+    this.sourceTags.putAll(e.source.tags.asJava)
     this.sourceTags.remove(TagKeys.ERROR_KEY)
-    this.destinationTags.putAll(e.destination.tags)
+    this.destinationTags.putAll(e.destination.tags.asJava)
     this.destinationTags.remove(TagKeys.ERROR_KEY)
 
-    val incrErrorCountBy = if (e.source.tags.getOrDefault(TagKeys.ERROR_KEY, "false") == "true") 1 else 0
+    val incrErrorCountBy = if (e.source.tags.getOrElse(TagKeys.ERROR_KEY, "false") == "true") 1 else 0
     EdgeStats(
       count + 1,
-      System.currentTimeMillis(),
+      lastSeen(e),
       errorCount + incrErrorCountBy,
       sourceTags,
       destinationTags)
+  }
+
+  private def lastSeen(e: GraphEdge): Long = {
+    if (e.sourceTimestamp == 0) System.currentTimeMillis() else Math.max(e.sourceTimestamp, this.lastSeen)
   }
 }

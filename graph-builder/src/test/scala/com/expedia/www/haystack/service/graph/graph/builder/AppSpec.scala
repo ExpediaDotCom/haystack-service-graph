@@ -237,7 +237,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
   private def sendRecord(producer: KafkaProducer[GraphEdge, GraphEdge], source: String, destination: String,
                          operation: String, time: Long, sourceEdgeTags: Map[String, String] = Map()): Unit = {
-    val edge = GraphEdge(GraphVertex(source, sourceEdgeTags.asJava), GraphVertex(destination), operation, time)
+    val edge = GraphEdge(GraphVertex(source, sourceEdgeTags), GraphVertex(destination), operation, time)
     producer.send(new ProducerRecord[GraphEdge, GraphEdge](appConfig.kafkaConfig.consumerTopic, edge, edge))
   }
 }

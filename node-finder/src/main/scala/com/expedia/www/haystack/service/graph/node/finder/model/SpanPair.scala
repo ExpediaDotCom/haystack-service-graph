@@ -21,8 +21,6 @@ import com.expedia.www.haystack.commons.entities._
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType
 import org.slf4j.LoggerFactory
 
-import scala.collection.JavaConverters._
-
 /**
   * An instance of SpanPair can contain data from both server and client spans.
   * SpanPair is considered "complete" if it has data fields from both server and client span of the same SpanId
@@ -100,8 +98,8 @@ class SpanPair() {
     */
   def getGraphEdge: Option[GraphEdge] = {
     if (isComplete) {
-      val clientVertex = GraphVertex(clientSpan.serviceName, clientSpan.tags.asJava)
-      val serverVertex = GraphVertex(serverSpan.serviceName, serverSpan.tags.asJava)
+      val clientVertex = GraphVertex(clientSpan.serviceName, clientSpan.tags)
+      val serverVertex = GraphVertex(serverSpan.serviceName, serverSpan.tags)
       Some(GraphEdge(clientVertex, serverVertex, clientSpan.operationName, clientSpan.time))
     } else {
       None
