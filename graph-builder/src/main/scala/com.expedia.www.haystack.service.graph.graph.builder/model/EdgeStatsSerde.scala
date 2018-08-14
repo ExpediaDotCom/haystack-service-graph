@@ -19,10 +19,13 @@ package com.expedia.www.haystack.service.graph.graph.builder.model
 
 import java.util
 
-import com.google.gson.Gson
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serializer}
+import org.json4s.DefaultFormats
+import org.json4s.jackson.Serialization
 
 class EdgeStatsSerde extends Serde[EdgeStats] {
+  implicit val formats = DefaultFormats
+
   override def deserializer(): Deserializer[EdgeStats] = new EdgeStatsDeserializer
 
   override def serializer(): Serializer[EdgeStats] = new EdgeStatsSerializer
@@ -33,8 +36,10 @@ class EdgeStatsSerde extends Serde[EdgeStats] {
 }
 
 class EdgeStatsSerializer extends Serializer[EdgeStats] {
-  override def serialize(topic: String, graphEdgeSet: EdgeStats): Array[Byte] = {
-    new Gson().toJson(graphEdgeSet).getBytes
+  implicit val formats = DefaultFormats
+
+  override def serialize(topic: String, edgeStats: EdgeStats): Array[Byte] = {
+    Serialization.write(edgeStats).getBytes("utf-8")
   }
 
   override def configure(map: util.Map[String, _], b: Boolean): Unit = ()
@@ -43,9 +48,10 @@ class EdgeStatsSerializer extends Serializer[EdgeStats] {
 }
 
 class EdgeStatsDeserializer extends Deserializer[EdgeStats] {
+  implicit val formats = DefaultFormats
+
   override def deserialize(topic: String, data: Array[Byte]): EdgeStats = {
-    if(data == null) EdgeStats(0, 0, 0)
-    else new Gson().fromJson(new String(data), classOf[EdgeStats])
+    if(data == null) EdgeStats(0, 0, 0) else Serialization.read[EdgeStats](new String(data))
   }
 
   override def configure(map: util.Map[String, _], b: Boolean): Unit = ()

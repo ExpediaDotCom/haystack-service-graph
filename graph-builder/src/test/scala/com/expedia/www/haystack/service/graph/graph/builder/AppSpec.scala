@@ -95,7 +95,10 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
       val storeIterator = store.all()
       val filteredEdges = storeIterator.asScala.toList.filter(
-        edge => edge.key.key == GraphEdge(GraphVertex(source), GraphVertex(destination), operation, time))
+        edge => {
+          val gEdge = edge.key.key
+          gEdge.source == GraphVertex(source) && gEdge.destination == GraphVertex(destination) && gEdge.operation == operation && gEdge.sourceTimestamp == 0
+        })
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(1)
@@ -125,8 +128,11 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
         stream.store(appConfig.kafkaConfig.producerTopic, QueryableStoreTypes.windowStore[GraphEdge, EdgeStats]())
 
       val storeIterator = store.all()
-      val filteredEdges = storeIterator.asScala.toList.filter(edge => edge.key.key ==
-        GraphEdge(GraphVertex(source), GraphVertex(destination), operation, time))
+      val filteredEdges = storeIterator.asScala.toList.filter(
+        edge => {
+          val gEdge = edge.key.key
+          gEdge.source == GraphVertex(source) && gEdge.destination == GraphVertex(destination) && gEdge.operation == operation && gEdge.sourceTimestamp == 0
+        })
 
       filteredEdges.length should be(1)
       filteredEdges.head.value.count should be(3)
@@ -237,7 +243,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
 
   private def sendRecord(producer: KafkaProducer[GraphEdge, GraphEdge], source: String, destination: String,
                          operation: String, time: Long, sourceEdgeTags: Map[String, String] = Map()): Unit = {
-    val edge = GraphEdge(GraphVertex(source, sourceEdgeTags.asJava), GraphVertex(destination), operation, time)
+    val edge = GraphEdge(GraphVertex(source, sourceEdgeTags), GraphVertex(destination), operation, time)
     producer.send(new ProducerRecord[GraphEdge, GraphEdge](appConfig.kafkaConfig.consumerTopic, edge, edge))
   }
 }

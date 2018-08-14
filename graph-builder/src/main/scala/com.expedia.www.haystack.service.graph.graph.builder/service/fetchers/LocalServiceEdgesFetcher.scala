@@ -38,8 +38,8 @@ class LocalServiceEdgesFetcher(streams: KafkaStreams, storeName: String) {
         val serviceGraphEdges =
           for (kv: KeyValue[Windowed[GraphEdge], EdgeStats] <- iterator.asScala)
             yield ServiceGraphEdge(
-              ServiceGraphVertex(kv.key.key.source.name, kv.value.sourceTags.asScala.toMap),
-              ServiceGraphVertex(kv.key.key.destination.name, kv.value.destinationTags.asScala.toMap),
+              ServiceGraphVertex(kv.key.key.source.name, kv.value.sourceTags.toMap),
+              ServiceGraphVertex(kv.key.key.destination.name, kv.value.destinationTags.toMap),
               ServiceEdgeStats(kv.value.count, kv.value.lastSeen, kv.value.errorCount),
               kv.key.window().start(), Math.min(System.currentTimeMillis(), to))
 

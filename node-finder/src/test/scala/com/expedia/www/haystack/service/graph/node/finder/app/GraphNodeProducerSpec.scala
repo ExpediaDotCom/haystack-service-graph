@@ -44,8 +44,8 @@ class GraphNodeProducerSpec extends TestSpec {
       edge.source.name should be("foo-service")
       edge.destination.name should be("baz-service")
       edge.operation should be("bar")
-      edge.source.tags.get("testtag") should be ("true")
-      edge.destination.tags.get("testtag") should be ("true")
+      edge.source.tags.get("testtag") shouldBe Some("true")
+      edge.destination.tags.get("testtag") shouldBe Some("true")
     }
     it("should emit no graph nodes for invalid light spans") {
       Given("an incomplete SpanPair instance")
