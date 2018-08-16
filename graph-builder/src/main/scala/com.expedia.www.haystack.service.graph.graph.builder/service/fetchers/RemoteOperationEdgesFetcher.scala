@@ -39,7 +39,9 @@ class RemoteOperationEdgesFetcher(clientConfig: ServiceClientConfiguration) exte
   def fetchEdges(host: String, port: Int, from: Long, to: Long): Future[Seq[OperationGraphEdge]] = {
     val request = new URIBuilder()
       .setScheme("http")
-      .setPath("/operationgraph/local?from="+from+"&to="+to)
+      .setPath("/operationgraph/local")
+      .setParameter("from", from.toString)
+      .setParameter("to", to.toString)
       .setHost(host)
       .setPort(port)
       .build()

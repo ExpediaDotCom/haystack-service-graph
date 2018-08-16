@@ -38,7 +38,9 @@ class RemoteServiceEdgesFetcher(clientConfig: ServiceClientConfiguration) extend
   def fetchEdges(host: String, port: Int, from: Long, to: Long): Future[Seq[ServiceGraphEdge]] = {
     val uri = new URIBuilder()
       .setScheme("http")
-      .setPath("/servicegraph/local?from="+from+"&to="+to)
+      .setPath("/servicegraph/local")
+      .setParameter("from", from.toString)
+      .setParameter("to", to.toString)
       .setHost(host)
       .setPort(port)
       .build()
