@@ -12,7 +12,7 @@ JAVA_OPTS="${JAVA_OPTS} \
 -XX:+PrintGCDateStamps \
 -XX:+UseGCLogFileRotation \
 -XX:NumberOfGCLogFiles=5 \
--XX:GCLogFileSize=2M
+-XX:GCLogFileSize=2M \
 -Xmx${JAVA_XMX} \
 -Xms${JAVA_XMS} \
 -Dapplication.name=${APP_NAME} \
