@@ -22,7 +22,7 @@ import javax.servlet.http.HttpServletRequest
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.ServiceConfiguration
 import com.expedia.www.haystack.service.graph.graph.builder.model.{OperationGraph, OperationGraphEdge}
 import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalOperationEdgesFetcher, RemoteOperationEdgesFetcher}
-import com.expedia.www.haystack.service.graph.graph.builder.service.utils.TimestampUtils
+import com.expedia.www.haystack.service.graph.graph.builder.service.utils.QueryTimestampReader
 import org.apache.kafka.streams.KafkaStreams
 import org.slf4j.LoggerFactory
 
@@ -36,14 +36,14 @@ class GlobalOperationGraphResource(streams: KafkaStreams,
                                    storeName: String,
                                    serviceConfig: ServiceConfiguration,
                                    localEdgesFetcher: LocalOperationEdgesFetcher,
-                                   remoteEdgesFetcher: RemoteOperationEdgesFetcher)
-  extends Resource("operationgraph") {
+                                   remoteEdgesFetcher: RemoteOperationEdgesFetcher)(implicit val timestampReader: QueryTimestampReader)
+extends Resource("operationgraph") {
   private val LOGGER = LoggerFactory.getLogger(classOf[GlobalOperationGraphResource])
   private val globalEdgeCount = metricRegistry.histogram("operationgraph.global.edges")
 
   protected override def get(request: HttpServletRequest): OperationGraph = {
-    val from = TimestampUtils.fromTimestamp(request)
-    val to = TimestampUtils.toTimestamp(request)
+    val from = timestampReader.fromTimestamp(request)
+    val to = timestampReader.toTimestamp(request)
 
     // get list of all hosts containing service-graph store
     // fetch local service graphs from all hosts
