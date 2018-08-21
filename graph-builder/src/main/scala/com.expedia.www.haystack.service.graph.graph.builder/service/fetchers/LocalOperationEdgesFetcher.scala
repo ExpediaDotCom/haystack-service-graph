@@ -41,7 +41,7 @@ class LocalOperationEdgesFetcher(streams: KafkaStreams, storeName: String) {
           kv.key.key.operation,
           kv.value,
           kv.key.window().start(),
-          Math.min(System.currentTimeMillis(), to))
+          Math.min(System.currentTimeMillis(), kv.key.window().end()))
       edges.toList
     } finally {
       IOUtils.closeSafely(iterator)
