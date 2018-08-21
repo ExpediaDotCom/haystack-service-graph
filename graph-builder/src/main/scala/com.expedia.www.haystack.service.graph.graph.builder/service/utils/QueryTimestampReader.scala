@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest
 
 import org.apache.commons.lang3.StringUtils
 
-object TimestampUtils {
+class QueryTimestampReader(aggregateWindowSec: Long) {
 
   def toTimestamp(request: HttpServletRequest): Long = {
     if (StringUtils.isEmpty(request.getParameter("to"))) {
@@ -34,14 +34,21 @@ object TimestampUtils {
   }
 
   def fromTimestamp(request: HttpServletRequest): Long = {
-    if (StringUtils.isEmpty(request.getParameter("from"))) {
+    val timestamp = if (StringUtils.isEmpty(request.getParameter("from"))) {
       Instant.now().minus(24, ChronoUnit.HOURS).toEpochMilli
     } else {
       extractTime(request, "from")
     }
+    adjustTimeWithAggregateWindow(timestamp)
+
   }
 
   private def extractTime(request: HttpServletRequest, key: String): Long = {
     request.getParameter(key).toLong
+  }
+
+  private def adjustTimeWithAggregateWindow(epochMillis: Long): Long = {
+    val result = Math.floor(epochMillis / (aggregateWindowSec * 1000)).toLong
+    result * aggregateWindowSec * 1000
   }
 }

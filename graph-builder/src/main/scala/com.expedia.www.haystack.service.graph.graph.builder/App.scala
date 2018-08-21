@@ -25,6 +25,7 @@ import com.expedia.www.haystack.service.graph.graph.builder.config.AppConfigurat
 import com.expedia.www.haystack.service.graph.graph.builder.config.entities.{KafkaConfiguration, ServiceConfiguration}
 import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.{LocalOperationEdgesFetcher, LocalServiceEdgesFetcher, RemoteOperationEdgesFetcher, RemoteServiceEdgesFetcher}
 import com.expedia.www.haystack.service.graph.graph.builder.service.resources._
+import com.expedia.www.haystack.service.graph.graph.builder.service.utils.QueryTimestampReader
 import com.expedia.www.haystack.service.graph.graph.builder.service.{HttpService, ManagedHttpService}
 import com.expedia.www.haystack.service.graph.graph.builder.stream.{ServiceGraphStreamSupplier, StreamSupplier}
 import com.netflix.servo.util.VisibleForTesting
@@ -75,7 +76,7 @@ object App extends MetricsSupport {
 
       // build http service to query current service graph
       // it performs interactive query on ktable
-      service = createService(appConfiguration.serviceConfig, stream, appConfiguration.kafkaConfig.producerTopic)
+      service = createService(appConfiguration.serviceConfig, stream, appConfiguration.kafkaConfig)
 
       // wrap service and stream in a managed application instance
       // ManagedApplication makes sure that startup/shutdown sequence is right
@@ -120,12 +121,14 @@ object App extends MetricsSupport {
   }
 
   @VisibleForTesting
-  def createService(serviceConfig: ServiceConfiguration, stream: KafkaStreams, storeName: String): HttpService = {
+  def createService(serviceConfig: ServiceConfiguration, stream: KafkaStreams, kafkaConfig: KafkaConfiguration): HttpService = {
+    val storeName = kafkaConfig.producerTopic
     val localOperationEdgesFetcher = new LocalOperationEdgesFetcher(stream, storeName)
     val remoteOperationEdgesFetcher = new RemoteOperationEdgesFetcher(serviceConfig.client)
     val localServiceEdgesFetcher = new LocalServiceEdgesFetcher(stream, storeName)
     val remoteServiceEdgesFetcher = new RemoteServiceEdgesFetcher(serviceConfig.client)
 
+    implicit val timestampReader = new QueryTimestampReader(kafkaConfig.aggregationWindowSec)
     val servlets = Map(
       "/operationgraph/local" -> new LocalOperationGraphResource(localOperationEdgesFetcher),
       "/operationgraph" -> new GlobalOperationGraphResource(stream, storeName, serviceConfig, localOperationEdgesFetcher, remoteOperationEdgesFetcher),

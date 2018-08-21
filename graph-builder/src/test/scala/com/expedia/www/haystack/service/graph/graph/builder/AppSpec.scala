@@ -61,7 +61,7 @@ class AppSpec extends TestSpec with BeforeAndAfterAll {
     stream.start()
 
     //start service
-    service = App.createService(appConfig.serviceConfig, stream, appConfig.kafkaConfig.producerTopic)
+    service = App.createService(appConfig.serviceConfig, stream, appConfig.kafkaConfig)
     service.start()
 
     //time for kstreams to initialize completely

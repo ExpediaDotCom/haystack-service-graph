@@ -21,14 +21,16 @@ import javax.servlet.http.HttpServletRequest
 
 import com.expedia.www.haystack.service.graph.graph.builder.model.ServiceGraph
 import com.expedia.www.haystack.service.graph.graph.builder.service.fetchers.LocalServiceEdgesFetcher
-import com.expedia.www.haystack.service.graph.graph.builder.service.utils.TimestampUtils
+import com.expedia.www.haystack.service.graph.graph.builder.service.utils.QueryTimestampReader
 
-class LocalServiceGraphResource(localEdgesFetcher: LocalServiceEdgesFetcher) extends Resource("servicegraph.local") {
+class LocalServiceGraphResource(localEdgesFetcher: LocalServiceEdgesFetcher)(implicit val timestampReader: QueryTimestampReader)
+  extends Resource("servicegraph.local") {
+
   private val edgeCount = metricRegistry.histogram("servicegraph.local.edges")
 
   protected override def get(request: HttpServletRequest): ServiceGraph = {
-    val from = TimestampUtils.fromTimestamp(request)
-    val to = TimestampUtils.toTimestamp(request)
+    val from = timestampReader.fromTimestamp(request)
+    val to = timestampReader.toTimestamp(request)
 
     val localGraph = ServiceGraph(localEdgesFetcher.fetchEdges(from, to))
     edgeCount.update(localGraph.edges.length)
