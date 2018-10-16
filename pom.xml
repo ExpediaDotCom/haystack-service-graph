@@ -69,7 +69,7 @@
         <json4s.version>3.5.3</json4s.version>
         <typesafe-config.version>1.3.1</typesafe-config.version>
         <haystack-commons.version>1.0.50</haystack-commons.version>
-        <jetty.version>9.4.9.v20180320</jetty.version>
+        <jetty.version>9.4.11.v20180605</jetty.version>
         <apache.httpcomponents.version>4.2.5</apache.httpcomponents.version>
         <msgpack.version>0.8.13</msgpack.version>
         <httpclient.version>4.5.3</httpclient.version>
@@ -170,12 +170,6 @@
                 <groupId>com.expedia.www</groupId>
                 <artifactId>haystack-logback-metrics-appender</artifactId>
                 <version>${haystack.logback.metrics.appender.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.json4s</groupId>
-                <artifactId>json4s-jackson_${scala.major.minor.version}</artifactId>
-                <version>${json4s.version}</version>
             </dependency>
 
             <dependency>
