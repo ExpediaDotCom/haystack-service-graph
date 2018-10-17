@@ -21,7 +21,8 @@ import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.node.finder.model.{LightSpan, SpanPair, SpanPairBuilder}
-import com.expedia.www.haystack.service.graph.node.finder.utils.SpanUtils
+import com.expedia.www.haystack.service.graph.node.finder.utils.SpanMergeStyle.SpanMergeStyle
+import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanMergeStyle, SpanUtils}
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.processor._
@@ -44,6 +45,8 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
 
   // map to store spanId -> span data. Used for checking child-parent relationship
   private var spanMap = mutable.HashMap[String, mutable.HashSet[LightSpan]]()
+
+  private val mergeStyleMap = mutable.HashMap[String, SpanMergeStyle]()
 
   // map to store parentSpanId -> span data. Used for checking child-parent relationship
   private var parentSpanMap = mutable.HashMap[String, mutable.HashSet[LightSpan]]()
@@ -81,8 +84,8 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
 
       processSpan(lightSpan) foreach {
         spanPair =>
+          if (isValidMerge(spanPair)) forward(processorContext, spanPair)
           cleanupSpanMap(spanPair)
-          forward(processorContext, spanPair)
           aggregateMeter.mark()
       }
     }
@@ -94,11 +97,9 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
 
   //forward all complete spans
   private def forward(context: ProcessorContext, spanPair: SpanPair): Unit = {
-    if (spanPair.isComplete) {
-      LOGGER.debug("Forwarding complete SpanPair: {}", spanPair)
-      context.forward(spanPair.getId, spanPair)
-      forwardMeter.mark()
-    }
+    LOGGER.debug("Forwarding complete SpanPair: {}", spanPair)
+    context.forward(spanPair.getId, spanPair)
+    forwardMeter.mark()
   }
 
   /**
@@ -165,5 +166,23 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
     spanPair.getBackingSpans.foreach(ls => {
       parentSpanMap.remove(ls.spanId)
     })
+  }
+
+  private def isValidMerge(spanPair: SpanPair): Boolean = {
+    if (spanPair.isComplete) {
+      mergeStyleMap.get(spanPair.getServerSpan.serviceName) match {
+        case Some(validStyle) =>
+          // if current merge matches with the recorded style, then accept it
+          // or if new merge style is SINGULAR, then ignore DUAL style and give priority to it.
+          if (validStyle == spanPair.getMergeStyle || spanPair.getMergeStyle == SpanMergeStyle.SINGULAR) {
+            mergeStyleMap.put(spanPair.getServerSpan.serviceName, spanPair.getMergeStyle)
+            return true
+          }
+        case _ =>
+          mergeStyleMap.put(spanPair.getServerSpan.serviceName, spanPair.getMergeStyle)
+          return true
+      }
+    }
+    false
   }
 }

@@ -125,7 +125,7 @@ class SpanAccumulatorSpec extends TestSpec {
       expecting {
         context.schedule(anyLong(), isA(classOf[PunctuationType]), isA(classOf[Punctuator]))
           .andReturn(mock[Cancellable]).once()
-        context.forward(anyString(), isA(classOf[SpanPair])).times(4)
+        context.forward(anyString(), isA(classOf[SpanPair])).times(2)
         context.commit().once()
       }
       replay(context)
@@ -139,7 +139,7 @@ class SpanAccumulatorSpec extends TestSpec {
         newSpan("I8", "I6", "svc4", "oper1", 1000, false, true),  // server
         newSpan("I9", "I8", "svc4", "oper1", 1000, true, false),
         newSpan("I10", "I9", "svc5", "oper1", 1000, true, false),
-        newSpan("I11", "I10", "svc5", "oper1", 1000, true, false)
+        newSpan("I11", "I10", "svc6", "oper1", 1000, false, true)
       )
       spanList.foreach(span => accumulator.process(span._1.getSpanId, span._1))
 
@@ -265,8 +265,7 @@ class SpanAccumulatorSpec extends TestSpec {
       accumulator.spanCount should be(0)
     }
 
-    // commenting this one since there is less chance of receiving duplicate spans from client
-    /*   it("should emit valid SpanPair instances for parent-child relation ignoring duplicate spans") {
+    it("should emit valid SpanPair instances for parent-child relation ignoring duplicate spans") {
 
          Given("an accumulator and initialized with a processor context")
          val accumulator = new SpanAccumulator(1000, new GraphEdgeTagCollector())
@@ -274,7 +273,7 @@ class SpanAccumulatorSpec extends TestSpec {
          expecting {
            context.schedule(anyLong(), isA(classOf[PunctuationType]), isA(classOf[Punctuator]))
              .andReturn(mock[Cancellable]).once()
-           context.forward(anyString(), isA(classOf[SpanPair])).times(4)
+           context.forward(anyString(), isA(classOf[SpanPair])).times(1)
            context.commit().once()
          }
          replay(context)
@@ -283,30 +282,87 @@ class SpanAccumulatorSpec extends TestSpec {
          val spanList = List(
            newSpan("I1", "I2", "svc1"),
            newSpan("I1", "I2", "svc1"), //duplicate server span
-           newSpan("I3", "I1", "svc1"),
-           newSpan("I4", "I3", "svc2"),
-           newSpan("I5", "I4", "svc2"),
-           newSpan("I6", "I5", "svc3"),
-           newSpan("I6", "I5", "svc3"), //duplicate client span
-           newSpan("I6", "I5", "svc3"), //duplicate client span
-           newSpan("I7", "I6", "svc3"),
-           newSpan("I8", "I7", "svc4"),
-           newSpan("I9", "I8", "svc4"),
-           newSpan("I10", "I9", "svc5"),
-           newSpan("I10", "I9", "svc5"), // duplicate server span
-           newSpan("I11", "I10", "svc5")
+           newSpan("I3", "I1", "svc2"),
+           newSpan("I4", "I3", "svc2")
          )
          spanList.foreach(span => accumulator.process(span.getSpanId, span))
 
          When("punctuate is called")
          accumulator.getPunctuator(context).punctuate(System.currentTimeMillis())
 
-         Then("it should produce 10 SpanPair instances as expected")
+         Then("it should produce 1 SpanPair instances as expected")
          verify(context)
          And("the accumulator's collection should be empty")
          accumulator.spanCount should be(0)
-       }*/
+       }
   }
+
+  it("should emit valid SpanPair instances in mixed merge mode where we receive spans in zipkin and jaeger style") {
+
+    Given("an accumulator and initialized with a processor context")
+    val accumulator = new SpanAccumulator(1000, new GraphEdgeTagCollector())
+    val context = mock[ProcessorContext]
+    expecting {
+      context.schedule(anyLong(), isA(classOf[PunctuationType]), isA(classOf[Punctuator]))
+        .andReturn(mock[Cancellable]).once()
+      context.forward(anyString(), isA(classOf[SpanPair])).times(3)
+      context.commit().once()
+    }
+    replay(context)
+    accumulator.init(context)
+    And("spans from 5 services")
+    val spanList = List(
+      newClientSpan("I1", "I2", "svc1"),
+      newServerSpan("I1", "I2", "svc2"),
+      newClientSpan("I2", "I1", "svc2"),
+      newServerSpan("I3", "I2", "svc3"),
+      newClientSpan("I4", "I3", "svc3"),
+      newServerSpan("I4", "I3", "svc4")
+    )
+    spanList.foreach(span => accumulator.process(span.getSpanId, span))
+
+    When("punctuate is called")
+    accumulator.getPunctuator(context).punctuate(System.currentTimeMillis())
+
+    Then("it should produce 3 SpanPair instances as expected")
+    verify(context)
+    And("the accumulator's collection should be empty")
+    accumulator.spanCount should be(0)
+  }
+
+  it("should emit valid SpanPair instances for only zipkin styled spans") {
+
+    Given("an accumulator and initialized with a processor context")
+    val accumulator = new SpanAccumulator(1000, new GraphEdgeTagCollector())
+    val context = mock[ProcessorContext]
+    expecting {
+      context.schedule(anyLong(), isA(classOf[PunctuationType]), isA(classOf[Punctuator]))
+        .andReturn(mock[Cancellable]).once()
+      context.forward(anyString(), isA(classOf[SpanPair])).times(3)
+      context.commit().once()
+    }
+    replay(context)
+    accumulator.init(context)
+    And("spans from 5 services")
+    val spanList = List(
+      newClientSpan("I1", "I2", "svc1"),
+      newServerSpan("I1", "I2", "svc2"),
+      newClientSpan("I2", "I1", "svc2"),
+      newServerSpan("I2", "I1", "svc3"),
+      newClientSpan("I3", "I2", "svc3"),
+      newServerSpan("I3", "I2", "svc4")
+    )
+    spanList.foreach(span => accumulator.process(span.getSpanId, span))
+
+    When("punctuate is called")
+    accumulator.getPunctuator(context).punctuate(System.currentTimeMillis())
+
+    Then("it should produce 4 SpanPair instances as expected")
+    verify(context)
+    And("the accumulator's collection should be empty")
+    accumulator.spanCount should be(0)
+  }
+
 
   describe("span accumulator supplier") {
     it("should supply a valid accumulator") {
