@@ -182,7 +182,10 @@ class SpanAccumulator(storeName: String, accumulatorInterval: Int, tagCollector:
           return true
         }
         if (spanPair.getMergeStyle == SpanMergeStyle.SINGULAR) {
-          metadataStore.put(spanPair.getServerSpan.serviceName, ServiceNodeMetadata(SpanMergeStyle.SINGULAR))
+          // small optimization to not update the metadata store if it already singular
+          if (metadata.mergeStyle != SpanMergeStyle.SINGULAR) {
+            metadataStore.put(spanPair.getServerSpan.serviceName, ServiceNodeMetadata(SpanMergeStyle.SINGULAR))
+          }
           return true
         }
       }

@@ -20,9 +20,11 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
-import com.expedia.www.haystack.service.graph.node.finder.model.SpanPair
+import com.expedia.www.haystack.service.graph.node.finder.model.{ServiceNodeMetadata, SpanPair}
+import com.expedia.www.haystack.service.graph.node.finder.utils.SpanMergeStyle
+import org.apache.kafka.common.utils.Bytes
 import org.apache.kafka.streams.processor.{Cancellable, ProcessorContext, PunctuationType, Punctuator}
-import org.apache.kafka.streams.state.Stores
+import org.apache.kafka.streams.state.{KeyValueStore, Stores}
 import org.easymock.EasyMock._
 
 class SpanAccumulatorSpec extends TestSpec {
@@ -349,11 +351,15 @@ class SpanAccumulatorSpec extends TestSpec {
     verify(context)
     And("the accumulator's collection should be empty")
     accumulator.spanCount should be(0)
+    val kvStore = stateStore.asInstanceOf[KeyValueStore[String, ServiceNodeMetadata]]
+    kvStore.get("svc1") shouldBe null
+    kvStore.get("svc2").mergeStyle shouldBe SpanMergeStyle.SINGULAR
+    kvStore.get("svc3").mergeStyle shouldBe SpanMergeStyle.DUAL
+    kvStore.get("svc4").mergeStyle shouldBe SpanMergeStyle.SINGULAR
   }
 
 
-  it("should respect the singular(zipkin) span merge style once set") {
-
+  it("should respect the singular(zipkin) span merge style once set even if receives dual span mode later") {
     Given("an accumulator and initialized with a processor context")
     val accumulator = new SpanAccumulator(storeName, 1000, new GraphEdgeTagCollector())
     val context = mock[ProcessorContext]
@@ -387,11 +393,55 @@ class SpanAccumulatorSpec extends TestSpec {
     verify(context)
     And("the accumulator's collection should be empty")
     accumulator.spanCount should be(0)
+
+    val kvStore = stateStore.asInstanceOf[KeyValueStore[String, ServiceNodeMetadata]]
+    kvStore.get("svc1") shouldBe null
+    kvStore.get("svc2").mergeStyle shouldBe SpanMergeStyle.SINGULAR
+    kvStore.get("svc3").mergeStyle shouldBe SpanMergeStyle.SINGULAR
+  }
+
+
+  it("should auto correct from dual to Singular merge style mode and never go back") {
+    Given("an accumulator and initialized with a processor context")
+    val accumulator = new SpanAccumulator(storeName, 1000, new GraphEdgeTagCollector())
+    val context = mock[ProcessorContext]
+    val stateStore = Stores.inMemoryKeyValueStore(storeName).get()
+    expecting {
+      context.schedule(anyLong(), isA(classOf[PunctuationType]), isA(classOf[Punctuator]))
+        .andReturn(mock[Cancellable]).once()
+      context.forward(anyString(), isA(classOf[SpanPair])).times(3)
+      context.getStateStore(storeName).andReturn(stateStore)
+      context.commit().once()
+    }
+    replay(context)
+    accumulator.init(context)
+    And("spans from 5 services")
+    val spanList = List(
+      newClientSpan("I1", "I2", "svc1"),
+      newServerSpan("I3", "I1", "svc3"),
+      newServerSpan("I1", "I2", "svc2"),
+      newClientSpan("I3", "I1", "svc2"),
+
+      newClientSpan("T1", "T2", "svc1"),
+      newServerSpan("T3", "T1", "svc3")
+    )
+    spanList.foreach(span => accumulator.process(span.getSpanId, span))
+
+    When("punctuate is called")
+    accumulator.getPunctuator(context).punctuate(System.currentTimeMillis())
+
+    Then("it should produce 3 SpanPair instances as expected")
+    verify(context)
+    And("the accumulator's collection should be empty")
+    accumulator.spanCount should be(0)
+    val kvStore = stateStore.asInstanceOf[KeyValueStore[String, ServiceNodeMetadata]]
+    kvStore.get("svc1") shouldBe null
+    kvStore.get("svc2").mergeStyle shouldBe SpanMergeStyle.SINGULAR
+    kvStore.get("svc3").mergeStyle shouldBe SpanMergeStyle.SINGULAR
   }
 
 
   it("should emit valid SpanPair instances for only zipkin styled spans") {
-
     Given("an accumulator and initialized with a processor context")
     val accumulator = new SpanAccumulator(storeName, 1000, new GraphEdgeTagCollector())
     val context = mock[ProcessorContext]

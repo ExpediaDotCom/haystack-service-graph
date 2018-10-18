@@ -20,8 +20,7 @@ package com.expedia.www.haystack.service.graph.node.finder.model
 
 import java.util
 
-import com.expedia.www.haystack.service.graph.node.finder.app.SpanAccumulator
-import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
+import com.expedia.www.haystack.service.graph.node.finder.config.NodeMetadataConfiguration
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanMergeStyle
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanMergeStyle.SpanMergeStyle
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serdes, Serializer}
@@ -68,13 +67,13 @@ class ServiceNodeMetadataSerde extends Serde[ServiceNodeMetadata] {
 }
 
 object MetadataStoreBuilder {
-  def storeBuilder(config: KafkaConfiguration): StoreBuilder[KeyValueStore[String, ServiceNodeMetadata]] = {
+  def storeBuilder(config: NodeMetadataConfiguration): StoreBuilder[KeyValueStore[String, ServiceNodeMetadata]] = {
     val builder = Stores.keyValueStoreBuilder(
-      Stores.inMemoryKeyValueStore(config.metadataConfig.topic),
+      Stores.inMemoryKeyValueStore(config.topic),
       Serdes.String(),
       new ServiceNodeMetadataSerde())
     .withCachingEnabled()
 
-    if (config.metadataConfig.logEnabled) builder else builder.withLoggingDisabled()
+    if (config.logEnabled) builder else builder.withLoggingDisabled()
   }
 }

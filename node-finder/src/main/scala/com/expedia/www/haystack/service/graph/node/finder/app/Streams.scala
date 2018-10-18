@@ -140,7 +140,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
       new SpanAccumulatorSupplier(kafkaConfiguration.metadataConfig.topic, kafkaConfiguration.accumulatorInterval, new GraphEdgeTagCollector(tags)),
       sourceName
     )
-    topology.addStateStore(MetadataStoreBuilder.storeBuilder(kafkaConfiguration), accumulatorName)
+    topology.addStateStore(MetadataStoreBuilder.storeBuilder(kafkaConfiguration.metadataConfig), accumulatorName)
   }
 
   private def addLatencyProducer(latencyProducerName: String, topology: Topology, accumulatorName: String) : Unit = {
