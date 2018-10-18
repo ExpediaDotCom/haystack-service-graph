@@ -20,6 +20,7 @@ package com.expedia.www.haystack.service.graph.node.finder.model
 import com.expedia.www.haystack.commons.entities._
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanMergeStyle.SpanMergeStyle
 import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanMergeStyle, SpanType}
+import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 
 /**
@@ -40,7 +41,12 @@ class SpanPair {
     * @return true or false
     */
   def isComplete: Boolean = {
-    clientSpan != null && serverSpan != null && clientSpan.serviceName != serverSpan.serviceName && mergeStyle != null
+    clientSpan != null &&
+      serverSpan != null &&
+      clientSpan.serviceName != serverSpan.serviceName &&
+      StringUtils.isNotEmpty(serverSpan.serviceName) &&
+      StringUtils.isNotEmpty(clientSpan.serviceName) &&
+      mergeStyle != null
   }
 
   /**

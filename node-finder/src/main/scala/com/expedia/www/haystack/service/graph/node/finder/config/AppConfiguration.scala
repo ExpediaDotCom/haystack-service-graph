@@ -97,6 +97,8 @@ class AppConfiguration(resourceName: String) {
       .toList
     else List()
 
+    val metadataConfig = kafka.getConfig("node.metadata")
+
     KafkaConfiguration(new StreamsConfig(props),
       producerConfig.getString("metrics.topic"),
       EncoderFactory.newInstance(producerConfig.getString("metrics.key.encoder")),
@@ -110,7 +112,8 @@ class AppConfiguration(resourceName: String) {
       },
       timestampExtractor,
       kafka.getInt("accumulator.interval"),
-      kafka.getLong("close.timeout.ms"), collectorTags)
-
+      kafka.getLong("close.timeout.ms"),
+      NodeMetadataConfiguration(metadataConfig.getString("topic"), metadataConfig.getBoolean("log.enabled")),
+      collectorTags)
   }
 }

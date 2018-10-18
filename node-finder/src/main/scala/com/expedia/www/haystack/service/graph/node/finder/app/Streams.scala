@@ -25,6 +25,7 @@ import com.expedia.www.haystack.commons.kstreams.serde.SpanSerde
 import com.expedia.www.haystack.commons.kstreams.serde.graph.{GraphEdgeKeySerde, GraphEdgeValueSerde}
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
 import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
+import com.expedia.www.haystack.service.graph.node.finder.model.MetadataStoreBuilder
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.Topology
@@ -132,16 +133,14 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
   }
 
   private def addAccumulator(accumulatorName: String, topology: Topology, sourceName: String) : Unit = {
+    val tags = if (kafkaConfiguration.collectorTags != null) kafkaConfiguration.collectorTags.toSet[String] else Set[String]()
 
-    val tags = if (kafkaConfiguration.collectorTags != null)
-      kafkaConfiguration.collectorTags.toSet[String]
-    else
-      Set[String]()
     topology.addProcessor(
       accumulatorName,
-      new SpanAccumulatorSupplier(kafkaConfiguration.accumulatorInterval, new GraphEdgeTagCollector(tags)),
+      new SpanAccumulatorSupplier(kafkaConfiguration.metadataConfig.topic, kafkaConfiguration.accumulatorInterval, new GraphEdgeTagCollector(tags)),
       sourceName
     )
+    topology.addStateStore(MetadataStoreBuilder.storeBuilder(kafkaConfiguration), accumulatorName)
   }
 
   private def addLatencyProducer(latencyProducerName: String, topology: Topology, accumulatorName: String) : Unit = {
