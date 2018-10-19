@@ -137,8 +137,7 @@ class SpanPair {
     }
   }
 
-  def getId: String = s"($clientSpan.spanId)"
-
+  def getId: String = s"${clientSpan.spanId}"
   def getServerSpan: LightSpan = serverSpan
   def getClientSpan: LightSpan = clientSpan
   def getMergeStyle: SpanMergeStyle = mergeStyle
