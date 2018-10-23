@@ -30,14 +30,16 @@ class SpanUtilsSpec extends TestSpec {
       Then("it is marked as CLIENT")
       spanType should be (SpanType.CLIENT)
     }
-    it("should return OTHER when more when 'cr', 'cs' and 'sr' is present") {
+
+    it("should return CLIENT when more when 'cr', 'cs' and 'sr' is present but span.kind is set correctly") {
       Given("a span with 'cr','cs', 'sr' and 'ss' event logs")
       val (span, _) = newSpan("foo-service", "bar", 6000, client = true, server = true)
       When("getSpanType is called")
       val spanType = SpanUtils.getSpanType(span)
       Then("it is marked as OTHER")
-      spanType should be (SpanType.OTHER)
+      spanType should be (SpanType.CLIENT)
     }
+
     it("should return SERVER when just 'sr' and 'ss' are present") {
       Given("a span with  'sr' and 'ss' event logs")
       val (span, _) = newSpan("foo-service", "bar", 6000, client = false, server = true)

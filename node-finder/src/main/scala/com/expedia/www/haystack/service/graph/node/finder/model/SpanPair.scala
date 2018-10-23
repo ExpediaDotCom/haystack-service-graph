@@ -18,19 +18,21 @@
 package com.expedia.www.haystack.service.graph.node.finder.model
 
 import com.expedia.www.haystack.commons.entities._
-import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType
+import com.expedia.www.haystack.service.graph.node.finder.utils.SpanMergeStyle.SpanMergeStyle
+import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanMergeStyle, SpanType}
+import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 
 /**
   * An instance of SpanPair can contain data from both server and client spans.
   * SpanPair is considered "complete" if it has data fields from both server and client span of the same SpanId
   */
-class SpanPair() {
-
+class SpanPair {
   private val LOGGER = LoggerFactory.getLogger(classOf[SpanPair])
 
   private var clientSpan: LightSpan = _
   private var serverSpan: LightSpan = _
+  private var mergeStyle: SpanMergeStyle = _
 
   /**
     * Returns true of the current instance has data for both server and client spans
@@ -39,7 +41,12 @@ class SpanPair() {
     * @return true or false
     */
   def isComplete: Boolean = {
-    clientSpan != null && serverSpan != null && clientSpan.serviceName != serverSpan.serviceName
+    clientSpan != null &&
+      serverSpan != null &&
+      clientSpan.serviceName != serverSpan.serviceName &&
+      StringUtils.isNotEmpty(serverSpan.serviceName) &&
+      StringUtils.isNotEmpty(clientSpan.serviceName) &&
+      mergeStyle != null
   }
 
   /**
@@ -61,11 +68,14 @@ class SpanPair() {
     */
   def merge(spanOne: LightSpan, spanTwo: LightSpan): Unit = {
     if (spanOne.spanId.equalsIgnoreCase(spanTwo.parentSpanId)) {
-      setSpans(LightSpanBuilder.updateSpanType(spanOne, SpanType.CLIENT), LightSpanBuilder.updateSpanType(spanTwo, SpanType.SERVER))
+      setSpans(LightSpanBuilder.updateSpanTypeIfAbsent(spanOne, SpanType.CLIENT), LightSpanBuilder.updateSpanTypeIfAbsent(spanTwo, SpanType.SERVER))
+      this.mergeStyle = SpanMergeStyle.DUAL
     } else if (spanOne.parentSpanId.equalsIgnoreCase(spanTwo.spanId)) {
-      setSpans(LightSpanBuilder.updateSpanType(spanOne, SpanType.SERVER), LightSpanBuilder.updateSpanType(spanTwo, SpanType.CLIENT))
+      setSpans(LightSpanBuilder.updateSpanTypeIfAbsent(spanOne, SpanType.SERVER), LightSpanBuilder.updateSpanTypeIfAbsent(spanTwo, SpanType.CLIENT))
+      this.mergeStyle = SpanMergeStyle.DUAL
     } else {
       setSpans(spanOne, spanTwo)
+      this.mergeStyle = SpanMergeStyle.SINGULAR
     }
 
     LOGGER.debug("created a span pair: client: {}, server: {}", List(clientSpan, serverSpan):_*)
@@ -127,7 +137,10 @@ class SpanPair() {
     }
   }
 
-  def getId: String = s"($clientSpan.spanId)"
+  def getId: String = s"${clientSpan.spanId}"
+  def getServerSpan: LightSpan = serverSpan
+  def getClientSpan: LightSpan = clientSpan
+  def getMergeStyle: SpanMergeStyle = mergeStyle
 
   override def toString = s"SpanPair($isComplete, $clientSpan, $serverSpan)"
 }

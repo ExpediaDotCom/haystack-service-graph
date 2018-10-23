@@ -86,6 +86,11 @@
             <artifactId>msgpack-core</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.json4s</groupId>
+            <artifactId>json4s-ext_${scala.major.minor.version}</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

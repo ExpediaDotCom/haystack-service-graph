@@ -23,8 +23,10 @@ import com.expedia.www.haystack.commons.entities.encoders.PeriodReplacementEncod
 import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.expedia.www.haystack.commons.kstreams.serde.SpanDeserializer
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
-import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
+import com.expedia.www.haystack.service.graph.node.finder.config.{KafkaConfiguration, NodeMetadataConfiguration}
+import com.expedia.www.haystack.service.graph.node.finder.model.ServiceNodeMetadata
 import org.apache.kafka.common.serialization.{Serializer, StringDeserializer, StringSerializer}
+import org.apache.kafka.streams.state.{KeyValueStore, StoreBuilder}
 import org.apache.kafka.streams.{StreamsConfig, Topology}
 import org.easymock.EasyMock._
 
@@ -36,7 +38,7 @@ class StreamsSpec extends TestSpec {
       val kafkaConfig = KafkaConfiguration(streamsConfig,
         "metrics", new PeriodReplacementEncoder(), "service-call",
         "proto-spans", Topology.AutoOffsetReset.LATEST,
-        new SpanTimestampExtractor, 10000, 10000, List("tier"))
+        new SpanTimestampExtractor, 10000, 10000, NodeMetadataConfiguration("mystore", true), List("tier"))
       val streams = new Streams(kafkaConfig)
       val topology = mock[Topology]
       When("initialize is invoked with a topology")
@@ -54,6 +56,8 @@ class StreamsSpec extends TestSpec {
           isA(classOf[MetricPointSerializer]), anyString()).andReturn(topology).once()
         topology.addSink(anyString(), anyString(), isA(classOf[Serializer[GraphEdge]]),
           isA(classOf[Serializer[GraphEdge]]), anyString()).andReturn(topology).once()
+        topology.addStateStore(isA(classOf[StoreBuilder[KeyValueStore[String, ServiceNodeMetadata]]]), anyString())
+          .andReturn(topology).once()
       }
       replay(topology)
       streams.initialize(topology)

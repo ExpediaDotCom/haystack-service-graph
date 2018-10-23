@@ -46,6 +46,14 @@ trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSug
     newSpan(spanId, parentSpanId, serviceName, "oper", 1000, client = false, server = false)._1
   }
 
+  def newServerSpan(spanId: String, parentSpanId: String, serviceName: String): Span = {
+    newSpan(spanId, parentSpanId, serviceName, "oper", 1000, client = false, server = true)._1
+  }
+
+  def newClientSpan(spanId: String, parentSpanId: String, serviceName: String): Span = {
+    newSpan(spanId, parentSpanId, serviceName, "oper", 1000, client = true, server = false)._1
+  }
+
   def newSpan(serviceName: String, operation: String, duration: Long, client: Boolean, server: Boolean): (Span, SpanType) = {
     newSpan(UUID.randomUUID().toString, UUID.randomUUID().toString, serviceName, operation, duration, client, server)
   }
@@ -77,6 +85,7 @@ trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSug
       logBuilder.addFields(Tag.newBuilder().setKey("event").setVStr(SpanUtils.CLIENT_RECV_EVENT).build())
       spanBuilder.addLogs(logBuilder.build())
       spanType = SpanType.CLIENT
+      spanBuilder.addTags(Tag.newBuilder().setKey("span.kind").setVStr("client"))
     }
 
     if (server) {
@@ -88,7 +97,9 @@ trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSug
       logBuilder.addFields(Tag.newBuilder().setKey("event").setVStr(SpanUtils.SERVER_SEND_EVENT).build())
       spanBuilder.addLogs(logBuilder.build())
       spanType = SpanType.SERVER
+      spanBuilder.addTags(Tag.newBuilder().setKey("span.kind").setVStr("server"))
     }
+
     if (tags.nonEmpty) {
       val tagBuilder = Tag.newBuilder()
       tags.foreach(tag => {

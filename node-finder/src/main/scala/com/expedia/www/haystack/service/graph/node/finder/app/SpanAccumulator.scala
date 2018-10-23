@@ -20,21 +20,22 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
-import com.expedia.www.haystack.service.graph.node.finder.model.{LightSpan, SpanPair, SpanPairBuilder}
-import com.expedia.www.haystack.service.graph.node.finder.utils.SpanUtils
+import com.expedia.www.haystack.service.graph.node.finder.model.{LightSpan, ServiceNodeMetadata, SpanPair, SpanPairBuilder}
+import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanMergeStyle, SpanUtils}
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.processor._
+import org.apache.kafka.streams.state.KeyValueStore
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class SpanAccumulatorSupplier(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector) extends
+class SpanAccumulatorSupplier(storeName: String, accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector) extends
   ProcessorSupplier[String, Span] {
-  override def get(): Processor[String, Span] = new SpanAccumulator(accumulatorInterval, tagCollector)
+  override def get(): Processor[String, Span] = new SpanAccumulator(storeName, accumulatorInterval, tagCollector)
 }
 
-class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector)
+class SpanAccumulator(storeName: String, accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector)
   extends Processor[String, Span] with MetricsSupport {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[SpanAccumulator])
@@ -50,9 +51,12 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
 
   private var processorContext: ProcessorContext = _
 
+  private var metadataStore: KeyValueStore[String, ServiceNodeMetadata] = _
+
   override def init(context: ProcessorContext): Unit = {
     processorContext = context
     context.schedule(accumulatorInterval, PunctuationType.STREAM_TIME, getPunctuator(context))
+    metadataStore = context.getStateStore(storeName).asInstanceOf[KeyValueStore[String, ServiceNodeMetadata]]
     LOGGER.info(s"${this.getClass.getSimpleName} initialized")
   }
 
@@ -81,8 +85,8 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
 
       processSpan(lightSpan) foreach {
         spanPair =>
+          if (isValidMerge(spanPair)) forward(processorContext, spanPair)
           cleanupSpanMap(spanPair)
-          forward(processorContext, spanPair)
           aggregateMeter.mark()
       }
     }
@@ -94,11 +98,9 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
 
   //forward all complete spans
   private def forward(context: ProcessorContext, spanPair: SpanPair): Unit = {
-    if (spanPair.isComplete) {
-      LOGGER.debug("Forwarding complete SpanPair: {}", spanPair)
-      context.forward(spanPair.getId, spanPair)
-      forwardMeter.mark()
-    }
+    LOGGER.debug("Forwarding complete SpanPair: {}", spanPair)
+    context.forward(spanPair.getId, spanPair)
+    forwardMeter.mark()
   }
 
   /**
@@ -165,5 +167,26 @@ class SpanAccumulator(accumulatorInterval: Int, tagCollector: GraphEdgeTagCollec
     spanPair.getBackingSpans.foreach(ls => {
       parentSpanMap.remove(ls.spanId)
     })
+  }
+
+  private def isValidMerge(spanPair: SpanPair): Boolean = {
+    if (spanPair.isComplete) {
+      val metadata = metadataStore.get(spanPair.getServerSpan.serviceName)
+      if (metadata == null) {
+        metadataStore.put(spanPair.getServerSpan.serviceName, ServiceNodeMetadata(spanPair.getMergeStyle))
+        return true
+      } else {
+        // if current merge matches with the recorded style, then accept it
+        // or if new merge style is SINGULAR, then ignore DUAL style and give priority to it.
+        if (metadata.mergeStyle == spanPair.getMergeStyle) {
+          return true
+        }
+        if (spanPair.getMergeStyle == SpanMergeStyle.SINGULAR) {
+          metadataStore.put(spanPair.getServerSpan.serviceName, ServiceNodeMetadata(SpanMergeStyle.SINGULAR))
+          return true
+        }
+      }
+    }
+    false
   }
 }
