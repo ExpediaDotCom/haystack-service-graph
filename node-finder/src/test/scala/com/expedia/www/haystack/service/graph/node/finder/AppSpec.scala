@@ -51,7 +51,7 @@ class AppSpec extends TestSpec with BeforeAndAfter {
 
     //ensure test topics are present
     kafkaController.createTopics(List(appConfig.kafkaConfig.protoSpanTopic,
-      appConfig.kafkaConfig.serviceCallTopic, appConfig.kafkaConfig.metricsTopic))
+      appConfig.kafkaConfig.serviceCallTopic, appConfig.kafkaConfig.metricsTopic, appConfig.kafkaConfig.metadataConfig.topic))
 
     //start topology
     streamsRunner.start()
@@ -80,8 +80,8 @@ class AppSpec extends TestSpec with BeforeAndAfter {
       val graphRecords = graphConsumer.poll(5000)
 
       //check if they are as expected
-      metricRecords.count() should be (5)
-      graphRecords.count() should be (5)
+      metricRecords.count() should be(5)
+      graphRecords.count() should be(5)
     }
   }
 

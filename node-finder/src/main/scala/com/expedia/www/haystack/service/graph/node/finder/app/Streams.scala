@@ -24,10 +24,11 @@ import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.kstreams.serde.SpanSerde
 import com.expedia.www.haystack.commons.kstreams.serde.graph.{GraphEdgeKeySerde, GraphEdgeValueSerde}
 import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
+import com.expedia.www.haystack.service.graph.node.finder.app.metadata.{MetadataProducerSupplier, MetadataStoreUpdateProcessorSupplier, TopicCreator}
 import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
-import com.expedia.www.haystack.service.graph.node.finder.model.MetadataStoreBuilder
+import com.expedia.www.haystack.service.graph.node.finder.model.{MetadataStoreBuilder, ServiceNodeMetadataSerde}
 import com.netflix.servo.util.VisibleForTesting
-import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
+import org.apache.kafka.common.serialization.{Serdes, StringDeserializer, StringSerializer}
 import org.apache.kafka.streams.Topology
 
 class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology] {
@@ -38,6 +39,11 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
   private val GRAPH_NODE_PRODUCER = "nodes-n-edges-producer"
   private val METRIC_SINK = "metric-sink"
   private val GRAPH_NODE_SINK = "graph-nodes-sink"
+
+  private val METADATA_STORE_PROCESSOR = "metadata-store-processor"
+  private val METADATA_SOURCE_NODE = "metadata-source-node"
+  private val METADATA_PRODUCER = "metadata-producer"
+  private val METADATA_SINK = "metadata-sink"
 
   override def get(): Topology = initialize(new Topology)
 
@@ -117,6 +123,10 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     //add sink for graph node producer
     addGraphNodeSink(GRAPH_NODE_SINK, kafkaConfiguration.serviceCallTopic, topology, GRAPH_NODE_PRODUCER)
 
+    //add metadata processor and a sink for metadata store
+    addMetadataProducer(METADATA_PRODUCER, topology, SPAN_ACCUMULATOR)
+    addMetadataStoreSink(METADATA_SINK, topology, METADATA_PRODUCER)
+
     //return the topology built
     topology
   }
@@ -140,7 +150,14 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
       new SpanAccumulatorSupplier(kafkaConfiguration.metadataConfig.topic, kafkaConfiguration.accumulatorInterval, new GraphEdgeTagCollector(tags)),
       sourceName
     )
-    topology.addStateStore(MetadataStoreBuilder.storeBuilder(kafkaConfiguration.metadataConfig), accumulatorName)
+
+    topology.addGlobalStore(MetadataStoreBuilder.storeBuilder(kafkaConfiguration.metadataConfig),
+      METADATA_SOURCE_NODE,
+      Serdes.String().deserializer(),
+      new ServiceNodeMetadataSerde().deserializer(),
+      kafkaConfiguration.metadataConfig.topic,
+      METADATA_STORE_PROCESSOR,
+      new MetadataStoreUpdateProcessorSupplier(kafkaConfiguration.metadataConfig.topic))
   }
 
   private def addLatencyProducer(latencyProducerName: String, topology: Topology, accumulatorName: String) : Unit = {
@@ -178,6 +195,24 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
       new GraphEdgeKeySerde().serializer(),
       new GraphEdgeValueSerde().serializer(),
       graphNodeProducerName
+    )
+  }
+
+  private def addMetadataStoreSink(sinkName: String, topology: Topology, producerName: String) :Unit = {
+    topology.addSink(
+      sinkName,
+      kafkaConfiguration.metadataConfig.topic,
+      Serdes.String().serializer(),
+      new ServiceNodeMetadataSerde().serializer(),
+      producerName
+    )
+  }
+
+  private def addMetadataProducer(processorName: String, topology: Topology, producerName: String): Unit = {
+    topology.addProcessor(
+      processorName,
+      new MetadataProducerSupplier(kafkaConfiguration.metadataConfig.topic),
+      producerName
     )
   }
 }

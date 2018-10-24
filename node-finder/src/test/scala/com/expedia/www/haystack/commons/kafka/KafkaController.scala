@@ -32,8 +32,6 @@ class KafkaController(kafkaProperties: Properties, zooKeeperProperties: Properti
   kafkaPropertiesWithZk.put("zookeeper.connect", zkUrl)
   private val kafkaServer = new KafkaLocal(kafkaPropertiesWithZk)
 
-  private val isRunning = new AtomicBoolean(false)
-
   def startService(): Unit = {
     //start zk
     val zookeeper = new ZooKeeperLocal(zooKeeperProperties)

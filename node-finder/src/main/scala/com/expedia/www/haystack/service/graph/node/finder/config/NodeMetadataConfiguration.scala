@@ -18,4 +18,4 @@
 
 package com.expedia.www.haystack.service.graph.node.finder.config
 
-case class NodeMetadataConfiguration(topic: String, logEnabled: Boolean)
+case class NodeMetadataConfiguration(autoCreate: Boolean, topic: String, partitionCount: Int, replicationFactor: Int)

@@ -17,23 +17,19 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.app
 
-import java.util
-
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.service.graph.node.finder.model.{ServiceNodeMetadata, SpanPair}
-import com.expedia.www.haystack.service.graph.node.finder.utils.SpanMergeStyle
 import org.apache.kafka.streams.processor._
 import org.apache.kafka.streams.state.{KeyValueStore, Stores}
+import org.easymock.EasyMock
 import org.easymock.EasyMock._
-import org.easymock.{Capture, CaptureType, EasyMock}
 
-import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 class SpanAccumulatorSpec extends TestSpec {
   private val storeName = "my-store"
-
   describe("a span accumulator") {
     it("should schedule Punctuator on init") {
       Given("a processor context")
@@ -101,9 +97,9 @@ class SpanAccumulatorSpec extends TestSpec {
       verify(context)
       And("the accumulator's collection should be empty")
       accumulator.spanCount should be(0)
-      kvStore.get("svc1") shouldBe null
-      2 until 6 foreach(id => {
-        kvStore.get(s"svc$id").mergeStyle shouldBe SpanMergeStyle.DUAL
+
+      1 until 6 foreach (id => {
+        kvStore.get(s"svc$id") shouldBe null
       })
     }
 
@@ -132,17 +128,14 @@ class SpanAccumulatorSpec extends TestSpec {
       verify(context)
       And("the accumulator's collection should be empty")
       accumulator.spanCount should be(0)
-      Set(1, 2, 4, 5) foreach { id =>
+      1 until 7 foreach { id =>
         kvStore.get(s"svc$id") shouldBe null
-      }
-      Set(3, 6) foreach { id =>
-        kvStore.get(s"svc$id").mergeStyle shouldBe SpanMergeStyle.DUAL
       }
     }
 
     it("should emit SpanPair instances for parent-child relation using ids with (I5, I4) and (I6, I5) in reverse order") {
       Given("an accumulator and initialized with a processor context")
-      val (context, _, _, _) = mockContext(4)
+      val (context, kvStore, _, _) = mockContext(4)
       val accumulator = createAccumulator(context)
       And("spans from 5 services")
       val spanList = List(
@@ -166,6 +159,9 @@ class SpanAccumulatorSpec extends TestSpec {
       verify(context)
       And("the accumulator's collection should be empty")
       accumulator.spanCount should be(0)
+      1 until 6 foreach { id =>
+        kvStore.get(s"svc$id") shouldBe null
+      }
     }
 
     it("should emit SpanPair instances for fork relation using ids for svc4 -> svc5 & svc4 -> svc6") {
@@ -255,11 +251,11 @@ class SpanAccumulatorSpec extends TestSpec {
     And("the accumulator's collection should be empty")
     accumulator.spanCount should be(0)
     kvStore.get("svc1") shouldBe null
-    kvStore.get("svc2").mergeStyle shouldBe SpanMergeStyle.SINGULAR
-    kvStore.get("svc3").mergeStyle shouldBe SpanMergeStyle.DUAL
-    kvStore.get("svc4").mergeStyle shouldBe SpanMergeStyle.SINGULAR
-    extractClientServerSvcNames(forwardedSpanPairs) should contain allOf ("svc1->svc2", "svc2->svc3", "svc3->svc4")
-    forwardedKeys.getValues.asScala.toSet should contain allOf ("I1", "I2", "I4")
+    kvStore.get("svc2").useSharedSpan shouldBe true
+    kvStore.get("svc3")
+    kvStore.get("svc4").useSharedSpan shouldBe true
+    extractClientServerSvcNames(forwardedSpanPairs) should contain allOf("svc1->svc2", "svc2->svc3", "svc3->svc4")
+    forwardedKeys.toSet should contain allOf("I1", "I2", "I4")
   }
 
 
@@ -294,10 +290,10 @@ class SpanAccumulatorSpec extends TestSpec {
     accumulator.spanCount should be(0)
 
     kvStore.get("svc1") shouldBe null
-    kvStore.get("svc2").mergeStyle shouldBe SpanMergeStyle.SINGULAR
-    kvStore.get("svc3").mergeStyle shouldBe SpanMergeStyle.SINGULAR
-    extractClientServerSvcNames(forwardedSpanPairs) should contain allOf ("svc1->svc2", "svc2->svc3")
-    forwardedKeys.getValues.asScala.toSet should contain allOf ("I1", "I3", "T3")
+    kvStore.get("svc2").useSharedSpan shouldBe true
+    kvStore.get("svc3").useSharedSpan shouldBe true
+    extractClientServerSvcNames(forwardedSpanPairs) should contain allOf("svc1->svc2", "svc2->svc3")
+    forwardedKeys.toSet should contain allOf("I1", "I3", "T3")
   }
 
   it("should auto-correct from dual to Singular merge style mode and never go back") {
@@ -326,15 +322,15 @@ class SpanAccumulatorSpec extends TestSpec {
     And("the accumulator's collection should be empty")
     accumulator.spanCount should be(0)
     kvStore.get("svc1") shouldBe null
-    kvStore.get("svc2").mergeStyle shouldBe SpanMergeStyle.SINGULAR
-    kvStore.get("svc3").mergeStyle shouldBe SpanMergeStyle.SINGULAR
-    extractClientServerSvcNames(forwardedSpanPairs) should contain allOf ("svc1->svc2", "svc1->svc3", "svc2->svc3")
-    forwardedKeys.getValues.asScala.toSet should contain allOf ("I1", "I3")
+    kvStore.get("svc2").useSharedSpan shouldBe true
+    kvStore.get("svc3").useSharedSpan shouldBe true
+    extractClientServerSvcNames(forwardedSpanPairs) should contain allOf("svc1->svc2", "svc1->svc3", "svc2->svc3")
+    forwardedKeys.toSet should contain allOf("I1", "I3")
   }
 
   it("should emit valid SpanPair instances for only singular(sharable) styled spans") {
     Given("an accumulator and initialized with a processor context")
-    val (context, _, forwardedKeys, forwardedSpanPairs) = mockContext(3)
+    val (context, kvStore, _, _) = mockContext(3)
     val accumulator = createAccumulator(context)
     And("spans from 4 services")
     val spanList = List(
@@ -354,9 +350,12 @@ class SpanAccumulatorSpec extends TestSpec {
     verify(context)
     And("the accumulator's collection should be empty")
     accumulator.spanCount should be(0)
-    extractClientServerSvcNames(forwardedSpanPairs) should contain allOf ("svc1->svc2", "svc2->svc3", "svc3->svc4")
-    forwardedKeys.getValues.asScala.toSet should contain allOf ("I1", "I2", "I3")
+    kvStore.get("svc1") shouldBe null
+    2 until 5 foreach { id =>
+      kvStore.get(s"svc$id").useSharedSpan shouldBe true
+    }
   }
+
 
   describe("span accumulator supplier") {
     it("should supply a valid accumulator") {
@@ -369,26 +368,37 @@ class SpanAccumulatorSpec extends TestSpec {
     }
   }
 
-  private def mockContext(expectedForwardCalls: Int): (ProcessorContext, KeyValueStore[String, ServiceNodeMetadata], Capture[String], Capture[SpanPair]) = {
+  private def mockContext(expectedForwardCalls: Int): (ProcessorContext, KeyValueStore[String, ServiceNodeMetadata], mutable.ListBuffer[String], mutable.ListBuffer[SpanPair]) = {
     val context = mock[ProcessorContext]
     val stateStore = Stores.inMemoryKeyValueStore(storeName).get()
-    val captureForwardedKeys = EasyMock.newCapture[String](CaptureType.ALL)
-    val captureForwardedSpanPairs = EasyMock.newCapture[SpanPair](CaptureType.ALL)
+
+    val forwardedKeys = mutable.ListBuffer[String]()
+    val forwardedSpanPairs = mutable.ListBuffer[SpanPair]()
 
     expecting {
       context.schedule(anyLong(), isA(classOf[PunctuationType]), isA(classOf[Punctuator]))
         .andReturn(mock[Cancellable]).once()
 
       if (expectedForwardCalls > 0) {
+        val captureForwardedKey = EasyMock.newCapture[String]()
+        val captureForwardedSpanPair = EasyMock.newCapture[SpanPair]()
         context
-          .forward(EasyMock.capture(captureForwardedKeys), EasyMock.capture(captureForwardedSpanPairs))
-          .times(expectedForwardCalls)
+          .forward(EasyMock.capture(captureForwardedKey), EasyMock.capture(captureForwardedSpanPair))
+          .andAnswer(() => {
+            val spanPair = captureForwardedSpanPair.getValue
+            if (spanPair.IsSharedSpan) {
+              stateStore.asInstanceOf[KeyValueStore[String, ServiceNodeMetadata]].put(spanPair.getServerSpan.serviceName, ServiceNodeMetadata(true))
+            }
+            forwardedKeys += captureForwardedKey.getValue
+            forwardedSpanPairs += spanPair
+          }).times(expectedForwardCalls)
+
         context.commit().once()
       }
       context.getStateStore(storeName).andReturn(stateStore)
     }
     replay(context)
-    (context, stateStore.asInstanceOf[KeyValueStore[String, ServiceNodeMetadata]], captureForwardedKeys, captureForwardedSpanPairs)
+    (context, stateStore.asInstanceOf[KeyValueStore[String, ServiceNodeMetadata]], forwardedKeys, forwardedSpanPairs)
   }
 
   private def createAccumulator(context: ProcessorContext): SpanAccumulator = {
@@ -397,7 +407,7 @@ class SpanAccumulatorSpec extends TestSpec {
     accumulator
   }
 
-  private def extractClientServerSvcNames(spanPairs: Capture[SpanPair]): Set[String] = {
-    spanPairs.getValues.asScala.map(p => p.getClientSpan.serviceName + "->" + p.getServerSpan.serviceName).toSet
+  private def extractClientServerSvcNames(spanPairs: mutable.ListBuffer[SpanPair]): Set[String] = {
+    spanPairs.map(p => p.getClientSpan.serviceName + "->" + p.getServerSpan.serviceName).toSet
   }
 }

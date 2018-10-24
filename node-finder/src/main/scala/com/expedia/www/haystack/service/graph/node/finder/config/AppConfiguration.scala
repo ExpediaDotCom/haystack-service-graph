@@ -97,7 +97,7 @@ class AppConfiguration(resourceName: String) {
       .toList
     else List()
 
-    val metadataConfig = kafka.getConfig("node.metadata")
+    val metadataTopicConfig = kafka.getConfig("node.metadata.topic")
 
     KafkaConfiguration(new StreamsConfig(props),
       producerConfig.getString("metrics.topic"),
@@ -113,7 +113,7 @@ class AppConfiguration(resourceName: String) {
       timestampExtractor,
       kafka.getInt("accumulator.interval"),
       kafka.getLong("close.timeout.ms"),
-      NodeMetadataConfiguration(metadataConfig.getString("topic"), metadataConfig.getBoolean("log.enabled")),
+      NodeMetadataConfiguration(metadataTopicConfig.getBoolean("autocreate"), metadataTopicConfig.getString("name"), metadataTopicConfig.getInt("partition.count"), metadataTopicConfig.getInt("replication.factor")),
       collectorTags)
   }
 }

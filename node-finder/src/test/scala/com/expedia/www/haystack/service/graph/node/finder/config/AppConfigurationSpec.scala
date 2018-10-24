@@ -78,8 +78,8 @@ class AppConfigurationSpec extends TestSpec {
       config.serviceCallTopic should be ("graph-nodes")
       config.accumulatorInterval should be (60000)
       config.metadataConfig.topic should be ("haystack-node-finder-metadata")
-      config.metadataConfig.logEnabled shouldBe true
+      config.metadataConfig.partitionCount should be (6)
+      config.metadataConfig.replicationFactor should be (2)
     }
   }
-
 }
