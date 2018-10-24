@@ -21,17 +21,15 @@ package com.expedia.www.haystack.service.graph.node.finder.model
 import java.util
 
 import com.expedia.www.haystack.service.graph.node.finder.config.NodeMetadataConfiguration
-import com.expedia.www.haystack.service.graph.node.finder.utils.SpanMergeStyle
-import com.expedia.www.haystack.service.graph.node.finder.utils.SpanMergeStyle.SpanMergeStyle
 import org.apache.kafka.common.serialization.{Deserializer, Serde, Serdes, Serializer}
 import org.apache.kafka.streams.state.{KeyValueStore, StoreBuilder, Stores}
+import org.json4s.DefaultFormats
 import org.json4s.jackson.Serialization
-import org.json4s.{DefaultFormats, Formats}
 
-case class ServiceNodeMetadata(mergeStyle: SpanMergeStyle)
+case class ServiceNodeMetadata(useSharedSpan: Boolean)
 
 class ServiceNodeMetadataSerde extends Serde[ServiceNodeMetadata] {
-  implicit val formats: Formats = DefaultFormats + new org.json4s.ext.EnumNameSerializer(SpanMergeStyle)
+  implicit val formats = DefaultFormats
 
   override def deserializer(): Deserializer[ServiceNodeMetadata] = {
     new Deserializer[ServiceNodeMetadata] {
@@ -68,12 +66,11 @@ class ServiceNodeMetadataSerde extends Serde[ServiceNodeMetadata] {
 
 object MetadataStoreBuilder {
   def storeBuilder(config: NodeMetadataConfiguration): StoreBuilder[KeyValueStore[String, ServiceNodeMetadata]] = {
-    val builder = Stores.keyValueStoreBuilder(
+    Stores.keyValueStoreBuilder(
       Stores.inMemoryKeyValueStore(config.topic),
       Serdes.String(),
       new ServiceNodeMetadataSerde())
-    .withCachingEnabled()
-
-    if (config.logEnabled) builder else builder.withLoggingDisabled()
+      .withCachingEnabled()
+      .withLoggingDisabled()
   }
 }

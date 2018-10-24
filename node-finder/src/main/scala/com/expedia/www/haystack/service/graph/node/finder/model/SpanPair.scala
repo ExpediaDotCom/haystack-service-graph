@@ -18,8 +18,7 @@
 package com.expedia.www.haystack.service.graph.node.finder.model
 
 import com.expedia.www.haystack.commons.entities._
-import com.expedia.www.haystack.service.graph.node.finder.utils.SpanMergeStyle.SpanMergeStyle
-import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanMergeStyle, SpanType}
+import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 
@@ -32,7 +31,7 @@ class SpanPair {
 
   private var clientSpan: LightSpan = _
   private var serverSpan: LightSpan = _
-  private var mergeStyle: SpanMergeStyle = _
+  private var isSharedSpan: Boolean = false
 
   /**
     * Returns true of the current instance has data for both server and client spans
@@ -45,8 +44,7 @@ class SpanPair {
       serverSpan != null &&
       clientSpan.serviceName != serverSpan.serviceName &&
       StringUtils.isNotEmpty(serverSpan.serviceName) &&
-      StringUtils.isNotEmpty(clientSpan.serviceName) &&
-      mergeStyle != null
+      StringUtils.isNotEmpty(clientSpan.serviceName)
   }
 
   /**
@@ -69,13 +67,13 @@ class SpanPair {
   def merge(spanOne: LightSpan, spanTwo: LightSpan): Unit = {
     if (spanOne.spanId.equalsIgnoreCase(spanTwo.parentSpanId)) {
       setSpans(LightSpanBuilder.updateSpanTypeIfAbsent(spanOne, SpanType.CLIENT), LightSpanBuilder.updateSpanTypeIfAbsent(spanTwo, SpanType.SERVER))
-      this.mergeStyle = SpanMergeStyle.DUAL
+      isSharedSpan = false
     } else if (spanOne.parentSpanId.equalsIgnoreCase(spanTwo.spanId)) {
       setSpans(LightSpanBuilder.updateSpanTypeIfAbsent(spanOne, SpanType.SERVER), LightSpanBuilder.updateSpanTypeIfAbsent(spanTwo, SpanType.CLIENT))
-      this.mergeStyle = SpanMergeStyle.DUAL
+      isSharedSpan = false
     } else {
       setSpans(spanOne, spanTwo)
-      this.mergeStyle = SpanMergeStyle.SINGULAR
+      isSharedSpan = true
     }
 
     LOGGER.debug("created a span pair: client: {}, server: {}", List(clientSpan, serverSpan):_*)
@@ -140,7 +138,7 @@ class SpanPair {
   def getId: String = s"${clientSpan.spanId}"
   def getServerSpan: LightSpan = serverSpan
   def getClientSpan: LightSpan = clientSpan
-  def getMergeStyle: SpanMergeStyle = mergeStyle
+  def IsSharedSpan: Boolean = isSharedSpan
 
   override def toString = s"SpanPair($isComplete, $clientSpan, $serverSpan)"
 }

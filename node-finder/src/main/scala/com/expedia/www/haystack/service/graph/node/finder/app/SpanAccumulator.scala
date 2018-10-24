@@ -21,7 +21,7 @@ import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.node.finder.model.{LightSpan, ServiceNodeMetadata, SpanPair, SpanPairBuilder}
-import com.expedia.www.haystack.service.graph.node.finder.utils.{SpanMergeStyle, SpanUtils}
+import com.expedia.www.haystack.service.graph.node.finder.utils.SpanUtils
 import com.netflix.servo.util.VisibleForTesting
 import org.apache.commons.lang3.StringUtils
 import org.apache.kafka.streams.processor._
@@ -30,12 +30,16 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class SpanAccumulatorSupplier(storeName: String, accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector) extends
+class SpanAccumulatorSupplier(storeName: String,
+                              accumulatorInterval: Int,
+                              tagCollector: GraphEdgeTagCollector) extends
   ProcessorSupplier[String, Span] {
   override def get(): Processor[String, Span] = new SpanAccumulator(storeName, accumulatorInterval, tagCollector)
 }
 
-class SpanAccumulator(storeName: String, accumulatorInterval: Int, tagCollector: GraphEdgeTagCollector)
+class SpanAccumulator(storeName: String,
+                      accumulatorInterval: Int,
+                      tagCollector: GraphEdgeTagCollector)
   extends Processor[String, Span] with MetricsSupport {
 
   private val LOGGER = LoggerFactory.getLogger(classOf[SpanAccumulator])
@@ -173,20 +177,13 @@ class SpanAccumulator(storeName: String, accumulatorInterval: Int, tagCollector:
     if (spanPair.isComplete) {
       val metadata = metadataStore.get(spanPair.getServerSpan.serviceName)
       if (metadata == null) {
-        metadataStore.put(spanPair.getServerSpan.serviceName, ServiceNodeMetadata(spanPair.getMergeStyle))
-        return true
+        true
       } else {
-        // if current merge matches with the recorded style, then accept it
-        // or if new merge style is SINGULAR, then ignore DUAL style and give priority to it.
-        if (metadata.mergeStyle == spanPair.getMergeStyle) {
-          return true
-        }
-        if (spanPair.getMergeStyle == SpanMergeStyle.SINGULAR) {
-          metadataStore.put(spanPair.getServerSpan.serviceName, ServiceNodeMetadata(SpanMergeStyle.SINGULAR))
-          return true
-        }
+        // if current merge matches with the recorded style, or it is shared span merge style, then accept it
+        (metadata.useSharedSpan == spanPair.IsSharedSpan) || spanPair.IsSharedSpan
       }
+    } else {
+      false
     }
-    false
   }
 }

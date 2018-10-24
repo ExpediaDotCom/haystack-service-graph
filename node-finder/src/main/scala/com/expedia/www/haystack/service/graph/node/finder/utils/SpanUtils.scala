@@ -120,16 +120,6 @@ object SpanType extends Enumeration {
 }
 
 /**
-  * Enum for different span style.
-  * SINGULAR is used where client and server span share the same IDs
-  * DUAL is used where server is a child of client span
-  */
-object SpanMergeStyle extends Enumeration {
-  type SpanMergeStyle = Value
-  val SINGULAR, DUAL = Value
-}
-
-/**
   * Simple case class representing a flag
   * @param value : value of the flag
   */

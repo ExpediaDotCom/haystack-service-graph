@@ -20,6 +20,7 @@ package com.expedia.www.haystack.service.graph.node.finder
 import com.expedia.www.haystack.commons.health.{HealthStatusController, UpdateHealthStatusFile}
 import com.expedia.www.haystack.commons.kstreams.app.{Main, StateChangeListener, StreamsFactory, StreamsRunner}
 import com.expedia.www.haystack.service.graph.node.finder.app.Streams
+import com.expedia.www.haystack.service.graph.node.finder.app.metadata.TopicCreator
 import com.expedia.www.haystack.service.graph.node.finder.config.AppConfiguration
 import com.netflix.servo.util.VisibleForTesting
 
@@ -57,6 +58,9 @@ object App extends Main {
                           stateChangeListener: StateChangeListener): StreamsRunner = {
     //create the topology provider
     val kafkaConfig = appConfiguration.kafkaConfig
+
+    TopicCreator.makeMetadataTopicReady(kafkaConfig)
+
     val streams = new Streams(kafkaConfig)
 
     val streamsFactory = new StreamsFactory(streams, kafkaConfig.streamsConfig, kafkaConfig.protoSpanTopic)
