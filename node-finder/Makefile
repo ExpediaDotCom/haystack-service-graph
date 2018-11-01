@@ -8,4 +8,4 @@ docker-image:
 	docker build -t $(DOCKER_IMAGE_NAME) -f build/docker/Dockerfile .
 
 release: docker-image
-	../scripts/publish-to-docker-hub.sh
+	..deployment/scripts/publish-to-docker-hub.sh
