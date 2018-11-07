@@ -11,6 +11,7 @@
     <modules>
         <module>node-finder</module>
         <module>graph-builder</module>
+        <module>snapshot-store</module>
     </modules>
 
     <scm>
@@ -86,7 +87,7 @@
         <scalatest.version>3.0.3</scalatest.version>
         <grpc.version>1.7.1</grpc.version>
         <netty.handler.version>4.1.16.Final</netty.handler.version>
-        <scoverage.plugin.version>1.3.0</scoverage.plugin.version>
+        <scoverage.plugin.version>1.4.0-M5</scoverage.plugin.version>
 
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
