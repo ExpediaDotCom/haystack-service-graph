@@ -40,7 +40,7 @@ case class LightSpan(spanId: String,
                      operationName: String,
                      duration: Long,
                      spanType: SpanType,
-                     tags: Map[String, String]) {
+                     tags: Map[String, String]) extends Equals {
   require(StringUtils.isNotBlank(spanId))
   require(time > 0)
   require(StringUtils.isNotBlank(serviceName))
@@ -49,16 +49,33 @@ case class LightSpan(spanId: String,
 
   /**
     * check whether this light span is later than the given cutOffTime
+    *
     * @param cutOffTime time to be compared
     * @return true if this span is later than the given cutOffTime time else false
     */
   def isLaterThan(cutOffTime: Long): Boolean = (time - cutOffTime) > 0
 
-  override def equals(obj: scala.Any): Boolean = {
-    val that = obj.asInstanceOf[LightSpan]
-    (this.spanId.equals(that.spanId)
-    && this.parentSpanId.equals(that.parentSpanId)
-    && this.serviceName.equalsIgnoreCase(that.serviceName))
+  override def canEqual(that: Any): Boolean = {
+    that.isInstanceOf[LightSpan]
+  }
+
+  override def equals(that: Any): Boolean = {
+    that match {
+      case that: LightSpan =>
+        that.canEqual(this) &&
+          this.spanId == that.spanId &&
+          this.parentSpanId == that.parentSpanId &&
+          this.serviceName == that.serviceName
+      case _ => false
+    }
+  }
+
+  override def hashCode(): Int = {
+    41 * (
+      41 * (
+        41 + spanId.hashCode
+        ) + parentSpanId.hashCode
+      ) + serviceName.hashCode
   }
 }
 
@@ -69,11 +86,12 @@ object LightSpanBuilder {
 
   /**
     * update span type to an existing span
-    * @param span span to be updated
+    *
+    * @param span     span to be updated
     * @param spanType span type to be updated in a given span
     * @return
     */
   def updateSpanTypeIfAbsent(span: LightSpan, spanType: SpanType): LightSpan = {
-    if(span.spanType == SpanType.OTHER) span.copy(spanType = spanType) else span
+    if (span.spanType == SpanType.OTHER) span.copy(spanType = spanType) else span
   }
 }
