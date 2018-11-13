@@ -28,7 +28,8 @@ trait StringStore {
     * @param content String to write
     * @return implementation-dependent value; see implementation documentation for details
     */
-  def write(instant: Instant, content: String): AnyRef
+  def write(instant: Instant,
+            content: String): AnyRef
 
   /**
     * Reads content from the persistent store
@@ -41,7 +42,7 @@ trait StringStore {
   /**
     * Purges items from the persistent store
     *
-    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier then or equal to
+    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier than or equal to
     *                instant will be purged
     * @return the number of items purged
     */

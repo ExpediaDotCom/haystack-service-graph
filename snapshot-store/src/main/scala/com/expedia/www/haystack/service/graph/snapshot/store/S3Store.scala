@@ -48,7 +48,8 @@ class S3Store(val s3Client: AmazonS3,
     * @param content String to write
     * @return the item name of the object written to S3 (does not include the bucket name)
     */
-  override def write(instant: Instant, content: String): AnyRef = {
+  override def write(instant: Instant,
+                     content: String): AnyRef = {
     if(!s3Client.doesBucketExistV2(bucketName)) {
       s3Client.createBucket(bucketName)
     }
@@ -75,19 +76,18 @@ class S3Store(val s3Client: AmazonS3,
   /**
     * Purges items from the persistent store
     *
-    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier then or equal to
+    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier than or equal to
     *                instant will be purged
     * @return the number of items purged
     */
   private def getItemNameOfYoungestItemBeforeInstant(instant: Instant): Option[String] = {
     var optionString: Option[String] = None
     val listObjectsV2Request = new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(listObjectsBatchSize)
+    val instantAsItemName = createItemName(createIso8601FileName(instant))
     var listObjectsV2Result: ListObjectsV2Result = null
     do {
       listObjectsV2Result = s3Client.listObjectsV2(bucketName)
-      val instantAsItemName = createItemName(createIso8601FileName(instant))
-      val summaries = listObjectsV2Result.getObjectSummaries
-      val objectSummaries = summaries.asScala
+      val objectSummaries = listObjectsV2Result.getObjectSummaries.asScala
         .filter(_.getKey.startsWith(itemNamePrefix)).filter(_.getKey <= instantAsItemName)
       val potentialMax = if (objectSummaries.nonEmpty) Some(objectSummaries.maxBy(_.getKey).getKey) else None
       (optionString, potentialMax) match {

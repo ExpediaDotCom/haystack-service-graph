@@ -33,7 +33,8 @@ class FileStore(val directoryName: String) extends StringStore {
     * @param content String to write
     * @return the Path of the file to which the String was written; @see java.nio.file.Path
     */
-  override def write(instant: Instant, content: String): AnyRef = {
+  override def write(instant: Instant,
+                     content: String): AnyRef = {
     if (!Files.exists(directory)) {
       Files.createDirectories(directory)
     }
@@ -70,7 +71,7 @@ class FileStore(val directoryName: String) extends StringStore {
   /**
     * Purges items from the persistent store
     *
-    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier then or equal to
+    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier than or equal to
     *                instant will be purged
     * @return the number of items purged
     */
