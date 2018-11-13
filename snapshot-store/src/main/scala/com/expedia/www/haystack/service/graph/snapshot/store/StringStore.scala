@@ -17,33 +17,40 @@
  */
 package com.expedia.www.haystack.service.graph.snapshot.store
 
-import java.nio.file.Path
 import java.time.Instant
+import java.time.format.DateTimeFormatterBuilder
 
 trait StringStore {
   /**
-    * Write a byte array to the persistent store
+    * Writes a string to the persistent store
     *
     * @param instant date/time of the write, used to create the name, which will later be used in read() and purge()
     * @param content String to write
-    * @return the Path to which the content was written
+    * @return implementation-dependent value; see implementation documentation for details
     */
-  def write(instant: Instant, content: String): Path
+  def write(instant: Instant,
+            content: String): AnyRef
 
   /**
-    * Read a byte array from the persistent store
+    * Reads content from the persistent store
     *
     * @param instant date/time of the read
-    * @return the byte array of the youngest item whose ISO-8601-based name is earlier or equal to instant
+    * @return the content of the youngest item whose ISO-8601-based name is earlier or equal to instant
     */
   def read(instant: Instant): Option[String]
 
   /**
     * Purges items from the persistent store
     *
-    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier or equals to instant
-    *                will be purged
+    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier than or equal to
+    *                instant will be purged
     * @return the number of items purged
     */
   def purge(instant: Instant): Integer
+
+  private val formatter = new DateTimeFormatterBuilder().appendInstant(3).toFormatter
+
+  def createIso8601FileName(instant: Instant): String = {
+    formatter.format(instant)
+  }
 }

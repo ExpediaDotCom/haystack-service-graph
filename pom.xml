@@ -64,6 +64,7 @@
         <project.jdk.version>1.8</project.jdk.version>
         <protobuf.version>3.4.0</protobuf.version>
 
+        <aws-java-sdk.version>1.11.447</aws-java-sdk.version>
         <logback.version>1.2.3</logback.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
         <commons-lang.version>3.4</commons-lang.version>
@@ -88,7 +89,7 @@
         <grpc.version>1.7.1</grpc.version>
         <netty.handler.version>4.1.16.Final</netty.handler.version>
         <scoverage.plugin.version>1.3.0</scoverage.plugin.version>
-
+        <mockito.version>1.9.5</mockito.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
@@ -162,6 +163,12 @@
             </dependency>
 
             <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-s3</artifactId>
+                <version>${aws-java-sdk.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.json4s</groupId>
                 <artifactId>json4s-jackson_${scala.major.minor.version}</artifactId>
                 <version>${json4s.version}</version>
@@ -220,6 +227,13 @@
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>fluent-hc</artifactId>
                 <version>${apache.httpcomponents.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

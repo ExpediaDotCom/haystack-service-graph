@@ -20,23 +20,34 @@ package com.expedia.www.haystack.service.graph.snapshot.store
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.time.Instant
-import java.time.format.DateTimeFormatter.ISO_INSTANT
 import java.util.{Comparator, Optional}
 
 class FileStore(val directoryName: String) extends StringStore {
   private val directory = Paths.get(directoryName)
-  private val pathNameComparator = new Comparator[Path] {
-    override def compare(o1: Path, o2: Path): Int = o1.toString.compareTo(o2.toString)
-  }
+  protected val pathNameComparator: Comparator[Path] = (o1: Path, o2: Path) => o1.toString.compareTo(o2.toString)
 
-  override def write(instant: Instant, content: String): Path = {
+  /**
+    * Writes a string to the persistent store
+    *
+    * @param instant date/time of the write, used to create the name, which will later be used in read() and purge()
+    * @param content String to write
+    * @return the Path of the file to which the String was written; @see java.nio.file.Path
+    */
+  override def write(instant: Instant,
+                     content: String): AnyRef = {
     if (!Files.exists(directory)) {
       Files.createDirectories(directory)
     }
-    val path = directory.resolve(ISO_INSTANT.format(instant))
+    val path = directory.resolve(createIso8601FileName(instant))
     Files.write(path, content.getBytes(StandardCharsets.UTF_8))
   }
 
+  /**
+    * Reads content from the persistent store
+    *
+    * @param instant date/time of the read
+    * @return the content of the youngest item whose ISO-8601-based name is earlier or equal to instant
+    */
   override def read(instant: Instant): Option[String] = {
     var optionString: Option[String] = None
     // No need to call filesWalk.close() because FileTreeWalker.close() method does not close any resources. But
@@ -46,7 +57,7 @@ class FileStore(val directoryName: String) extends StringStore {
     // has a finally block to do so.
     val filesWalk = Files.walk(directory, 1)
     try {
-      val fileName = ISO_INSTANT.format(instant)
+      val fileName = createIso8601FileName(instant)
       val fileToUse: Optional[Path] = filesWalk.filter(_.toFile.getName <= fileName).max(pathNameComparator)
       if (fileToUse.isPresent) {
         optionString = Some(Files.readAllLines(fileToUse.get).toArray.mkString("\n"))
@@ -57,8 +68,15 @@ class FileStore(val directoryName: String) extends StringStore {
     optionString
   }
 
+  /**
+    * Purges items from the persistent store
+    *
+    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier than or equal to
+    *                instant will be purged
+    * @return the number of items purged
+    */
   override def purge(instant: Instant): Integer = {
-    val fileNameForInstant = ISO_INSTANT.format(instant)
+    val fileNameForInstant = createIso8601FileName(instant)
     val pathsToPurge: Array[AnyRef] = Files
       .walk(directory, 1)
       .filter(_.toFile.getName <= fileNameForInstant)
