@@ -18,30 +18,20 @@
 package com.expedia.www.haystack.service.graph.snapshot.store
 
 import java.io.File
-import java.nio.file.Files
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import java.nio.file.{Files, Path}
 
-import org.scalatest.{FunSpec, Matchers}
-
-class FileStoreSpec extends FunSpec with Matchers {
-  private val directory = Files.createTempDirectory("FileStoreForUnitTest")
+class FileStoreSpec extends StringStoreSpecBase {
+  private val directory = Files.createTempDirectory("FileStoreSpec")
   directory.toFile.deleteOnExit()
   private val directoryName = directory.toFile.getCanonicalPath
-  private val now = Instant.now
-  private val json = "{\n\"foo\": \"5s\"\n}"
-  private val twoMillisecondsBeforeNow = now.minus(2, ChronoUnit.MILLIS)
-  private val oneMillisecondBeforeNow = now.minus(1, ChronoUnit.MILLIS)
-  private val oneMillisecondAfterNow = now.plus(1, ChronoUnit.MILLIS)
-  private val twoMillisecondsAfterNow = now.plus(2, ChronoUnit.MILLIS)
 
   describe("FileStore") {
     {
       val fileStore = new FileStore(directoryName)
       it("should use an existing directory without trying to create it when writing") {
-        val pathFromWrite = fileStore.write(now, json.format(now.toString))
+        val pathFromWrite = fileStore.write(now, json.format(now.toString)).asInstanceOf[Path]
         assert(pathFromWrite.toFile.getCanonicalPath.startsWith(directoryName))
-        assert(pathFromWrite.toFile.getCanonicalPath.endsWith(now.toString))
+        assert(pathFromWrite.toFile.getCanonicalPath.endsWith(fileStore.createIso8601FileName(now)))
         fileStore.write(oneMillisecondBeforeNow, json.format(oneMillisecondBeforeNow.toString))
         fileStore.write(twoMillisecondsAfterNow, json.format(twoMillisecondsAfterNow.toString))
       }
@@ -62,10 +52,10 @@ class FileStoreSpec extends FunSpec with Matchers {
         numberOfFilesPurged shouldEqual 2
       }
     }
-    it("should create the directory when the direction does not exist") {
+    it("should create the directory when the directory does not exist") {
       val suffix = File.separator + "DirectoryToCreate"
       val fileStore = new FileStore(directoryName + suffix)
-      val pathFromWrite = fileStore.write(now, json.format(now.toString))
+      val pathFromWrite = fileStore.write(now, json.format(now.toString)).asInstanceOf[Path]
       assert(pathFromWrite.toFile.getCanonicalPath.startsWith(directoryName + suffix))
       val fileContent = fileStore.read(now)
       assert(fileContent.get == json.format(now.toString))
