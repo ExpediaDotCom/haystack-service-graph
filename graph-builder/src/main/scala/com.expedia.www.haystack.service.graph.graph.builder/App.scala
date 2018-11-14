@@ -80,11 +80,13 @@ object App extends MetricsSupport {
 
       // wrap service and stream in a managed application instance
       // ManagedApplication makes sure that startup/shutdown sequence is right
-      // and startup/shutdow errors are handling appropriately
+      // and startup/shutdown errors are handling appropriately
       val app = new ManagedApplication(
         new ManagedHttpService(service),
         new ManagedKafkaStreams(stream),
-        jmxReporter)
+        jmxReporter,
+        LoggerFactory.getLogger(classOf[ManagedApplication])
+      )
 
       // start the application
       // if any exception occurs during startup
@@ -128,7 +130,7 @@ object App extends MetricsSupport {
     val localServiceEdgesFetcher = new LocalServiceEdgesFetcher(stream, storeName)
     val remoteServiceEdgesFetcher = new RemoteServiceEdgesFetcher(serviceConfig.client)
 
-    implicit val timestampReader = new QueryTimestampReader(kafkaConfig.aggregationWindowSec)
+    implicit val timestampReader: QueryTimestampReader = new QueryTimestampReader(kafkaConfig.aggregationWindowSec)
     val servlets = Map(
       "/operationgraph/local" -> new LocalOperationGraphResource(localOperationEdgesFetcher),
       "/operationgraph" -> new GlobalOperationGraphResource(stream, storeName, serviceConfig, localOperationEdgesFetcher, remoteOperationEdgesFetcher),

@@ -3,31 +3,41 @@ package com.expedia.www.haystack.service.graph.graph.builder
 import com.codahale.metrics.JmxReporter
 import com.expedia.www.haystack.commons.kstreams.app.ManagedService
 import com.expedia.www.haystack.commons.logger.LoggerUtils
-import org.slf4j.LoggerFactory
+import com.expedia.www.haystack.service.graph.graph.builder.ManagedApplication._
+import org.slf4j.Logger
 
 import scala.util.Try
 
-class ManagedApplication(service: ManagedService, stream: ManagedService, jmxReporter: JmxReporter) {
+object ManagedApplication {
+  val StartMessage = "Starting the given topology and service"
+  val HttpStartMessage = "HTTP service started successfully"
+  val StreamStartMessage = "Kafka stream started successfully"
+  val HttpStopMessage = "Shutting down HTTP service"
+  val StreamStopMessage = "Shutting down Kafka stream"
+  val JmxReporterStopMessage = "Shutting down JMX Reporter"
+  val LoggerStopMessage = "Shutting down logger. Bye!"
+}
 
-  private val LOGGER = LoggerFactory.getLogger(classOf[ManagedApplication])
+class ManagedApplication(service: ManagedService, stream: ManagedService, jmxReporter: JmxReporter, logger: Logger) {
 
   require(service != null)
   require(stream != null)
   require(jmxReporter != null)
+  require(logger != null)
 
   def start(): Unit = {
     try {
       jmxReporter.start()
-      LOGGER.info("Starting the given topology and service")
+      logger.info(StartMessage)
 
       service.start()
-      LOGGER.info("http service started successfully")
+      logger.info(HttpStartMessage)
 
       stream.start()
-      LOGGER.info("kafka stream started successfully")
+      logger.info(StreamStartMessage)
     } catch {
       case ex: Exception =>
-        LOGGER.error("Observed fatal exception while starting the app", ex)
+        logger.error("Observed fatal exception while starting the app", ex)
         stop()
         System.exit(1)
     }
@@ -38,16 +48,16 @@ class ManagedApplication(service: ManagedService, stream: ManagedService, jmxRep
     * previously started. If not, this method does nothing
     */
   def stop(): Unit = {
-      LOGGER.info("Shutting down http service")
+      logger.info(HttpStopMessage)
       Try(service.stop())
 
-      LOGGER.info("Shutting down kafka stream")
+      logger.info(StreamStopMessage)
       Try(stream.stop())
 
-      LOGGER.info("Shutting down jmxReporter")
+      logger.info(JmxReporterStopMessage)
       Try(jmxReporter.close())
 
-      LOGGER.info("Shutting down logger. Bye!")
+      logger.info(LoggerStopMessage)
       Try(LoggerUtils.shutdownLogger())
   }
 }
