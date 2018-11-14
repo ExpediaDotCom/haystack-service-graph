@@ -23,11 +23,11 @@ import com.expedia.www.haystack.service.graph.graph.builder.model.{EdgeStats, Op
 object EdgesMerger {
   def getMergedServiceEdges(serviceGraphEdges: Seq[ServiceGraphEdge]): Seq[ServiceGraphEdge] = {
     // group by source and destination service
-    val groupedEdges = serviceGraphEdges.groupBy((edge) => ServicePair(edge.source.name, edge.destination.name))
+    val groupedEdges = serviceGraphEdges.groupBy(edge => ServicePair(edge.source.name, edge.destination.name))
 
     // go through edges grouped by source and destination
     // add counts for all edges in group to get total count for a source destination pair
-    // get latest last seen for all edges in group to lastseen for a source destination pair
+    // get latest last seen for all edges in group to last seen for a source destination pair
     groupedEdges.map {
       case (_, edge) => edge.reduce((e1, e2) => e1 + e2)
     }.toSeq
@@ -35,13 +35,13 @@ object EdgesMerger {
 
   def getMergedOperationEdge(operationGraphEdges: Seq[OperationGraphEdge]): Seq[OperationGraphEdge] = {
     // group by source and destination service
-    val groupedEdges = operationGraphEdges.groupBy((edge) => OperationPair(edge.source, edge.destination, edge.operation))
+    val groupedEdges = operationGraphEdges.groupBy(edge => OperationTrio(edge.source, edge.destination, edge.operation))
 
     // go through edges grouped by source and destination
-    // add counts for all edges in group to get total count for a source destination pair
-    // get latest last seen for all edges in group to lastseen for a source destination pair
+    // add counts for all edges in group to get total count for an operation trio
+    // get latest last seen for all edges in group to last seen for an operation trio
     groupedEdges.map(
-      (group) => group._2
+      group => group._2
         .reduce((e1, e2) => OperationGraphEdge(group._1.source, group._1.destination, group._1.operation,
           EdgeStats(e1.stats.count + e2.stats.count, Math.max(e1.stats.lastSeen, e2.stats.lastSeen), e1.stats
             .errorCount + e2.stats.errorCount), Math.min(e1.effectiveFrom, e2.effectiveFrom), Math.max(e1.effectiveTo, e2.effectiveTo))))
@@ -50,5 +50,5 @@ object EdgesMerger {
 
   private case class ServicePair(source: String, destination: String)
 
-  private case class OperationPair(source: String, destination: String, operation: String)
+  private case class OperationTrio(source: String, destination: String, operation: String)
 }
