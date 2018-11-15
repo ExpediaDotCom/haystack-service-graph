@@ -33,7 +33,7 @@ object EdgesMerger {
     }.toSeq
   }
 
-  def getMergedOperationEdge(operationGraphEdges: Seq[OperationGraphEdge]): Seq[OperationGraphEdge] = {
+  def getMergedOperationEdges(operationGraphEdges: Seq[OperationGraphEdge]): Seq[OperationGraphEdge] = {
     // group by source and destination service
     val groupedEdges = operationGraphEdges.groupBy(edge => OperationTrio(edge.source, edge.destination, edge.operation))
 
