@@ -40,15 +40,20 @@ import scala.util.Try
   * @param streamsConfig    Configuration instance for KafkaStreams
   * @param consumerTopic    Optional consuming topic name
   */
+//noinspection ScalaDocInlinedTag,ScalaDocParserErrorInspection
 class StreamSupplier(topologySupplier: Supplier[Topology],
                      healthController: HealthStatusController,
                      streamsConfig: StreamsConfig,
-                     consumerTopic: String) extends Supplier[KafkaStreams] {
+                     consumerTopic: String,
+                     var adminClient: AdminClient = null) extends Supplier[KafkaStreams] {
 
   require(topologySupplier != null, "streamsBuilder is required")
   require(healthController != null, "healthStatusController is required")
   require(streamsConfig != null, "streamsConfig is required")
   require(consumerTopic != null && !consumerTopic.isEmpty, "consumerTopic is required")
+  if(adminClient == null) {
+    adminClient = AdminClient.create(getBootstrapProperties)
+  }
 
   private val LOGGER = LoggerFactory.getLogger(classOf[StreamSupplier])
 
@@ -71,7 +76,6 @@ class StreamSupplier(topologySupplier: Supplier[Topology],
 
   private def checkConsumerTopic(): Unit = {
     LOGGER.info(s"checking for the consumer topic $consumerTopic")
-    val adminClient = AdminClient.create(getBootstrapProperties)
     try {
       val present = adminClient.listTopics().names().get().contains(consumerTopic)
       if (!present) {
