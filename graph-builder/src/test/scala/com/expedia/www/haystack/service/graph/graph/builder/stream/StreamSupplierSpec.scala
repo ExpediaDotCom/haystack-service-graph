@@ -48,10 +48,10 @@ class StreamSupplierSpec extends FunSpec with Matchers with MockitoSugar {
     it("should throw an exception if the consumer topic does exist") {
       when(adminClient.listTopics()).thenReturn(listTopicsResult)
       when(listTopicsResult.names()).thenReturn(kafkaFuture)
-      val nonExistentTopic = "Not" + ConsumerTopic
-      when(kafkaFuture.get()).thenReturn(Collections.singleton(nonExistentTopic))
+      val nonExistentTopic = "NonExistent" + ConsumerTopic
+      when(kafkaFuture.get()).thenReturn(Collections.singleton(ConsumerTopic))
 
-      val streamSupplier = new StreamSupplier(topologySupplier, healthController, streamsConfig, ConsumerTopic, adminClient)
+      val streamSupplier = new StreamSupplier(topologySupplier, healthController, streamsConfig, nonExistentTopic, adminClient)
       val thrown = the [streamSupplier.TopicNotPresentException] thrownBy streamSupplier.get
       thrown.getTopic shouldEqual nonExistentTopic
 
