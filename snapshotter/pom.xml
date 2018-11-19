@@ -2,15 +2,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <artifactId>haystack-service-graph</artifactId>
         <groupId>com.expedia.www</groupId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>haystack-service-graph-snapshot-store</artifactId>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>haystack-service-graph-snapshotter</artifactId>
+    <packaging>jar</packaging>
 
     <licenses>
         <!--
@@ -39,14 +39,18 @@
         </license>
     </licenses>
 
+    <properties>
+        <finalName>${project.artifactId}-${project.version}</finalName>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.expedia.www</groupId>
             <artifactId>haystack-logback-metrics-appender</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-s3</artifactId>
+            <groupId>com.expedia.www</groupId>
+            <artifactId>haystack-service-graph-snapshot-store</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -55,6 +59,7 @@
     </dependencies>
 
     <build>
+        <finalName>${finalName}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.scalatest</groupId>
