@@ -12,6 +12,7 @@
         <module>node-finder</module>
         <module>graph-builder</module>
         <module>snapshot-store</module>
+        <module>snapshotter</module>
     </modules>
 
     <scm>
@@ -67,6 +68,7 @@
         <grpc.version>1.7.1</grpc.version>
         <haystack-commons.version>1.0.50</haystack-commons.version>
         <haystack.logback.metrics.appender.version>0.1.12</haystack.logback.metrics.appender.version>
+        <haystack-service-graph-snapshot-store.version>1.0.0-SNAPSHOT</haystack-service-graph-snapshot-store.version>
         <httpclient.version>4.5.3</httpclient.version>
         <jetty.version>9.4.11.v20180605</jetty.version>
         <json4s.version>3.5.3</json4s.version>
@@ -201,6 +203,11 @@
                 <groupId>com.expedia.www</groupId>
                 <artifactId>haystack-commons</artifactId>
                 <version>${haystack-commons.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.expedia.www</groupId>
+                <artifactId>haystack-service-graph-snapshot-store</artifactId>
+                <version>${haystack-service-graph-snapshot-store.version}</version>
             </dependency>
 
             <!-- metrics -->
