@@ -20,36 +20,20 @@ import java.time.Instant
 
 class StringStoreSpec extends StringStoreSpecBase {
   private val stringStore = new StringStore {
-    /**
-      * Write a string to the persistent store
-      *
-      * @param instant date/time of the write, used to create the name, which will later be used in read() and purge()
-      * @param content String to write
-      * @return implementation-dependent value; see implementation documentation for details
-      */
     override def write(instant: Instant, content: String): AnyRef = {
       None
     }
 
-    /**
-      * Read a byte array from the persistent store
-      *
-      * @param instant date/time of the read
-      * @return the byte array of the youngest item whose ISO-8601-based name is earlier or equal to instant
-      */
     override def read(instant: Instant): Option[String] = {
       None
     }
 
-    /**
-      * Purges items from the persistent store
-      *
-      * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier or equals to instant
-      *                will be purged
-      * @return the number of items purged
-      */
     override def purge(instant: Instant): Integer = {
       0
+    }
+
+    override def build(constructorArguments: Array[String]): StringStore = {
+      this
     }
   }
 

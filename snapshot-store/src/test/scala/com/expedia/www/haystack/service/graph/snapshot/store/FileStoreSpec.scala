@@ -27,7 +27,7 @@ class FileStoreSpec extends StringStoreSpecBase {
 
   describe("FileStore") {
     {
-      val fileStore = new FileStore(directoryName)
+      val fileStore = new FileStore().build(Array(directoryName))
       it("should use an existing directory without trying to create it when writing") {
         val pathFromWrite = fileStore.write(now, json.format(now.toString)).asInstanceOf[Path]
         assert(pathFromWrite.toFile.getCanonicalPath.startsWith(directoryName))

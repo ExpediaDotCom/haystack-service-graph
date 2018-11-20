@@ -26,6 +26,20 @@ class FileStore(val directoryName: String) extends StringStore {
   private val directory = Paths.get(directoryName)
   protected val pathNameComparator: Comparator[Path] = (o1: Path, o2: Path) => o1.toString.compareTo(o2.toString)
 
+  def this() = {
+    this("/")
+  }
+
+  /**
+    * Returns a FileStore using the directory name specified
+    *
+    * @param constructorArguments constructorArguments(0) must specify the directory to which snapshots will be stored
+    * @return the concrete StringStore to use
+    */
+  override def build(constructorArguments: Array[String]): StringStore = {
+    new FileStore(constructorArguments(0))
+  }
+
   /**
     * Writes a string to the persistent store
     *
@@ -86,4 +100,5 @@ class FileStore(val directoryName: String) extends StringStore {
     }
     pathsToPurge.length
   }
+
 }

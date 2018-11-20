@@ -22,6 +22,14 @@ import java.time.format.DateTimeFormatterBuilder
 
 trait StringStore {
   /**
+    * Builds a StringStore implementation given arguments to pass to the constructor
+    *
+    * @param constructorArguments arguments to pass to the constructor
+    * @return the concrete StringStore to use
+    */
+  def build(constructorArguments: Array[String]): StringStore
+
+  /**
     * Writes a string to the persistent store
     *
     * @param instant date/time of the write, used to create the name, which will later be used in read() and purge()
