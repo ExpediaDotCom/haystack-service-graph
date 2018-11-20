@@ -33,6 +33,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.mockito.MockitoSugar
 
 import scala.collection.mutable
+
 object S3StoreSpec {
   private val itemNamesWrittenToS3 = mutable.SortedSet[String]()
 }
@@ -62,6 +63,17 @@ class S3StoreSpec extends StringStoreSpecBase with BeforeAndAfterAll with Mockit
     val s3ObjectSummary = new S3ObjectSummary()
     s3ObjectSummary.setKey(key)
     s3ObjectSummary
+  }
+
+  describe("S3Store.build()") {
+    val s3Store = new S3Store().build(Array(bucketName, folderName, "42")).asInstanceOf[S3Store]
+    it("should use the arguments in the default constructor and the array") {
+      val s3Client: AmazonS3 = s3Store.s3Client
+      s3Client.getRegion.toString shouldEqual Regions.US_WEST_2.getName
+      s3Store.bucketName shouldEqual bucketName
+      s3Store.folderName shouldEqual folderName
+      s3Store.listObjectsBatchSize shouldEqual 42
+    }
   }
 
   describe("S3Store") {

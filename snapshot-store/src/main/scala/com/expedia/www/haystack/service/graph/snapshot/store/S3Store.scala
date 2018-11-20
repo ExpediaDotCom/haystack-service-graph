@@ -18,7 +18,8 @@
 package com.expedia.www.haystack.service.graph.snapshot.store
 import java.time.Instant
 
-import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.regions.Regions
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.services.s3.model.{ListObjectsV2Request, ListObjectsV2Result}
 
 import scala.collection.JavaConverters._
@@ -40,6 +41,25 @@ class S3Store(val s3Client: AmazonS3,
               val folderName: String,
               val listObjectsBatchSize: Int) extends StringStore {
   private val itemNamePrefix = folderName + "/"
+
+  def this() = {
+    this(AmazonS3ClientBuilder.standard.withRegion(Regions.US_WEST_2).build, "", "", 0)
+  }
+
+  /**
+    * Builds a StringStore implementation given arguments to pass to the constructor
+    *
+    * @param constructorArguments [0] must be a String that specifies the bucket
+    *                             [1] must be a String that specifies the folder in the bucket
+    *                             [2] must be a String that specifies the batch count when listing items in the bucket
+    * @return the concrete StringStore to use
+    */
+  override def build(constructorArguments: Array[String]): StringStore = {
+    val bucketNameFromArray = constructorArguments(0)
+    val folderNameFromArray = constructorArguments(1)
+    val listObjectsBatchSizeFromArray = constructorArguments(2).toInt
+    new S3Store(s3Client, bucketNameFromArray, folderNameFromArray, listObjectsBatchSizeFromArray)
+  }
 
   /**
     * Writes a string to the persistent store
@@ -119,4 +139,5 @@ class S3Store(val s3Client: AmazonS3,
   private def createItemName(fileName: String) = {
     s"$folderName/$fileName"
   }
+
 }
