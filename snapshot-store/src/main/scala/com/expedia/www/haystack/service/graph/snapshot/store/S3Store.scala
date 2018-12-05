@@ -55,10 +55,10 @@ class S3Store(val s3Client: AmazonS3,
     * @return the concrete StringStore to use
     */
   override def build(constructorArguments: Array[String]): StringStore = {
-    val bucketNameFromArray = constructorArguments(0)
-    val folderNameFromArray = constructorArguments(1)
-    val listObjectsBatchSizeFromArray = constructorArguments(2).toInt
-    new S3Store(s3Client, bucketNameFromArray, folderNameFromArray, listObjectsBatchSizeFromArray)
+    val bucketName = constructorArguments(0)
+    val folderName = constructorArguments(1)
+    val listObjectsBatchSize = constructorArguments(2).toInt
+    new S3Store(s3Client, bucketName, folderName, listObjectsBatchSize)
   }
 
   /**
@@ -123,17 +123,6 @@ class S3Store(val s3Client: AmazonS3,
       listObjectsV2Request.setContinuationToken(listObjectsV2Result.getNextContinuationToken)
     } while (listObjectsV2Result.isTruncated)
     optionString
-  }
-
-  /**
-    * Purges items from the persistent store
-    *
-    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier or equals to instant
-    *                will be purged
-    * @return the number of items purged
-    */
-  override def purge(instant: Instant): Integer = {
-    0
   }
 
   private def createItemName(fileName: String) = {
