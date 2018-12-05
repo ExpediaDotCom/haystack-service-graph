@@ -48,13 +48,17 @@ trait StringStore {
   def read(instant: Instant): Option[String]
 
   /**
-    * Purges items from the persistent store
+    * Purges items from the persistent store (optional operation; the S3 implementation of StringStore will use an S3
+    * lifecycle rule to purge items, but the file implementation must purge old files)
     *
     * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier than or equal to
     *                instant will be purged
     * @return the number of items purged
     */
-  def purge(instant: Instant): Integer
+  def purge(instant: Instant): Integer = {
+    0
+    // Override if purge code is needed by the particular StringStore implementation
+  }
 
   private val formatter = new DateTimeFormatterBuilder().appendInstant(3).toFormatter
 
