@@ -47,6 +47,7 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
   private val now = Instant.now()
 
   private var tempDirectory: Path = _
+
   before {
     saveReaObjectsThatWillBeReplacedWithMocks()
     createMocks()
@@ -72,7 +73,6 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
       Main.clock = mockClock
     }
   }
-
 
   after {
     restoreRealObjects()
