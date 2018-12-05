@@ -35,10 +35,10 @@ import org.apache.commons.lang3.StringUtils
   */
 case class LightSpan(spanId: String,
                      parentSpanId: String,
-                     time: Long,
+                     time: Long, // in epoch millis
                      serviceName: String,
                      operationName: String,
-                     duration: Long,
+                     duration: Long, // in micros
                      spanType: SpanType,
                      tags: Map[String, String]) extends Equals {
   require(StringUtils.isNotBlank(spanId))
@@ -47,13 +47,14 @@ case class LightSpan(spanId: String,
   require(StringUtils.isNoneBlank(operationName))
   require(spanType != null)
 
+  private val durationInMillis = duration / 1000L
   /**
     * check whether this light span is later than the given cutOffTime
     *
     * @param cutOffTime time to be compared
     * @return true if this span is later than the given cutOffTime time else false
     */
-  def isLaterThan(cutOffTime: Long): Boolean = (time - cutOffTime) > 0
+  def isLaterThan(cutOffTime: Long): Boolean = (time + durationInMillis - cutOffTime) > 0
 
   override def canEqual(that: Any): Boolean = {
     that.isInstanceOf[LightSpan]
