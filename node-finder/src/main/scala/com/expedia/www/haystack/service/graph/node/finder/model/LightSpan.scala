@@ -51,7 +51,7 @@ case class LightSpan(spanId: String,
   /**
     * check whether this light span is later than the given cutOffTime
     *
-    * @param cutOffTime time to be compared
+    * @param cutOffTime time in epoch millis to be compared
     * @return true if this span is later than the given cutOffTime time else false
     */
   def isLaterThan(cutOffTime: Long): Boolean = (time + durationInMillis - cutOffTime) > 0
