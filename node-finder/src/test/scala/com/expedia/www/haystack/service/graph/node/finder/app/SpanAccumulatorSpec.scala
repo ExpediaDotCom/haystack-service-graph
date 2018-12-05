@@ -17,6 +17,8 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.app
 
+import java.util.concurrent.TimeUnit
+
 import com.expedia.open.tracing.Span
 import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
@@ -30,6 +32,8 @@ import scala.collection.mutable
 
 class SpanAccumulatorSpec extends TestSpec {
   private val storeName = "my-store"
+  private val DEFAULT_ACCUMULATE_INTERVAL_MILLIS = TimeUnit.SECONDS.toMillis(2)
+
   describe("a span accumulator") {
     it("should schedule Punctuator on init") {
       Given("a processor context")
@@ -46,7 +50,7 @@ class SpanAccumulatorSpec extends TestSpec {
       When("10 server, 10 client and 10 other spans are processed")
       val producers = List[(Long, (Span) => Unit) => Unit](produceSimpleSpan,
         produceServerSpan, produceClientSpan)
-      producers.foreach(producer => writeSpans(10, 1000, producer, (span) => accumulator.process(span.getSpanId, span)))
+      producers.foreach(producer => writeSpans(10, 200, producer, (span) => accumulator.process(span.getSpanId, span)))
       Then("accumulator should hold only the 10 client and 10 server spans")
       accumulator.spanCount should be(30)
     }
@@ -258,7 +262,6 @@ class SpanAccumulatorSpec extends TestSpec {
     forwardedKeys.toSet should contain allOf("I1", "I2", "I4")
   }
 
-
   it("should respect the singular(sharable) span merge style once set even later if it receives dual(non-sharable) span mode") {
     Given("an accumulator and initialized with a processor context")
     val (context, kvStore, forwardedKeys, forwardedSpanPairs) = mockContext(3)
@@ -356,6 +359,46 @@ class SpanAccumulatorSpec extends TestSpec {
     }
   }
 
+  it("should apply eviction logic using the end time (start time + duration) of the incoming spans and not rely on their start time") {
+    Given("an accumulator and initialized with a processor context")
+    val (context, kvStore, forwardedKeys, forwardedSpanPairs) = mockContext(2, 2)
+    val accumulator = createAccumulator(context)
+
+    And("spans from 2 services")
+    val currentTime = System.currentTimeMillis()
+    val oldStartTime = currentTime - TimeUnit.SECONDS.toMillis(10)
+    val longDurationSpans = List(
+      // sharable client-server span
+      newClientSpan("I1", "I2", "svc1", oldStartTime, TimeUnit.SECONDS.toMicros(9)),
+      newClientSpan("I3", "I4", "svc1", oldStartTime, TimeUnit.SECONDS.toMicros(5)),
+      newServerSpan("I3", "I4", "svc2", oldStartTime, TimeUnit.SECONDS.toMicros(5))
+    )
+    longDurationSpans.foreach(span => accumulator.process(span.getSpanId, span))
+
+    When("punctuate is called")
+    accumulator.getPunctuator(context).punctuate(currentTime)
+
+    Then("it should produce 2 SpanPair instances as expected")
+    And("the accumulator's collection not be empty, it should hold span with spanId I1")
+    accumulator.spanCount should be(1)
+    Set("I1") should contain allElementsOf accumulator.internalSpanMap.keySet
+
+    And("when finally, server span with spanId I1 is observed, it should process and forward")
+    List(
+      newServerSpan("I1", "I2", "svc2", oldStartTime, TimeUnit.SECONDS.toMicros(9))
+    ).foreach(span => accumulator.process(span.getSpanId, span))
+
+    // once the stream time moves ahead, it should evict the older spans
+    accumulator.getPunctuator(context).punctuate(currentTime + TimeUnit.SECONDS.toMillis(5))
+    accumulator.spanCount should be(0)
+
+    verify(context)
+
+    kvStore.get("svc1") shouldBe null
+    kvStore.get("svc2").useSharedSpan shouldBe true
+    extractClientServerSvcNames(forwardedSpanPairs) should contain allElementsOf  Seq("svc1->svc2")
+    forwardedKeys.toSet should contain allElementsOf Seq("I1", "I3")
+  }
 
   describe("span accumulator supplier") {
     it("should supply a valid accumulator") {
@@ -368,7 +411,7 @@ class SpanAccumulatorSpec extends TestSpec {
     }
   }
 
-  private def mockContext(expectedForwardCalls: Int): (ProcessorContext, KeyValueStore[String, ServiceNodeMetadata], mutable.ListBuffer[String], mutable.ListBuffer[SpanPair]) = {
+  private def mockContext(expectedForwardCalls: Int, expectedCommits: Int = 1): (ProcessorContext, KeyValueStore[String, ServiceNodeMetadata], mutable.ListBuffer[String], mutable.ListBuffer[SpanPair]) = {
     val context = mock[ProcessorContext]
     val stateStore = Stores.inMemoryKeyValueStore(storeName).get()
 
@@ -393,7 +436,7 @@ class SpanAccumulatorSpec extends TestSpec {
             forwardedSpanPairs += spanPair
           }).times(expectedForwardCalls)
 
-        context.commit().once()
+        context.commit().times(expectedCommits)
       }
       context.getStateStore(storeName).andReturn(stateStore)
     }
@@ -402,7 +445,7 @@ class SpanAccumulatorSpec extends TestSpec {
   }
 
   private def createAccumulator(context: ProcessorContext): SpanAccumulator = {
-    val accumulator = new SpanAccumulator(storeName, 1000, new GraphEdgeTagCollector())
+    val accumulator = new SpanAccumulator(storeName, DEFAULT_ACCUMULATE_INTERVAL_MILLIS.toInt, new GraphEdgeTagCollector())
     accumulator.init(context)
     accumulator
   }

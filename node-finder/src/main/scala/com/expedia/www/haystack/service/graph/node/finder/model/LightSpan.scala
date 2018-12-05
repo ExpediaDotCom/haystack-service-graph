@@ -30,7 +30,7 @@ import org.apache.commons.lang3.StringUtils
   * @param time          Timestamp associated with a Span in MilliSeconds (i.e., StartTime)
   * @param serviceName   Service name of the span
   * @param operationName Operation name of the span
-  * @param duration      duration of the Span
+  * @param duration      duration of the Span in micro seconds
   * @param spanType      type of the span
   */
 case class LightSpan(spanId: String,

@@ -18,6 +18,7 @@
 package com.expedia.www.haystack
 
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 import com.expedia.open.tracing.Tag.TagType
 import com.expedia.open.tracing.{Log, Span, Tag}
@@ -28,6 +29,8 @@ import org.scalatest.easymock.EasyMockSugar
 import org.scalatest.{FunSpec, GivenWhenThen, Matchers}
 
 trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSugar {
+  private val DEFAULT_START_TIME = System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(5)
+  private val DEFAULT_DURATION_MICROS = TimeUnit.MILLISECONDS.toMicros(100)
 
   def newLightSpan(spanId: String, parentSpanId: String, serviceName: String, operName: String, spanType: SpanType): LightSpan = {
     LightSpan(spanId, parentSpanId, System.currentTimeMillis(), serviceName, operName, 1000, spanType, Map())
@@ -43,15 +46,23 @@ trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSug
   }
 
   def newSpan(spanId: String, parentSpanId: String, serviceName: String): Span = {
-    newSpan(spanId, parentSpanId, serviceName, "oper", 1000, client = false, server = false)._1
+    newSpan(spanId, parentSpanId, serviceName, "oper", DEFAULT_DURATION_MICROS, client = false, server = false)._1
   }
 
   def newServerSpan(spanId: String, parentSpanId: String, serviceName: String): Span = {
-    newSpan(spanId, parentSpanId, serviceName, "oper", 1000, client = false, server = true)._1
+    newSpan(spanId, parentSpanId, serviceName, "oper", DEFAULT_DURATION_MICROS, client = false, server = true)._1
   }
 
   def newClientSpan(spanId: String, parentSpanId: String, serviceName: String): Span = {
-    newSpan(spanId, parentSpanId, serviceName, "oper", 1000, client = true, server = false)._1
+    newSpan(spanId, parentSpanId, serviceName, "oper", DEFAULT_DURATION_MICROS, client = true, server = false)._1
+  }
+
+  def newClientSpan(spanId: String, parentSpanId: String, serviceName: String, startTime: Long, duration: Long): Span = {
+    newSpan(spanId, parentSpanId, startTime, serviceName, "oper", duration, client=true, server=false)._1
+  }
+
+  def newServerSpan(spanId: String, parentSpanId: String, serviceName: String, startTime: Long, duration: Long): Span = {
+    newSpan(spanId, parentSpanId, startTime, serviceName, "oper", duration, client=false, server=true)._1
   }
 
   def newSpan(serviceName: String, operation: String, duration: Long, client: Boolean, server: Boolean): (Span, SpanType) = {
@@ -59,8 +70,7 @@ trait TestSpec extends FunSpec with GivenWhenThen with Matchers with EasyMockSug
   }
 
   def newSpan(spanId: String, parentSpanId: String, serviceName: String, operation: String, duration: Long, client: Boolean, server: Boolean): (Span, SpanType) = {
-    val ts = System.currentTimeMillis() - (10 * 1000)
-    newSpan(spanId, parentSpanId, ts, serviceName, operation, duration, client, server)
+    newSpan(spanId, parentSpanId, DEFAULT_START_TIME, serviceName, operation, duration, client, server)
   }
 
   def newSpan(spanId: String, parentSpanId: String, ts: Long, serviceName: String, operation: String, duration: Long, client: Boolean,
