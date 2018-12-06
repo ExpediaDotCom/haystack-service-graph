@@ -53,7 +53,7 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
     createMocks()
     replaceRealObjectsWithMocks()
 
-    tempDirectory = Files.createTempDirectory(new MainSpec().getClass.getSimpleName)
+    tempDirectory = Files.createTempDirectory(this.getClass.getSimpleName)
 
     def saveReaObjectsThatWillBeReplacedWithMocks(): Unit = {
       realLogger = Main.logger
