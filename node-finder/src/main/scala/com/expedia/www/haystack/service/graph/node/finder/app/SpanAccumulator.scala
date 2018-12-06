@@ -54,7 +54,6 @@ class SpanAccumulator(storeName: String,
   private var parentSpanMap = mutable.HashMap[String, mutable.HashSet[LightSpan]]()
 
   private var processorContext: ProcessorContext = _
-
   private var metadataStore: KeyValueStore[String, ServiceNodeMetadata] = _
 
   override def init(context: ProcessorContext): Unit = {
@@ -160,6 +159,9 @@ class SpanAccumulator(storeName: String,
 
   @VisibleForTesting
   def spanCount: Int = spanMap.values.flatten[LightSpan].size
+
+  @VisibleForTesting
+  def internalSpanMap = spanMap.toMap
 
   /**
     * spans in a span pair to be cleaned up from the parent span map.

@@ -119,10 +119,10 @@ class AppSpec extends TestSpec with BeforeAndAfter {
     }
 
     //send 5 simple spans, 5 client spans, 5 server span and 5 client-server span combinations
-    for (i <- 1 to count) produceClientSpan(10000, writer)
-    for (i <- 1 to count) produceServerSpan(9000, writer)
-    for (i <- 1 to count) produceClientAndServerSpans(8000, writer)
-    for (i <- 1 to count) produceSimpleSpan(5000, writer)
+    for (_ <- 1 to count) produceClientSpan(10000, writer)
+    for (_ <- 1 to count) produceServerSpan(9000, writer)
+    for (_ <- 1 to count) produceClientAndServerSpans(8000, writer)
+    for (_ <- 1 to count) produceSimpleSpan(5000, writer)
     producer.flush()
 
     //sleep for 30 seconds for streams to process. This is probably too much for local -
