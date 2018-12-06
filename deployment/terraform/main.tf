@@ -40,3 +40,22 @@ module "graph-builder" {
   jvm_memory_limit = "${var.service-graph["graph_builder_jvm_memory_limit"]}"
   env_vars = "${var.service-graph["graph_builder_environment_overrides"]}"
 }
+
+module "snapshotter" {
+  source = "snapshotter"
+  image = "expediadotcom/haystack-service-graph-snapshotter:${var.service-graph["version"]}"
+  namespace = "${var.namespace}"
+  graphite_hostname = "${var.graphite_hostname}"
+  graphite_port = "${var.graphite_port}"
+  enabled = "${var.service-graph["enabled"]}"
+  kubectl_executable_name = "${var.kubectl_executable_name}"
+  kubectl_context_name = "${var.kubectl_context_name}"
+  cpu_limit = "${var.service-graph["snapshotter_cpu_limit"]}"
+  snapshotter_purge_age_ms = "${var.service-graph["snapshotter_purge_age_ms"]}"
+  cpu_request = "${var.service-graph["snapshotter_cpu_request"]}"
+  memory_limit = "${var.service-graph["snapshotter_memory_limit"]}"
+  memory_request = "${var.service-graph["snapshotter_memory_request"]}"
+  jvm_memory_limit = "${var.service-graph["snapshotter_jvm_memory_limit"]}"
+  env_vars = "${var.service-graph["snapshotter_environment_overrides"]}"
+  main_args = "${var.service-graph["main_args"]}"
+}

@@ -64,11 +64,6 @@ class FileStore(val directoryName: String) extends StringStore {
     */
   override def read(instant: Instant): Option[String] = {
     var optionString: Option[String] = None
-    // No need to call filesWalk.close() because FileTreeWalker.close() method does not close any resources. But
-    // https://docs.oracle.com/javase/8/docs/api/java/nio/file/Files.html#walk-java.nio.file.Path-java.nio.file.FileVisitOption...-
-    // says "If timely disposal of file system resources is required, the try-with-resources construct should be used
-    // to ensure that the stream's close method is invoked after the stream operations are completed," so this method
-    // has a finally block to do so.
     val filesWalk = Files.walk(directory, 1)
     try {
       val fileName = createIso8601FileName(instant)

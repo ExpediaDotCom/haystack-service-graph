@@ -53,12 +53,16 @@
             <artifactId>haystack-service-graph-snapshot-store</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
+            <groupId>org.scalaj</groupId>
+            <artifactId>scalaj-http_${scala.major.minor.version}</artifactId>
         </dependency>
     </dependencies>
 
