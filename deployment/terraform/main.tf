@@ -40,7 +40,7 @@ module "graph-builder" {
   jvm_memory_limit = "${var.service-graph["graph_builder_jvm_memory_limit"]}"
   env_vars = "${var.service-graph["graph_builder_environment_overrides"]}"
 }
-
+/*
 module "snapshotter" {
   source = "snapshotter"
   image = "expediadotcom/haystack-service-graph-snapshotter:${var.service-graph["version"]}"
@@ -59,3 +59,4 @@ module "snapshotter" {
   env_vars = "${var.service-graph["snapshotter_environment_overrides"]}"
   main_args = "${var.service-graph["main_args"]}"
 }
+*/
