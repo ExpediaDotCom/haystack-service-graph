@@ -37,4 +37,6 @@ class AppConfiguration(resourceName: String) {
   def this() = this("app.conf")
 
   val purgeAgeMs: Long = config.getLong("snapshotter.purge.age.ms")
+
+  val windowSizeMs: Long = config.getLong("snapshotter.window.size.ms")
 }

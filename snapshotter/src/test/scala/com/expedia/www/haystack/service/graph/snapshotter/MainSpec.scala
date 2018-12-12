@@ -20,6 +20,7 @@ package com.expedia.www.haystack.service.graph.snapshotter
 import java.io.File
 import java.nio.file.{Files, Path}
 import java.time.{Clock, Instant}
+import java.util.concurrent.TimeUnit
 
 import com.expedia.www.haystack.service.graph.snapshot.store.FileStore
 import com.expedia.www.haystack.service.graph.snapshotter.Main.{ServiceGraphUrl, StringStoreClassRequiredMsg}
@@ -101,14 +102,14 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
 
   describe("Main.main() called with FileStore arguments") {
     it("should create a FileStore, write to it, then call purge()") {
-      when(mockFactory.createHttpRequest(any())).thenReturn(mockHttpRequest)
+      when(mockFactory.createHttpRequest(any(), any())).thenReturn(mockHttpRequest)
       when(mockHttpRequest.asString).thenReturn(httpResponse)
       when(mockClock.instant()).thenReturn(now)
 
       Main.main(Array(new FileStore().getClass.getCanonicalName, tempDirectory.toString))
 
       verifyDirectoryIsEmptyToProveThatPurgeWasCalled
-      verify(mockFactory).createHttpRequest(ServiceGraphUrl)
+      verify(mockFactory).createHttpRequest(ServiceGraphUrl, now.toEpochMilli - TimeUnit.HOURS.toMillis(1))
       verify(mockHttpRequest).asString
       verify(mockClock).instant()
 
@@ -119,10 +120,12 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
   }
 
   describe("Factory.createHttpRequest()") {
-    it("should call the URL provided") {
+    it("should properly construct the URL") {
       val factory = new Factory
-      val httpRequest = factory.createHttpRequest("http://www.google.com") // not a pure unit test :-( but it's
-      assert(httpRequest.asString.body.length > 0)                              // easier than starting an HTTP server
+      val httpRequest = factory.createHttpRequest(Main.ServiceGraphUrl, now.toEpochMilli)
+      val url = httpRequest.url
+      url should startWith (Main.ServiceGraphUrlBase)
+      url should endWith (Main.ServiceGraphUrlSuffix.format(now.toEpochMilli))
     }
   }
 

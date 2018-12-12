@@ -26,7 +26,9 @@ import scalaj.http.{Http, HttpRequest}
 object Main {
   val StringStoreClassRequiredMsg =
     "The first argument must specify the fully qualified class name of a class that implements StringStore"
-  val ServiceGraphUrl = "http://apis/graph/servicegraph"
+  val ServiceGraphUrlBase: String = "http://apis/graph/servicegraph"
+  val ServiceGraphUrlSuffix: String = "?from=%d"
+  val ServiceGraphUrl: String = ServiceGraphUrlBase + ServiceGraphUrlSuffix
   val appConfiguration = new AppConfiguration()
 
   var logger: Logger = LoggerFactory.getLogger(Main.getClass)
@@ -63,7 +65,7 @@ object Main {
     } else {
       val stringStore = instantiateStringStore(args)
       val now = clock.instant()
-      val json = getCurrentServiceGraph(stringStore)
+      val json = getCurrentServiceGraph(stringStore, now)
       storeServiceGraphInTheStringStore(stringStore, now, json)
       purgeOldSnapshots(stringStore, now)
     }
@@ -81,8 +83,8 @@ object Main {
     stringStore
   }
 
-  private def getCurrentServiceGraph(stringStore: StringStore): String = {
-    val request = factory.createHttpRequest(ServiceGraphUrl)
+  private def getCurrentServiceGraph(stringStore: StringStore, instant: Instant): String = {
+    val request = factory.createHttpRequest(ServiceGraphUrl, instant.toEpochMilli - appConfiguration.windowSizeMs)
     val httpResponse = request.asString
     httpResponse.body
   }
@@ -100,7 +102,8 @@ object Main {
 }
 
 class Factory {
-  def createHttpRequest(url: String): HttpRequest = {
-    Http(url)
+  def createHttpRequest(url: String, windowSizeMs: Long): HttpRequest = {
+    val urlWithParameter = url.format(windowSizeMs)
+    Http(urlWithParameter)
   }
 }
