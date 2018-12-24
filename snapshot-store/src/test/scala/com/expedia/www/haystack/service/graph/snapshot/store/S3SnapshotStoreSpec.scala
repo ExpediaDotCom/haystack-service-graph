@@ -25,7 +25,7 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3ClientBuilder.standard
 import com.amazonaws.services.s3.model.{ListObjectsV2Result, S3ObjectSummary}
 import com.amazonaws.services.s3.AmazonS3
-import com.expedia.www.haystack.service.graph.snapshot.store.S3StoreSpec.itemNamesWrittenToS3
+import com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStoreSpec.itemNamesWrittenToS3
 import org.mockito.{Matchers, Mockito}
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions, when}
 import org.mockito.Matchers.anyString
@@ -34,11 +34,11 @@ import org.scalatest.mockito.MockitoSugar
 
 import scala.collection.mutable
 
-object S3StoreSpec {
+object S3SnapshotStoreSpec {
   private val itemNamesWrittenToS3 = mutable.SortedSet[String]()
 }
 
-class S3StoreSpec extends StringStoreSpecBase with BeforeAndAfterAll with MockitoSugar {
+class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll with MockitoSugar {
   // Set to true to run these test in an integration-type way, talking to a real S3.
   // You must have valid keys on your machine to do so, typically in ~/.aws/credentials.
   private val useRealS3 = false
@@ -66,7 +66,7 @@ class S3StoreSpec extends StringStoreSpecBase with BeforeAndAfterAll with Mockit
   }
 
   describe("S3Store.build()") {
-    val s3Store = new S3Store().build(Array(bucketName, folderName, "42")).asInstanceOf[S3Store]
+    val s3Store = new S3SnapshotStore().build(Array(bucketName, folderName, "42")).asInstanceOf[S3SnapshotStore]
     it("should use the arguments in the default constructor and the array") {
       val s3Client: AmazonS3 = s3Store.s3Client
       s3Client.getRegion.toString shouldEqual Regions.US_WEST_2.getName
@@ -77,7 +77,7 @@ class S3StoreSpec extends StringStoreSpecBase with BeforeAndAfterAll with Mockit
   }
 
   describe("S3Store") {
-    var s3Store = new S3Store(s3Client, bucketName, folderName, 3)
+    var s3Store = new S3SnapshotStore(s3Client, bucketName, folderName, 3)
     it("should create the bucket when the bucket does not exist") {
       if(!useRealS3) {
         whensForWrite(false)
@@ -147,7 +147,7 @@ class S3StoreSpec extends StringStoreSpecBase with BeforeAndAfterAll with Mockit
       }
     }
     it("should return the correct object for small batches") {
-      s3Store = new S3Store(s3Client, bucketName, folderName, 1)
+      s3Store = new S3SnapshotStore(s3Client, bucketName, folderName, 1)
       if (!useRealS3) {
         whensForRead
         when(s3Client.getObjectAsString(anyString(), anyString())).thenReturn(twoMillisecondsAfterNowContent)

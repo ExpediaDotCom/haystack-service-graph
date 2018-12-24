@@ -66,6 +66,7 @@
         <aws-java-sdk.version>1.11.447</aws-java-sdk.version>
         <commons-lang.version>3.4</commons-lang.version>
         <grpc.version>1.7.1</grpc.version>
+        <kantan_csv.version>0.5.0</kantan_csv.version>
         <haystack-commons.version>1.0.50</haystack-commons.version>
         <haystack.logback.metrics.appender.version>0.1.12</haystack.logback.metrics.appender.version>
         <haystack-service-graph-snapshot-store.version>1.0.0-SNAPSHOT</haystack-service-graph-snapshot-store.version>
@@ -179,6 +180,12 @@
                 <groupId>org.json4s</groupId>
                 <artifactId>json4s-ext_${scala.major.minor.version}</artifactId>
                 <version>${json4s.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.nrinaudo</groupId>
+                <artifactId>kantan.csv_${scala.major.minor.version}</artifactId>
+                <version>${kantan_csv.version}</version>
             </dependency>
 
             <dependency>

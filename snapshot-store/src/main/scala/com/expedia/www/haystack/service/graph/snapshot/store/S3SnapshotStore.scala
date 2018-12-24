@@ -36,10 +36,10 @@ import scala.math.Ordering.String.max
   *                             one hour snapshot interval and a snapshot TTL of 1 year, 366 * 24 = 8784 would be a good
   *                             value (perhaps rounded to 10,000)
   */
-class S3Store(val s3Client: AmazonS3,
-              val bucketName: String,
-              val folderName: String,
-              val listObjectsBatchSize: Int) extends StringStore {
+class S3SnapshotStore(val s3Client: AmazonS3,
+                      val bucketName: String,
+                      val folderName: String,
+                      val listObjectsBatchSize: Int) extends SnapshotStore {
   private val itemNamePrefix = folderName + "/"
 
   def this() = {
@@ -47,18 +47,18 @@ class S3Store(val s3Client: AmazonS3,
   }
 
   /**
-    * Builds a StringStore implementation given arguments to pass to the constructor
+    * Builds an S3SnapshotStore implementation given arguments to pass to the constructor
     *
     * @param constructorArguments [0] must be a String that specifies the bucket
     *                             [1] must be a String that specifies the folder in the bucket
     *                             [2] must be a String that specifies the batch count when listing items in the bucket
-    * @return the concrete StringStore to use
+    * @return the S3SnapshotStore to use
     */
-  override def build(constructorArguments: Array[String]): StringStore = {
+  override def build(constructorArguments: Array[String]): SnapshotStore = {
     val bucketName = constructorArguments(0)
     val folderName = constructorArguments(1)
     val listObjectsBatchSize = constructorArguments(2).toInt
-    new S3Store(s3Client, bucketName, folderName, listObjectsBatchSize)
+    new S3SnapshotStore(s3Client, bucketName, folderName, listObjectsBatchSize)
   }
 
   /**

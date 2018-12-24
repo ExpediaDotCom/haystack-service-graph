@@ -22,7 +22,9 @@ import java.time.temporal.ChronoUnit
 
 import org.scalatest.{FunSpec, Matchers}
 
-abstract class StringStoreSpecBase extends FunSpec with Matchers {
+import scala.io.{BufferedSource, Codec, Source}
+
+class SnapshotStoreSpecBase extends FunSpec with Matchers {
   protected val json = "{\n\"content\": \"%s\"\n}"
 
   protected val now: Instant = Instant.EPOCH
@@ -37,4 +39,13 @@ abstract class StringStoreSpecBase extends FunSpec with Matchers {
 
   protected val twoMillisecondsAfterNow: Instant = now.plus(2, ChronoUnit.MILLIS)
   protected val twoMillisecondsAfterNowContent: String = json.format(twoMillisecondsAfterNow)
+
+  def readFile(fileName: String): String = {
+    implicit val codec: Codec = Codec.UTF8
+    lazy val bufferedSource: BufferedSource = Source.fromResource(fileName)
+    val fileContents = bufferedSource.getLines.mkString("\n")
+    bufferedSource.close()
+    fileContents + "\n"
+  }
+
 }

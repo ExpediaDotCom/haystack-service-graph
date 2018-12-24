@@ -22,7 +22,7 @@ import java.nio.file.{Files, Path}
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 
-import com.expedia.www.haystack.service.graph.snapshot.store.FileStore
+import com.expedia.www.haystack.service.graph.snapshot.store.FileSnapshotStore
 import com.expedia.www.haystack.service.graph.snapshotter.Main.{ServiceGraphUrl, StringStoreClassRequiredMsg}
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{verify, verifyNoMoreInteractions, when}
@@ -106,7 +106,7 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
       when(mockHttpRequest.asString).thenReturn(httpResponse)
       when(mockClock.instant()).thenReturn(now)
 
-      Main.main(Array(new FileStore().getClass.getCanonicalName, tempDirectory.toString))
+      Main.main(Array(new FileSnapshotStore().getClass.getCanonicalName, tempDirectory.toString))
 
       verifyDirectoryIsEmptyToProveThatPurgeWasCalled
       verify(mockFactory).createHttpRequest(ServiceGraphUrl, now.toEpochMilli - TimeUnit.HOURS.toMillis(1))

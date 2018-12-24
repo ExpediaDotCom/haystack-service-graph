@@ -22,7 +22,7 @@ import java.nio.file.{Files, Path, Paths}
 import java.time.Instant
 import java.util.{Comparator, Optional}
 
-class FileStore(val directoryName: String) extends StringStore {
+class FileSnapshotStore(val directoryName: String) extends SnapshotStore {
   private val directory = Paths.get(directoryName)
   protected val pathNameComparator: Comparator[Path] = (o1: Path, o2: Path) => o1.toString.compareTo(o2.toString)
 
@@ -34,10 +34,10 @@ class FileStore(val directoryName: String) extends StringStore {
     * Returns a FileStore using the directory name specified
     *
     * @param constructorArguments constructorArguments(0) must specify the directory to which snapshots will be stored
-    * @return the concrete StringStore to use
+    * @return the concrete FileStore to use
     */
-  override def build(constructorArguments: Array[String]): StringStore = {
-    new FileStore(constructorArguments(0))
+  override def build(constructorArguments: Array[String]): SnapshotStore = {
+    new FileSnapshotStore(constructorArguments(0))
   }
 
   /**

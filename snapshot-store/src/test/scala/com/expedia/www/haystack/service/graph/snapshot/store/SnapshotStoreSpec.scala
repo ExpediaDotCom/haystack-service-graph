@@ -18,8 +18,8 @@
 package com.expedia.www.haystack.service.graph.snapshot.store
 import java.time.Instant
 
-class StringStoreSpec extends StringStoreSpecBase {
-  private val stringStore = new StringStore {
+class SnapshotStoreSpec extends SnapshotStoreSpecBase {
+  private val snapshotStore = new SnapshotStore {
     override def write(instant: Instant, content: String): AnyRef = {
       None
     }
@@ -32,16 +32,16 @@ class StringStoreSpec extends StringStoreSpecBase {
       0
     }
 
-    override def build(constructorArguments: Array[String]): StringStore = {
+    override def build(constructorArguments: Array[String]): SnapshotStore = {
       this
     }
   }
 
-  describe("StringStore") {
+  describe("SnapshotStore") {
     it("should create the correct ISO 8601 file name") {
-      stringStore.createIso8601FileName(Instant.EPOCH) shouldEqual "1970-01-01T00:00:00.000Z"
-      stringStore.createIso8601FileName(Instant.EPOCH.plusMillis(1)) shouldEqual "1970-01-01T00:00:00.001Z"
-      stringStore.createIso8601FileName(Instant.EPOCH.plusMillis(-1)) shouldEqual "1969-12-31T23:59:59.999Z"
+      snapshotStore.createIso8601FileName(Instant.EPOCH) shouldEqual "1970-01-01T00:00:00.000Z"
+      snapshotStore.createIso8601FileName(Instant.EPOCH.plusMillis(1)) shouldEqual "1970-01-01T00:00:00.001Z"
+      snapshotStore.createIso8601FileName(Instant.EPOCH.plusMillis(-1)) shouldEqual "1969-12-31T23:59:59.999Z"
     }
   }
 

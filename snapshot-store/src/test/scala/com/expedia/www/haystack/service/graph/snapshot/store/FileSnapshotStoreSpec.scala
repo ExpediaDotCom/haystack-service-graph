@@ -20,41 +20,42 @@ package com.expedia.www.haystack.service.graph.snapshot.store
 import java.io.File
 import java.nio.file.{Files, Path}
 
-class FileStoreSpec extends StringStoreSpecBase {
+class FileSnapshotStoreSpec extends SnapshotStoreSpecBase {
   private val directory = Files.createTempDirectory("FileStoreSpec")
   directory.toFile.deleteOnExit()
   private val directoryName = directory.toFile.getCanonicalPath
 
   describe("FileStore") {
     {
-      val fileStore = new FileStore().build(Array(directoryName))
+      val defaultFaultSnapshotStore = new FileSnapshotStore
+      val fileSnapshotStore = defaultFaultSnapshotStore.build(Array(directoryName))
       it("should use an existing directory without trying to create it when writing") {
-        val pathFromWrite = fileStore.write(now, json.format(now.toString)).asInstanceOf[Path]
+        val pathFromWrite = fileSnapshotStore.write(now, json.format(now.toString)).asInstanceOf[Path]
         assert(pathFromWrite.toFile.getCanonicalPath.startsWith(directoryName))
-        assert(pathFromWrite.toFile.getCanonicalPath.endsWith(fileStore.createIso8601FileName(now)))
-        fileStore.write(oneMillisecondBeforeNow, json.format(oneMillisecondBeforeNow.toString))
-        fileStore.write(twoMillisecondsAfterNow, json.format(twoMillisecondsAfterNow.toString))
+        assert(pathFromWrite.toFile.getCanonicalPath.endsWith(fileSnapshotStore.createIso8601FileName(now)))
+        fileSnapshotStore.write(oneMillisecondBeforeNow, json.format(oneMillisecondBeforeNow.toString))
+        fileSnapshotStore.write(twoMillisecondsAfterNow, json.format(twoMillisecondsAfterNow.toString))
       }
       it("should return None when read() is called with a time that is too early") {
-        val fileContent = fileStore.read(twoMillisecondsBeforeNow)
+        val fileContent = fileSnapshotStore.read(twoMillisecondsBeforeNow)
         assert(fileContent === None)
       }
       it("should read the correct file when read() is called with a later time") {
-        val fileContent = fileStore.read(oneMillisecondAfterNow)
+        val fileContent = fileSnapshotStore.read(oneMillisecondAfterNow)
         assert(fileContent.get == json.format(now.toString))
       }
       it("should purge a single file when calling purge() with the timestamp of the oldest file") {
-        val numberOfFilesPurged = fileStore.purge(oneMillisecondBeforeNow)
+        val numberOfFilesPurged = fileSnapshotStore.purge(oneMillisecondBeforeNow)
         numberOfFilesPurged shouldEqual 1
       }
       it("should purge the two remaining files when calling purge() with the youngest timestamp") {
-        val numberOfFilesPurged = fileStore.purge(twoMillisecondsAfterNow)
+        val numberOfFilesPurged = fileSnapshotStore.purge(twoMillisecondsAfterNow)
         numberOfFilesPurged shouldEqual 2
       }
     }
     it("should create the directory when the directory does not exist") {
       val suffix = File.separator + "DirectoryToCreate"
-      val fileStore = new FileStore(directoryName + suffix)
+      val fileStore = new FileSnapshotStore(directoryName + suffix)
       val pathFromWrite = fileStore.write(now, json.format(now.toString)).asInstanceOf[Path]
       assert(pathFromWrite.toFile.getCanonicalPath.startsWith(directoryName + suffix))
       val fileContent = fileStore.read(now)
