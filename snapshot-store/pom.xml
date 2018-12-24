@@ -52,6 +52,10 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.nrinaudo</groupId>
+            <artifactId>kantan.csv_${scala.major.minor.version}</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

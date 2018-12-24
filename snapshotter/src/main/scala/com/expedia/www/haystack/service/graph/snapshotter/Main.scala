@@ -19,13 +19,13 @@ package com.expedia.www.haystack.service.graph.snapshotter
 
 import java.time.{Clock, Instant}
 
-import com.expedia.www.haystack.service.graph.snapshot.store.StringStore
+import com.expedia.www.haystack.service.graph.snapshot.store.SnapshotStore
 import org.slf4j.{Logger, LoggerFactory}
 import scalaj.http.{Http, HttpRequest}
 
 object Main {
   val StringStoreClassRequiredMsg =
-    "The first argument must specify the fully qualified class name of a class that implements StringStore"
+    "The first argument must specify the fully qualified class name of a class that implements SnapshotStore"
   val ServiceGraphUrlBase: String = "http://apis/graph/servicegraph"
   val ServiceGraphUrlSuffix: String = "?from=%d"
   val ServiceGraphUrl: String = ServiceGraphUrlBase + ServiceGraphUrlSuffix
@@ -39,19 +39,19 @@ object Main {
     * @param args specifies the class to run and its parameters.
     * ==args(0)==
     * The first parameter is the fully qualified class name of the implementation of
-    * [[com.expedia.www.haystack.service.graph.snapshot.store.StringStore]] to run.
+    * [[com.expedia.www.haystack.service.graph.snapshot.store.SnapshotStore]] to run.
     * There are currently two implementations:
-    *   - [[com.expedia.www.haystack.service.graph.snapshot.store.FileStore]]
-    *   - [[com.expedia.www.haystack.service.graph.snapshot.store.S3Store]]
+    *   - [[com.expedia.www.haystack.service.graph.snapshot.store.FileSnapshotStore]]
+    *   - [[com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStore]]
     * ==args(1+)==
     * The rest of the arguments are passed to the constructor of the class specified by args(0).
     * See the documentation in the build() method of the desired implementation for argument details.
     * ===Examples===
-    * ====FileStore====
+    * ====FileSnapshotStore====
     * To run FileStore and use /var/snapshots for snapshot storage, the arguments would be:
     *   - com.expedia.www.haystack.service.graph.snapshot.store.FileStore
     *   - /var/snapshots
-    * ====S3Store====
+    * ====S3SnapshotStore====
     * To run S3Store and use the "Haystack" bucket with subfolder "snapshots" for snapshot storage, and a batch size
     * of 10,000 when calling the S3 "listObjectsV2" API, the arguments would be:
     *   - com.expedia.www.haystack.service.graph.snapshot.store.S3Store
@@ -63,41 +63,41 @@ object Main {
     if (args.length == 0) {
       logger.error(StringStoreClassRequiredMsg)
     } else {
-      val stringStore = instantiateStringStore(args)
+      val snapshotStore = instantiateSnapshotStore(args)
       val now = clock.instant()
-      val json = getCurrentServiceGraph(stringStore, now)
-      storeServiceGraphInTheStringStore(stringStore, now, json)
-      purgeOldSnapshots(stringStore, now)
+      val json = getCurrentServiceGraph(now)
+      storeServiceGraphInTheStringStore(snapshotStore, now, json)
+      purgeOldSnapshots(snapshotStore, now)
     }
   }
 
-  private def instantiateStringStore(args: Array[String]): StringStore = {
-    def createStringStoreInstanceWithDefaultConstructor: StringStore = {
+  private def instantiateSnapshotStore(args: Array[String]): SnapshotStore = {
+    def createStringStoreInstanceWithDefaultConstructor: SnapshotStore = {
       val fullyQualifiedClassName = args(0)
       val klass = Class.forName(fullyQualifiedClassName)
-      val instanceBuiltByDefaultConstructor = klass.newInstance().asInstanceOf[StringStore]
+      val instanceBuiltByDefaultConstructor = klass.newInstance().asInstanceOf[SnapshotStore]
       instanceBuiltByDefaultConstructor
     }
 
-    val stringStore = createStringStoreInstanceWithDefaultConstructor.build(args.drop(1))
-    stringStore
+    val snapshotStore = createStringStoreInstanceWithDefaultConstructor.build(args.drop(1))
+    snapshotStore
   }
 
-  private def getCurrentServiceGraph(stringStore: StringStore, instant: Instant): String = {
+  private def getCurrentServiceGraph(instant: Instant) = {
     val request = factory.createHttpRequest(ServiceGraphUrl, instant.toEpochMilli - appConfiguration.windowSizeMs)
     val httpResponse = request.asString
     httpResponse.body
   }
 
-  private def storeServiceGraphInTheStringStore(stringStore: StringStore,
+  private def storeServiceGraphInTheStringStore(snapshotStore: SnapshotStore,
                                                 instant: Instant,
                                                 json: String): AnyRef = {
-    stringStore.write(instant, json)
+    snapshotStore.write(instant, json)
   }
 
-  private def purgeOldSnapshots(stringStore: StringStore,
+  private def purgeOldSnapshots(snapshotStore: SnapshotStore,
                                 instant: Instant): Integer = {
-    stringStore.purge(instant.minusMillis(appConfiguration.purgeAgeMs))
+    snapshotStore.purge(instant.minusMillis(appConfiguration.purgeAgeMs))
   }
 }
 

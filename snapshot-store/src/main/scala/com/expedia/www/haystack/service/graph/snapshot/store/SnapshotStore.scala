@@ -20,14 +20,14 @@ package com.expedia.www.haystack.service.graph.snapshot.store
 import java.time.Instant
 import java.time.format.DateTimeFormatterBuilder
 
-trait StringStore {
+trait SnapshotStore {
   /**
-    * Builds a StringStore implementation given arguments to pass to the constructor
+    * Builds a SnapshotStore implementation given arguments to pass to the constructor
     *
     * @param constructorArguments arguments to pass to the constructor
-    * @return the concrete StringStore to use
+    * @return the concrete SnapshotStore to use
     */
-  def build(constructorArguments: Array[String]): StringStore
+  def build(constructorArguments: Array[String]): SnapshotStore
 
   /**
     * Writes a string to the persistent store
@@ -48,7 +48,7 @@ trait StringStore {
   def read(instant: Instant): Option[String]
 
   /**
-    * Purges items from the persistent store (optional operation; the S3 implementation of StringStore will use an S3
+    * Purges items from the persistent store (optional operation; the S3 implementation of SnapshotStore will use an S3
     * lifecycle rule to purge items, but the file implementation must purge old files)
     *
     * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier than or equal to
@@ -57,7 +57,7 @@ trait StringStore {
     */
   def purge(instant: Instant): Integer = {
     0
-    // Override if purge code is needed by the particular StringStore implementation
+    // Override if purge code is needed by the particular SnapshotStore implementation
   }
 
   private val formatter = new DateTimeFormatterBuilder().appendInstant(3).toFormatter
