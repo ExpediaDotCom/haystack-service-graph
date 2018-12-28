@@ -18,9 +18,11 @@
 package com.expedia.www.haystack.service.graph.snapshot.store
 
 object Constants {
-  val Copy = "_copy"
-  val DotJson = ".json"
-  val DotCsv = ".csv"
+  private val DotJson = ".json"
+  private val DotCsv = ".csv"
+
+  val _Nodes = "_nodes"
+  val _Edges = "_edges"
   val SourceKey: String = "source"
   val EdgesKey: String = "edges"
   val DestinationKey: String = "destination"
@@ -37,9 +39,6 @@ object Constants {
   val TierKey: String = "tier"
   val ServiceGraph: String = "serviceGraph"
   val JsonFileNameWithExtension: String = ServiceGraph + DotJson
-  val NodesCsvFileNameWithoutExtension: String = ServiceGraph + "_nodes"
-  val NodesCsvFileNameWithExtension: String = NodesCsvFileNameWithoutExtension + DotCsv
-  val EdgesCsvFileNameWithoutExtension: String = ServiceGraph + "_edges"
-  val EdgesCsvFileNameWithExtension: String = EdgesCsvFileNameWithoutExtension + DotCsv
-  val ResourcesDirectory = "src/main/resources/"
+  val NodesCsvFileNameWithExtension: String = ServiceGraph + _Nodes + DotCsv
+  val EdgesCsvFileNameWithExtension: String = ServiceGraph + _Edges + DotCsv
 }

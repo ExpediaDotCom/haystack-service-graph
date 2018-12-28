@@ -18,17 +18,27 @@
 package com.expedia.www.haystack.service.graph.snapshot.store
 
 import com.expedia.www.haystack.service.graph.snapshot.store.Constants.EdgesKey
+import com.expedia.www.haystack.service.graph.snapshot.store.DataFramesIntoJsonTransformer.{AddToMapError, WriteError}
 import kantan.csv._
 import kantan.csv.ops._
-import org.slf4j.Logger
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
+object DataFramesIntoJsonTransformer {
+  val WriteError: String = "Problem reading JSON in write()"
+  val AddToMapError: String = "Problem reading JSON in addToMap()"
+}
+
 class DataFramesIntoJsonTransformer(logger: Logger) {
+  def this() {
+    this(LoggerFactory.getLogger("com.expedia.www.haystack.service.graph.snapshot.store.DataFramesIntoJsonTransformer"))
+  }
+
   private def addToMap(map: mutable.Map[Long, Node],
                        either: Either[ReadError, NodeWithId]): Unit = {
     either match {
-      case Left(readError) => logger.error("Problem reading JSON in addToMap()", readError)
+      case Left(readError) => logger.error(AddToMapError, readError)
       case Right(nodeWithId) => map.put(nodeWithId.id, NodeWithId.nodeMapper(nodeWithId))
     }
   }
@@ -39,7 +49,7 @@ class DataFramesIntoJsonTransformer(logger: Logger) {
                     nodeIdVsNode: mutable.Map[Long, Node],
                     either: Either[ReadError, EdgeWithIds]): Unit = {
     either match {
-      case Left(readError) => logger.error("Problem reading JSON in write()", readError)
+      case Left(readError) => logger.error(WriteError, readError)
       case Right(edgeWithId) =>
         val edge = Edge.mapper(nodeIdVsNode, edgeWithId)
         stringBuilder.append(edge.toJson(prependComma))

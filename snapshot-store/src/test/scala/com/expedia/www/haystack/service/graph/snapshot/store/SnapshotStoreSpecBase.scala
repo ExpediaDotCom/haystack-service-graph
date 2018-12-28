@@ -25,20 +25,15 @@ import org.scalatest.{FunSpec, Matchers}
 import scala.io.{BufferedSource, Codec, Source}
 
 class SnapshotStoreSpecBase extends FunSpec with Matchers {
-  protected val json = "{\n\"content\": \"%s\"\n}"
-
   protected val now: Instant = Instant.EPOCH
 
   protected val twoMillisecondsBeforeNow: Instant = now.minus(2, ChronoUnit.MILLIS)
 
   protected val oneMillisecondBeforeNow: Instant = now.minus(1, ChronoUnit.MILLIS)
-  protected val oneMillisecondBeforeNowContent: String = json.format(oneMillisecondBeforeNow)
 
   protected val oneMillisecondAfterNow: Instant = now.plus(1, ChronoUnit.MILLIS)
-  protected val oneMillisecondAfterNowContent: String = json.format(oneMillisecondAfterNow)
 
   protected val twoMillisecondsAfterNow: Instant = now.plus(2, ChronoUnit.MILLIS)
-  protected val twoMillisecondsAfterNowContent: String = json.format(twoMillisecondsAfterNow)
 
   def readFile(fileName: String): String = {
     implicit val codec: Codec = Codec.UTF8

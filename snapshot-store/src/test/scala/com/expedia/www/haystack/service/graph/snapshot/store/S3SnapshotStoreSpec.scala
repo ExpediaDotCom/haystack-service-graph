@@ -19,6 +19,7 @@ package com.expedia.www.haystack.service.graph.snapshot.store
 
 import java.time.Instant
 import java.time.format.DateTimeFormatter.ISO_INSTANT
+import java.util
 
 import collection.JavaConverters._
 import com.amazonaws.regions.Regions
@@ -32,10 +33,10 @@ import org.mockito.Matchers.anyString
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.mockito.MockitoSugar
 
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 
 object S3SnapshotStoreSpec {
-  private val itemNamesWrittenToS3 = mutable.SortedSet[String]()
+  private val itemNamesWrittenToS3 = mutable.SortedSet[(String, String)]()
 }
 
 class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll with MockitoSugar {
@@ -48,21 +49,19 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
   private val nextContinuationToken = "nextContinuationToken"
   private val listObjectsV2Result = mock[ListObjectsV2Result]
   private val s3Client = if (useRealS3) standard.withRegion(Regions.US_WEST_2).build else mock[AmazonS3]
+  private val serviceGraphJson = readFile(Constants.JsonFileNameWithExtension)
+  private val nodesCsv = readFile(Constants.NodesCsvFileNameWithExtension)
+  private val edgesCsv = readFile(Constants.EdgesCsvFileNameWithExtension)
 
   override def afterAll() {
     if (useRealS3) {
-      itemNamesWrittenToS3.foreach(itemName => s3Client.deleteObject(bucketName, itemName))
+      itemNamesWrittenToS3.foreach(itemName => s3Client.deleteObject(bucketName, itemName._1))
+      itemNamesWrittenToS3.foreach(itemName => s3Client.deleteObject(bucketName, itemName._2))
       s3Client.deleteBucket(bucketName)
     }
     else {
       verifyNoMoreInteractionsForAllMocksThenReset()
     }
-  }
-
-  def convertStringToS3ObjectSummary(key: String): S3ObjectSummary = {
-    val s3ObjectSummary = new S3ObjectSummary()
-    s3ObjectSummary.setKey(key)
-    s3ObjectSummary
   }
 
   describe("S3Store.build()") {
@@ -79,14 +78,15 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
   describe("S3Store") {
     var s3Store = new S3SnapshotStore(s3Client, bucketName, folderName, 3)
     it("should create the bucket when the bucket does not exist") {
-      if(!useRealS3) {
+      if (!useRealS3) {
         whensForWrite(false)
       }
-      itemNamesWrittenToS3 += s3Store.write(oneMillisecondBeforeNow, oneMillisecondBeforeNowContent).asInstanceOf[String]
+      itemNamesWrittenToS3 += s3Store.write(oneMillisecondBeforeNow, serviceGraphJson)
       if (!useRealS3) {
         verify(s3Client).doesBucketExistV2(bucketName)
         verify(s3Client).createBucket(bucketName)
-        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondBeforeNow), oneMillisecondBeforeNowContent)
+        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondBeforeNow) + Constants._Nodes, nodesCsv)
+        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondBeforeNow) + Constants._Edges, edgesCsv)
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
@@ -94,12 +94,14 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       if (!useRealS3) {
         whensForWrite(true)
       }
-      itemNamesWrittenToS3 += s3Store.write(oneMillisecondAfterNow, oneMillisecondAfterNowContent).asInstanceOf[String]
-      itemNamesWrittenToS3 += s3Store.write(twoMillisecondsAfterNow, twoMillisecondsAfterNowContent).asInstanceOf[String]
+      itemNamesWrittenToS3 += s3Store.write(oneMillisecondAfterNow, serviceGraphJson)
+      itemNamesWrittenToS3 += s3Store.write(twoMillisecondsAfterNow, serviceGraphJson)
       if (!useRealS3) {
         verify(s3Client, times(2)).doesBucketExistV2(bucketName)
-        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondAfterNow), oneMillisecondAfterNowContent)
-        verify(s3Client).putObject(bucketName, createItemName(twoMillisecondsAfterNow), twoMillisecondsAfterNowContent)
+        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondAfterNow) + Constants._Nodes, nodesCsv)
+        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondAfterNow) + Constants._Edges, edgesCsv)
+        verify(s3Client).putObject(bucketName, createItemName(twoMillisecondsAfterNow) + Constants._Nodes, nodesCsv)
+        verify(s3Client).putObject(bucketName, createItemName(twoMillisecondsAfterNow) + Constants._Edges, edgesCsv)
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
@@ -107,8 +109,7 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       if (!useRealS3) {
         whensForRead
         when(listObjectsV2Result.isTruncated).thenReturn(false)
-        val objectSummaries = itemNamesWrittenToS3.map(convertStringToS3ObjectSummary).toList.asJava
-        when(listObjectsV2Result.getObjectSummaries).thenReturn(objectSummaries)
+        when(listObjectsV2Result.getObjectSummaries).thenReturn(convertStringToS3ObjectSummary)
       }
       assert(s3Store.read(twoMillisecondsBeforeNow).isEmpty)
       if (!useRealS3) {
@@ -119,30 +120,32 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
     it("should return the correct object when read() is called with a time that is not an exact match but is not too early") {
       if (!useRealS3) {
         whensForRead
-        when(s3Client.getObjectAsString(anyString(), anyString())).thenReturn(oneMillisecondBeforeNowContent)
+        when(s3Client.getObjectAsString(anyString(), anyString())).thenReturn(nodesCsv, edgesCsv)
         when(listObjectsV2Result.isTruncated).thenReturn(false)
-        val objectSummaries = itemNamesWrittenToS3.map(convertStringToS3ObjectSummary).toList.asJava
-        when(listObjectsV2Result.getObjectSummaries).thenReturn(objectSummaries)
+        when(listObjectsV2Result.getObjectSummaries).thenReturn(convertStringToS3ObjectSummary)
       }
-      assert(s3Store.read(now).get == oneMillisecondBeforeNowContent)
+      assert(s3Store.read(now).get == serviceGraphJson)
       if (!useRealS3) {
         verifiesForRead(1)
-        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(oneMillisecondBeforeNow)))
+        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(oneMillisecondBeforeNow) + Constants._Nodes))
+        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(oneMillisecondBeforeNow) + Constants._Edges))
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
     it("should return the correct object when read() is called with a time that is an exact match") {
       if (!useRealS3) {
         whensForRead
-        when(s3Client.getObjectAsString(anyString(), anyString())).thenReturn(twoMillisecondsAfterNowContent)
+        when(s3Client.getObjectAsString(anyString(), anyString())).thenReturn(nodesCsv, edgesCsv)
         when(listObjectsV2Result.isTruncated).thenReturn(false)
-        val objectSummaries = itemNamesWrittenToS3.map(convertStringToS3ObjectSummary).toList.asJava
-        when(listObjectsV2Result.getObjectSummaries).thenReturn(objectSummaries)
+        when(listObjectsV2Result.getObjectSummaries).thenReturn(convertStringToS3ObjectSummary)
       }
-      assert(s3Store.read(twoMillisecondsAfterNow).get == twoMillisecondsAfterNowContent)
+      val actual = s3Store.read(twoMillisecondsAfterNow).get
+      val expected = serviceGraphJson
+      assert(actual == expected)
       if (!useRealS3) {
         verifiesForRead(1)
-        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(twoMillisecondsAfterNow)))
+        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Nodes))
+        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Edges))
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
@@ -150,25 +153,49 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       s3Store = new S3SnapshotStore(s3Client, bucketName, folderName, 1)
       if (!useRealS3) {
         whensForRead
-        when(s3Client.getObjectAsString(anyString(), anyString())).thenReturn(twoMillisecondsAfterNowContent)
+        when(s3Client.getObjectAsString(anyString(), anyString())).thenReturn(nodesCsv, edgesCsv)
         when(listObjectsV2Result.isTruncated).thenReturn(true, true, false)
         val it = itemNamesWrittenToS3.iterator
         when(listObjectsV2Result.getObjectSummaries)
-          .thenReturn(List(convertStringToS3ObjectSummary(it.next())).asJava)
-          .thenReturn(List(convertStringToS3ObjectSummary(it.next())).asJava)
-          .thenReturn(List(convertStringToS3ObjectSummary(it.next())).asJava)
+          .thenReturn(
+            convertTupleToObjectSummary(it.next()).asJava,
+            convertTupleToObjectSummary(it.next()).asJava,
+            convertTupleToObjectSummary(it.next()).asJava)
       }
-      assert(s3Store.read(twoMillisecondsAfterNow).get == twoMillisecondsAfterNowContent)
+      assert(s3Store.read(twoMillisecondsAfterNow).get == serviceGraphJson)
       if (!useRealS3) {
         verifiesForRead(3)
-        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(twoMillisecondsAfterNow)))
+        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Nodes))
+        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Edges))
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
     it("should never delete any items when purge() is called") {
       s3Store.purge(twoMillisecondsAfterNow) shouldEqual 0
-      verifyNoMoreInteractionsForAllMocksThenReset()
+      if (!useRealS3) {
+        verifyNoMoreInteractionsForAllMocksThenReset()
+      }
     }
+  }
+
+  private def convertTupleToObjectSummary(tuple: (String, String)): immutable.Seq[S3ObjectSummary] = {
+    val s3ObjectSummary1 = new S3ObjectSummary
+    s3ObjectSummary1.setBucketName(bucketName)
+    s3ObjectSummary1.setKey(tuple._1)
+    val s3ObjectSummary2 = new S3ObjectSummary
+    s3ObjectSummary2.setBucketName(bucketName)
+    s3ObjectSummary2.setKey(tuple._2)
+    List(s3ObjectSummary1, s3ObjectSummary2)
+  }
+
+  private def convertStringToS3ObjectSummary: util.List[S3ObjectSummary] = {
+    val listBuilder = List.newBuilder[S3ObjectSummary]
+    for (tuple <- itemNamesWrittenToS3) {
+      val list: immutable.Seq[S3ObjectSummary] = convertTupleToObjectSummary(tuple)
+      listBuilder += list.head
+      listBuilder += list(1)
+    }
+    listBuilder.result().asJava
   }
 
   private def verifiesForRead(loopTimes: Int) = {

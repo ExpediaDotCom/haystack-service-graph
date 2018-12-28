@@ -16,6 +16,7 @@
  *
  */
 package com.expedia.www.haystack.service.graph.snapshot.store
+
 import java.time.Instant
 
 import com.amazonaws.regions.Regions
@@ -27,9 +28,10 @@ import scala.math.Ordering.String.max
 
 /**
   * Object that stores snapshots in S3
-  * @param s3Client client with which to communicate with S3
-  * @param bucketName name of the bucket
-  * @param folderName name of the "folder" in the bucket (becomes the prefix of the S3 item name)
+  *
+  * @param s3Client             client with which to communicate with S3
+  * @param bucketName           name of the bucket
+  * @param folderName           name of the "folder" in the bucket (becomes the prefix of the S3 item name)
   * @param listObjectsBatchSize number of results to return with each listObjectsV2 request to S3; smaller values
   *                             use less memory at the cost of more calls to S3. The best value would be the maximum
   *                             number of snapshots that will exist in S3 before being purged; for example, with a
@@ -66,16 +68,25 @@ class S3SnapshotStore(val s3Client: AmazonS3,
     *
     * @param instant date/time of the write, used to create the name, which will later be used in read() and purge()
     * @param content String to write
-    * @return the item name of the object written to S3 (does not include the bucket name)
+    * @return the item names of the two objects written to S3 (does not include the bucket name): the first item name
+    *         returned will end in "_nodes" and the other will end in "_edges"
     */
   override def write(instant: Instant,
-                     content: String): AnyRef = {
-    if(!s3Client.doesBucketExistV2(bucketName)) {
+                     content: String): (String, String) = {
+    if (!s3Client.doesBucketExistV2(bucketName)) {
       s3Client.createBucket(bucketName)
     }
-    val itemName = createItemName(createIso8601FileName(instant))
+    val nodesAndEdges = transformJsonToNodesAndEdges(content)
+    write(bucketName, instant, Constants._Nodes, nodesAndEdges.nodes)
+    write(bucketName, instant, Constants._Edges, nodesAndEdges.edges)
+    val itemNameBase = createIso8601FileName(instant)
+    (createItemName(itemNameBase + Constants._Nodes), createItemName(itemNameBase + Constants._Edges))
+  }
+
+  private def write(bucketName: String, instant: Instant, suffix: String, content: String) = {
+    val itemNameBase = createItemName(createIso8601FileName(instant))
+    val itemName = itemNameBase + suffix
     s3Client.putObject(bucketName, itemName, content)
-    itemName
   }
 
   /**
@@ -85,22 +96,19 @@ class S3SnapshotStore(val s3Client: AmazonS3,
     * @return the content of the youngest item whose ISO-8601-based name is earlier or equal to instant
     */
   override def read(instant: Instant): Option[String] = {
-    var content: Option[String] = None
-    val itemName = getItemNameOfYoungestItemBeforeInstant(instant)
-    if(itemName.isDefined) {
-      content = Some(s3Client.getObjectAsString(bucketName, itemName.get))
+    var optionString: Option[String] = None
+    val itemName = getItemNameOfYoungestNodesItemBeforeInstant(instant)
+    if (itemName.isDefined) {
+      val nodesItemName = itemName.get
+      val nodesRawData = s3Client.getObjectAsString(bucketName, nodesItemName)
+      val edgesItemName = nodesItemName.replace(Constants._Nodes, Constants._Edges)
+      val edgesRawData = s3Client.getObjectAsString(bucketName, edgesItemName)
+      optionString = Some(transformNodesAndEdgesToJson(nodesRawData, edgesRawData))
     }
-    content
+    optionString
   }
 
-  /**
-    * Purges items from the persistent store
-    *
-    * @param instant date/time of items to be purged; items whose ISO-8601-based name is earlier than or equal to
-    *                instant will be purged
-    * @return the number of items purged
-    */
-  private def getItemNameOfYoungestItemBeforeInstant(instant: Instant): Option[String] = {
+  private def getItemNameOfYoungestNodesItemBeforeInstant(instant: Instant): Option[String] = {
     var optionString: Option[String] = None
     val listObjectsV2Request = new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(listObjectsBatchSize)
     val instantAsItemName = createItemName(createIso8601FileName(instant))
@@ -108,7 +116,9 @@ class S3SnapshotStore(val s3Client: AmazonS3,
     do {
       listObjectsV2Result = s3Client.listObjectsV2(bucketName)
       val objectSummaries = listObjectsV2Result.getObjectSummaries.asScala
-        .filter(_.getKey.startsWith(itemNamePrefix)).filter(_.getKey <= instantAsItemName)
+        .filter(_.getKey.startsWith(itemNamePrefix))
+        .filter(_.getKey.endsWith(Constants._Nodes))
+        .filter(_.getKey.substring(0, instantAsItemName.length) <= instantAsItemName)
       val potentialMax = if (objectSummaries.nonEmpty) Some(objectSummaries.maxBy(_.getKey).getKey) else None
       (optionString, potentialMax) match {
         case (None, None) =>
@@ -116,7 +126,7 @@ class S3SnapshotStore(val s3Client: AmazonS3,
         case (None, Some(_)) =>
           optionString = potentialMax
         case (Some(_), None) =>
-          // optionString stays unchanged
+        // optionString stays unchanged
         case (Some(optionStringItemName), Some(potentialMaxItemName)) =>
           optionString = Some(max(optionStringItemName, potentialMaxItemName))
       }
