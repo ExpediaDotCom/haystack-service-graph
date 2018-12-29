@@ -31,6 +31,8 @@ import org.scalatest.{BeforeAndAfter, FunSpec, Matchers}
 import org.slf4j.Logger
 import scalaj.http.{HttpRequest, HttpResponse}
 
+import scala.io.{BufferedSource, Codec, Source}
+
 class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAfter {
   private var mockLogger: Logger = _
   private var realLogger: Logger = _
@@ -43,7 +45,15 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
 
   private val mockHttpRequest = mock[HttpRequest]
 
-  private val body = "Body of the HttpResponse"
+  private def readFile(fileName: String): String = {
+    implicit val codec: Codec = Codec.UTF8
+    lazy val bufferedSource: BufferedSource = Source.fromResource(fileName)
+    val fileContents = bufferedSource.getLines.mkString("\n")
+    bufferedSource.close()
+    fileContents + "\n"
+  }
+
+  private val body = readFile("serviceGraph.json")
   private val httpResponse: HttpResponse[String] = new HttpResponse[String](body = body, code = 0, headers = Map())
   private val now = Instant.now()
 
@@ -124,8 +134,8 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
       val factory = new Factory
       val httpRequest = factory.createHttpRequest(Main.ServiceGraphUrl, now.toEpochMilli)
       val url = httpRequest.url
-      url should startWith (Main.ServiceGraphUrlBase)
-      url should endWith (Main.ServiceGraphUrlSuffix.format(now.toEpochMilli))
+      url should startWith(Main.ServiceGraphUrlBase)
+      url should endWith(Main.ServiceGraphUrlSuffix.format(now.toEpochMilli))
     }
   }
 

@@ -65,4 +65,19 @@ trait SnapshotStore {
   def createIso8601FileName(instant: Instant): String = {
     formatter.format(instant)
   }
+
+  // Not stateful, so only one object is needed
+  private val jsonIntoDataFramesTransformer = new JsonIntoDataFramesTransformer
+
+  def transformJsonToNodesAndEdges(json: String): NodesAndEdges = {
+    jsonIntoDataFramesTransformer.parseJson(json)
+  }
+
+  def transformNodesAndEdgesToJson(nodesRawData: String,
+                                   edgesRawData: String): String = {
+    // Stateful because of instance variable DataFramesIntoJsonTransformer.prependComma, so each parse needs one
+    val dataFramesIntoJsonTransformer = new DataFramesIntoJsonTransformer
+
+    dataFramesIntoJsonTransformer.parseDataFrames(nodesRawData, edgesRawData)
+  }
 }

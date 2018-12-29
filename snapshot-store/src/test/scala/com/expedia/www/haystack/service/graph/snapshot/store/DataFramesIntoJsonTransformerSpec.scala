@@ -18,14 +18,20 @@
 package com.expedia.www.haystack.service.graph.snapshot.store
 
 import com.expedia.www.haystack.service.graph.snapshot.store.Constants._
+import com.expedia.www.haystack.service.graph.snapshot.store.DataFramesIntoJsonTransformer.{AddToMapError, WriteError}
+import kantan.csv.ReadError
 import org.mockito.Mockito
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{FunSpec, Matchers}
+import org.scalatest.{FunSpec, Matchers, PrivateMethodTester}
 import org.slf4j.Logger
 
-class DataFramesIntoJsonTransformerSpec extends FunSpec with Matchers with MockitoSugar {
+import scala.collection.mutable
+
+class DataFramesIntoJsonTransformerSpec extends FunSpec with Matchers with MockitoSugar with PrivateMethodTester {
   private val stringSnapshotStoreSpecBase = new SnapshotStoreSpecBase
   private val mockLogger = mock[Logger]
+  private val mockReadError = mock[ReadError]
+  private val emptyMap = mutable.Map.empty[Long, Node]
 
   describe("DataFramesIntoJsonTransformerSpec.parseDataFrames()") {
     val dataFramesIntoJsonTransformer = new DataFramesIntoJsonTransformer(mockLogger)
@@ -34,7 +40,27 @@ class DataFramesIntoJsonTransformerSpec extends FunSpec with Matchers with Mocki
       val edgesRawData = stringSnapshotStoreSpecBase.readFile(EdgesCsvFileNameWithExtension)
       val json = dataFramesIntoJsonTransformer.parseDataFrames(nodesRawData, edgesRawData)
       json shouldEqual stringSnapshotStoreSpecBase.readFile(JsonFileNameWithExtension)
-      Mockito.verifyNoMoreInteractions(mockLogger)
+      Mockito.verifyNoMoreInteractions(mockLogger, mockReadError)
+    }
+  }
+
+  describe("DataFramesIntoJsonTransformerSpec.write()") {
+    val dataFramesIntoJsonTransformer = new DataFramesIntoJsonTransformer(mockLogger)
+    it("should log an error when it sees a ReadError") {
+      val write = PrivateMethod[Unit]('write)
+      dataFramesIntoJsonTransformer invokePrivate write(new StringBuilder, emptyMap, Left(mockReadError))
+      Mockito.verify(mockLogger).error(WriteError, mockReadError)
+      Mockito.verifyNoMoreInteractions(mockLogger, mockReadError)
+    }
+  }
+
+  describe("DataFramesIntoJsonTransformerSpec.addToMap()") {
+    val dataFramesIntoJsonTransformer = new DataFramesIntoJsonTransformer(mockLogger)
+    it("should log an error when it sees a ReadError") {
+      val addToMap = PrivateMethod[Unit]('addToMap)
+      dataFramesIntoJsonTransformer invokePrivate addToMap(emptyMap, Left(mockReadError))
+      Mockito.verify(mockLogger).error(AddToMapError, mockReadError)
+      Mockito.verifyNoMoreInteractions(mockLogger, mockReadError)
     }
   }
 }
