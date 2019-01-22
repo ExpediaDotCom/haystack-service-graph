@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.expedia.www</groupId>
     <artifactId>haystack-service-graph</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.5-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -69,13 +69,14 @@
         <kantan_csv.version>0.5.0</kantan_csv.version>
         <haystack-commons.version>1.0.50</haystack-commons.version>
         <haystack.logback.metrics.appender.version>0.1.12</haystack.logback.metrics.appender.version>
-        <haystack-service-graph-snapshot-store.version>1.0.0-SNAPSHOT</haystack-service-graph-snapshot-store.version>
+        <haystack-service-graph-snapshot-store.version>${version}</haystack-service-graph-snapshot-store.version>
         <httpclient.version>4.5.3</httpclient.version>
         <jetty.version>9.4.11.v20180605</jetty.version>
         <json4s.version>3.5.3</json4s.version>
         <json4s.version>3.6.0</json4s.version>
         <logback.version>1.2.3</logback.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+        <maven-shade-plugin-version>3.2.1</maven-shade-plugin-version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <mockito.version>1.9.5</mockito.version>
         <msgpack.version>0.8.13</msgpack.version>
