@@ -22,9 +22,24 @@ import java.time.Instant
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.services.s3.model.{ListObjectsV2Request, ListObjectsV2Result}
+import com.expedia.www.haystack.service.graph.snapshot.store.Constants.{_Edges, _Nodes}
+import com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStore.createItemName
 
 import scala.collection.JavaConverters._
 import scala.math.Ordering.String.max
+
+/**
+  * Companion object, with public AmazonS3 that can be set to a mock for unit tests
+  */
+object S3SnapshotStore {
+  var amazonS3: AmazonS3 = AmazonS3ClientBuilder.standard.withRegion(Regions.US_WEST_2).build
+
+  def createItemName(folderName: String, fileName: String): String = {
+    s"$folderName/$fileName"
+  }
+
+
+}
 
 /**
   * Object that stores snapshots in S3
@@ -45,7 +60,7 @@ class S3SnapshotStore(val s3Client: AmazonS3,
   private val itemNamePrefix = folderName + "/"
 
   def this() = {
-    this(AmazonS3ClientBuilder.standard.withRegion(Regions.US_WEST_2).build, "", "", 0)
+    this(S3SnapshotStore.amazonS3, "", "", 0)
   }
 
   /**
@@ -57,9 +72,9 @@ class S3SnapshotStore(val s3Client: AmazonS3,
     * @return the S3SnapshotStore to use
     */
   override def build(constructorArguments: Array[String]): SnapshotStore = {
-    val bucketName = constructorArguments(0)
-    val folderName = constructorArguments(1)
-    val listObjectsBatchSize = constructorArguments(2).toInt
+    val bucketName = constructorArguments(1)
+    val folderName = constructorArguments(2)
+    val listObjectsBatchSize = constructorArguments(3).toInt
     new S3SnapshotStore(s3Client, bucketName, folderName, listObjectsBatchSize)
   }
 
@@ -77,14 +92,14 @@ class S3SnapshotStore(val s3Client: AmazonS3,
       s3Client.createBucket(bucketName)
     }
     val nodesAndEdges = transformJsonToNodesAndEdges(content)
-    write(bucketName, instant, Constants._Nodes, nodesAndEdges.nodes)
-    write(bucketName, instant, Constants._Edges, nodesAndEdges.edges)
+    write(bucketName, instant, _Nodes, nodesAndEdges.nodes)
+    write(bucketName, instant, _Edges, nodesAndEdges.edges)
     val itemNameBase = createIso8601FileName(instant)
-    (createItemName(itemNameBase + Constants._Nodes), createItemName(itemNameBase + Constants._Edges))
+    (createItemName(folderName, itemNameBase + _Nodes), createItemName(folderName, itemNameBase + _Edges))
   }
 
   private def write(bucketName: String, instant: Instant, suffix: String, content: String) = {
-    val itemNameBase = createItemName(createIso8601FileName(instant))
+    val itemNameBase = createItemName(folderName, createIso8601FileName(instant))
     val itemName = itemNameBase + suffix
     s3Client.putObject(bucketName, itemName, content)
   }
@@ -101,7 +116,7 @@ class S3SnapshotStore(val s3Client: AmazonS3,
     if (itemName.isDefined) {
       val nodesItemName = itemName.get
       val nodesRawData = s3Client.getObjectAsString(bucketName, nodesItemName)
-      val edgesItemName = nodesItemName.replace(Constants._Nodes, Constants._Edges)
+      val edgesItemName = nodesItemName.replace(_Nodes, _Edges)
       val edgesRawData = s3Client.getObjectAsString(bucketName, edgesItemName)
       optionString = Some(transformNodesAndEdgesToJson(nodesRawData, edgesRawData))
     }
@@ -111,13 +126,13 @@ class S3SnapshotStore(val s3Client: AmazonS3,
   private def getItemNameOfYoungestNodesItemBeforeInstant(instant: Instant): Option[String] = {
     var optionString: Option[String] = None
     val listObjectsV2Request = new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(listObjectsBatchSize)
-    val instantAsItemName = createItemName(createIso8601FileName(instant))
+    val instantAsItemName = createItemName(folderName, createIso8601FileName(instant))
     var listObjectsV2Result: ListObjectsV2Result = null
     do {
       listObjectsV2Result = s3Client.listObjectsV2(bucketName)
       val objectSummaries = listObjectsV2Result.getObjectSummaries.asScala
         .filter(_.getKey.startsWith(itemNamePrefix))
-        .filter(_.getKey.endsWith(Constants._Nodes))
+        .filter(_.getKey.endsWith(_Nodes))
         .filter(_.getKey.substring(0, instantAsItemName.length) <= instantAsItemName)
       val potentialMax = if (objectSummaries.nonEmpty) Some(objectSummaries.maxBy(_.getKey).getKey) else None
       (optionString, potentialMax) match {
@@ -133,10 +148,6 @@ class S3SnapshotStore(val s3Client: AmazonS3,
       listObjectsV2Request.setContinuationToken(listObjectsV2Result.getNextContinuationToken)
     } while (listObjectsV2Result.isTruncated)
     optionString
-  }
-
-  private def createItemName(fileName: String) = {
-    s"$folderName/$fileName"
   }
 
 }

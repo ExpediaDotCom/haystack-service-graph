@@ -65,7 +65,9 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
   }
 
   describe("S3SnapshotStore.build()") {
-    val s3Store = new S3SnapshotStore().build(Array(bucketName, folderName, "42")).asInstanceOf[S3SnapshotStore]
+    val store = new S3SnapshotStore()
+    val s3Store = store.build(Array(store.getClass.getCanonicalName, bucketName, folderName, "42"))
+      .asInstanceOf[S3SnapshotStore]
     it("should use the arguments in the default constructor and the array") {
       val s3Client: AmazonS3 = s3Store.s3Client
       s3Client.getRegion.toString shouldEqual Regions.US_WEST_2.getName
