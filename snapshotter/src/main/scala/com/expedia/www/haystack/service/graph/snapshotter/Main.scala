@@ -48,13 +48,13 @@ object Main {
     * See the documentation in the build() method of the desired implementation for argument details.
     * ===Examples===
     * ====FileSnapshotStore====
-    * To run FileStore and use /var/snapshots for snapshot storage, the arguments would be:
-    *   - com.expedia.www.haystack.service.graph.snapshot.store.FileStore
+    * To run FileSnapshotStore and use /var/snapshots for snapshot storage, the arguments would be:
+    *   - com.expedia.www.haystack.service.graph.snapshot.store.FileSnapshotStore
     *   - /var/snapshots
     * ====S3SnapshotStore====
-    * To run S3Store and use the "Haystack" bucket with subfolder "snapshots" for snapshot storage, and a batch size
-    * of 10,000 when calling the S3 "listObjectsV2" API, the arguments would be:
-    *   - com.expedia.www.haystack.service.graph.snapshot.store.S3Store
+    * To run S3SnapshotStore and use the "Haystack" bucket with subfolder "snapshots" for snapshot storage, and a batch
+    * size of 10,000 when calling the S3 "listObjectsV2" API, the arguments would be:
+    *   - com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStore
     *   - Haystack
     *   - snapshots
     *   - 10000

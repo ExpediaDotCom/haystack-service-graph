@@ -64,7 +64,7 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
     }
   }
 
-  describe("S3Store.build()") {
+  describe("S3SnapshotStore.build()") {
     val s3Store = new S3SnapshotStore().build(Array(bucketName, folderName, "42")).asInstanceOf[S3SnapshotStore]
     it("should use the arguments in the default constructor and the array") {
       val s3Client: AmazonS3 = s3Store.s3Client
@@ -75,7 +75,7 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
     }
   }
 
-  describe("S3Store") {
+  describe("S3SnapshotStore") {
     var s3Store = new S3SnapshotStore(s3Client, bucketName, folderName, 3)
     it("should create the bucket when the bucket does not exist") {
       if (!useRealS3) {
