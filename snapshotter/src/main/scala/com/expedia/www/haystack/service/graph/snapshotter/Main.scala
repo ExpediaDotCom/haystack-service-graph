@@ -101,6 +101,9 @@ object Main {
   }
 }
 
+class Main() {
+}
+
 class Factory {
   def createHttpRequest(url: String, windowSizeMs: Long): HttpRequest = {
     val urlWithParameter = url.format(windowSizeMs)
