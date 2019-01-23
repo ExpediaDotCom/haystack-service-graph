@@ -23,13 +23,13 @@ import java.nio.file.{Files, Path, Paths}
 import com.expedia.www.haystack.service.graph.snapshot.store.Constants.JsonFileNameWithExtension
 
 class FileSnapshotStoreSpec extends SnapshotStoreSpecBase {
-  private val directory = Files.createTempDirectory("FileStoreSpec")
+  private val directory = Files.createTempDirectory("FileSnapshotStoreSpec")
   directory.toFile.deleteOnExit()
 
   private val directoryName = directory.toFile.getCanonicalPath
   private val serviceGraphJson = readFile(JsonFileNameWithExtension)
 
-  describe("FileStore") {
+  describe("FileSnapshotStore") {
     {
       val defaultFaultSnapshotStore = new FileSnapshotStore
       val fileSnapshotStore = defaultFaultSnapshotStore.build(Array(directoryName))

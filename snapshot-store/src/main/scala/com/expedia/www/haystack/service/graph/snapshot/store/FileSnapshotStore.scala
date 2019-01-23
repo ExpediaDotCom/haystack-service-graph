@@ -30,10 +30,10 @@ class FileSnapshotStore(val directoryName: String) extends SnapshotStore {
   }
 
   /**
-    * Returns a FileStore using the directory name specified
+    * Returns a FileSnapshotStore using the directory name specified
     *
     * @param constructorArguments constructorArguments(0) must specify the directory to which snapshots will be stored
-    * @return the concrete FileStore to use
+    * @return the concrete FileSnapshotStore to use
     */
   override def build(constructorArguments: Array[String]): SnapshotStore = {
     new FileSnapshotStore(constructorArguments(0))

@@ -110,8 +110,8 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
     }
   }
 
-  describe("Main.main() called with FileStore arguments") {
-    it("should create a FileStore, write to it, then call purge()") {
+  describe("Main.main() called with FileSnapshotStore arguments") {
+    it("should create a FileSnapshotStore, write to it, then call purge()") {
       when(mockFactory.createHttpRequest(any(), any())).thenReturn(mockHttpRequest)
       when(mockHttpRequest.asString).thenReturn(httpResponse)
       when(mockClock.instant()).thenReturn(now)
