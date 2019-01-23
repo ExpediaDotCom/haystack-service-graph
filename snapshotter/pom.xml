@@ -5,7 +5,7 @@
     <parent>
         <artifactId>haystack-service-graph</artifactId>
         <groupId>com.expedia.www</groupId>
-        <version>1.0.5-SNAPSHOT</version>
+        <version>1.0.6-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -41,7 +41,7 @@
 
     <properties>
         <finalName>${project.artifactId}-${project.version}</finalName>
-        <mainClass>com.expedia.www.haystack.service.graph.snapshot.store.Main</mainClass>
+        <mainClass>com.expedia.www.haystack.service.graph.snapshotter.Main</mainClass>
     </properties>
 
     <dependencies>
