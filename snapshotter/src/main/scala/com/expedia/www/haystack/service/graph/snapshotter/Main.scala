@@ -26,9 +26,9 @@ import scalaj.http.{Http, HttpRequest}
 object Main {
   val StringStoreClassRequiredMsg =
     "The first argument must specify the fully qualified class name of a class that implements SnapshotStore"
-  val ServiceGraphUrlBase: String = "http://apis/graph/servicegraph"
+  val UrlBaseRequiredMsg =
+    "The second argument must specify the base of the service graph URL"
   val ServiceGraphUrlSuffix: String = "?from=%d"
-  val ServiceGraphUrl: String = ServiceGraphUrlBase + ServiceGraphUrlSuffix
   val appConfiguration = new AppConfiguration()
 
   var logger: Logger = LoggerFactory.getLogger(Main.getClass)
@@ -62,10 +62,12 @@ object Main {
   def main(args: Array[String]): Unit = {
     if (args.length == 0) {
       logger.error(StringStoreClassRequiredMsg)
+    } else if (args.length == 1) {
+      logger.error(UrlBaseRequiredMsg)
     } else {
       val snapshotStore = instantiateSnapshotStore(args)
       val now = clock.instant()
-      val json = getCurrentServiceGraph(now)
+      val json = getCurrentServiceGraph(args(0) + ServiceGraphUrlSuffix, now)
       storeServiceGraphInTheStringStore(snapshotStore, now, json)
       purgeOldSnapshots(snapshotStore, now)
     }
@@ -73,7 +75,7 @@ object Main {
 
   private def instantiateSnapshotStore(args: Array[String]): SnapshotStore = {
     def createStringStoreInstanceWithDefaultConstructor: SnapshotStore = {
-      val fullyQualifiedClassName = args(0)
+      val fullyQualifiedClassName = args(1)
       val klass = Class.forName(fullyQualifiedClassName)
       val instanceBuiltByDefaultConstructor = klass.newInstance().asInstanceOf[SnapshotStore]
       instanceBuiltByDefaultConstructor
@@ -83,8 +85,8 @@ object Main {
     snapshotStore
   }
 
-  private def getCurrentServiceGraph(instant: Instant) = {
-    val request = factory.createHttpRequest(ServiceGraphUrl, instant.toEpochMilli - appConfiguration.windowSizeMs)
+  private def getCurrentServiceGraph(url: String, instant: Instant) = {
+    val request = factory.createHttpRequest(url, instant.toEpochMilli - appConfiguration.windowSizeMs)
     val httpResponse = request.asString
     httpResponse.body
   }
@@ -99,9 +101,6 @@ object Main {
                                 instant: Instant): Integer = {
     snapshotStore.purge(instant.minusMillis(appConfiguration.purgeAgeMs))
   }
-}
-
-class Main() {
 }
 
 class Factory {
