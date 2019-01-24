@@ -1,5 +1,8 @@
 # Release Notes
 
+## 2019-01-23 1.0.10
+  * Names of S3 service graph snapshot items should terminate in ".csv"
+
 ## 2019-01-23 1.0.9
   * Make the parameter for listObjectsBatchSize in S3SnapshotStore optional, as it's only needed when calling write
 
