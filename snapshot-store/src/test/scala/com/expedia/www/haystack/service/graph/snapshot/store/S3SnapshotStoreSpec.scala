@@ -21,25 +21,25 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter.ISO_INSTANT
 import java.util
 
-import collection.JavaConverters._
 import com.amazonaws.regions.Regions
+import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder.standard
 import com.amazonaws.services.s3.model.{ListObjectsV2Result, S3ObjectSummary}
-import com.amazonaws.services.s3.AmazonS3
 import com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStoreSpec.itemNamesWrittenToS3
-import org.mockito.{Matchers, Mockito}
+import org.mockito.Matchers._
+import org.mockito.Mockito
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions, when}
-import org.mockito.Matchers.anyString
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, _}
 import org.scalatest.mockito.MockitoSugar
 
+import scala.collection.JavaConverters._
 import scala.collection.{immutable, mutable}
 
 object S3SnapshotStoreSpec {
   private val itemNamesWrittenToS3 = mutable.SortedSet[(String, String)]()
 }
 
-class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll with MockitoSugar {
+class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll with MockitoSugar with Matchers {
   // Set to true to run these test in an integration-type way, talking to a real S3.
   // You must have valid keys on your machine to do so, typically in ~/.aws/credentials.
   private val useRealS3 = false
@@ -66,7 +66,7 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
 
   describe("S3SnapshotStore.build()") {
     val store = new S3SnapshotStore()
-    val s3Store = store.build(Array(store.getClass.getCanonicalName, bucketName, folderName, "42"))
+    var s3Store = store.build(Array(store.getClass.getCanonicalName, bucketName, folderName, "42"))
       .asInstanceOf[S3SnapshotStore]
     it("should use the arguments in the default constructor and the array") {
       val s3Client: AmazonS3 = s3Store.s3Client
@@ -74,6 +74,11 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       s3Store.bucketName shouldEqual bucketName
       s3Store.folderName shouldEqual folderName
       s3Store.listObjectsBatchSize shouldEqual 42
+    }
+    it("should use 0 for listObjectsBatchSize if no listObjectsBatchSize is specified in the args array") {
+      s3Store = store.build(Array(store.getClass.getCanonicalName, bucketName, folderName))
+        .asInstanceOf[S3SnapshotStore]
+      s3Store.listObjectsBatchSize shouldEqual 0
     }
   }
 
@@ -129,8 +134,10 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       assert(s3Store.read(now).get == serviceGraphJson)
       if (!useRealS3) {
         verifiesForRead(1)
-        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(oneMillisecondBeforeNow) + Constants._Nodes))
-        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(oneMillisecondBeforeNow) + Constants._Edges))
+        verify(s3Client).getObjectAsString(anyString(),
+          org.mockito.Matchers.eq(createItemName(oneMillisecondBeforeNow) + Constants._Nodes))
+        verify(s3Client).getObjectAsString(anyString(),
+          org.mockito.Matchers.eq(createItemName(oneMillisecondBeforeNow) + Constants._Edges))
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
@@ -146,8 +153,10 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       assert(actual == expected)
       if (!useRealS3) {
         verifiesForRead(1)
-        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Nodes))
-        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Edges))
+        verify(s3Client).getObjectAsString(anyString(),
+          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Nodes))
+        verify(s3Client).getObjectAsString(anyString(),
+          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Edges))
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
@@ -167,13 +176,22 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       assert(s3Store.read(twoMillisecondsAfterNow).get == serviceGraphJson)
       if (!useRealS3) {
         verifiesForRead(3)
-        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Nodes))
-        verify(s3Client).getObjectAsString(anyString(), Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Edges))
+        verify(s3Client).getObjectAsString(anyString(),
+          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Nodes))
+        verify(s3Client).getObjectAsString(anyString(),
+          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + Constants._Edges))
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
     it("should never delete any items when purge() is called") {
       s3Store.purge(twoMillisecondsAfterNow) shouldEqual 0
+      if (!useRealS3) {
+        verifyNoMoreInteractionsForAllMocksThenReset()
+      }
+    }
+    it("should throw an IllegalArgumentException when read() is called with a 0 value of listObjectsBatchSize") {
+      s3Store = new S3SnapshotStore(s3Client, bucketName, folderName, 0)
+      an [IllegalArgumentException] should be thrownBy s3Store.read(twoMillisecondsBeforeNow)
       if (!useRealS3) {
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
