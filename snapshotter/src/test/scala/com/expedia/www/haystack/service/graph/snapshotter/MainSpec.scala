@@ -23,7 +23,7 @@ import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit.HOURS
 
 import com.amazonaws.services.s3.AmazonS3
-import com.expedia.www.haystack.service.graph.snapshot.store.Constants.{_Edges, _Nodes}
+import com.expedia.www.haystack.service.graph.snapshot.store.Constants.{DotCsv, _Edges, _Nodes}
 import com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStore.createItemName
 import com.expedia.www.haystack.service.graph.snapshot.store.{FileSnapshotStore, S3SnapshotStore, SnapshotStore}
 import com.expedia.www.haystack.service.graph.snapshotter.Main.{StringStoreClassRequiredMsg, UrlBaseRequiredMsg}
@@ -166,8 +166,8 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
       verifiesForCallToServiceGraphUrl(2)
       verify(mockAmazonS3).doesBucketExistV2(bucketName)
       verify(mockAmazonS3).createBucket(bucketName)
-      verify(mockAmazonS3).putObject(bucketName, createItemName(folderName, fileNameBase + _Edges), edges)
-      verify(mockAmazonS3).putObject(bucketName, createItemName(folderName, fileNameBase + _Nodes), nodes)
+      verify(mockAmazonS3).putObject(bucketName, createItemName(folderName, fileNameBase + _Edges + DotCsv), edges)
+      verify(mockAmazonS3).putObject(bucketName, createItemName(folderName, fileNameBase + _Nodes + DotCsv), nodes)
     }
   }
 

@@ -19,8 +19,8 @@ package com.expedia.www.haystack.service.graph.snapshot.store
 
 object Constants {
   private val DotJson = ".json"
-  private val DotCsv = ".csv"
 
+  val DotCsv = ".csv"
   val _Nodes = "_nodes"
   val _Edges = "_edges"
   val SourceKey: String = "source"
