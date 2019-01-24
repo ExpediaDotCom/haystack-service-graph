@@ -22,7 +22,7 @@ import java.time.Instant
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.services.s3.model.{ListObjectsV2Request, ListObjectsV2Result}
-import com.expedia.www.haystack.service.graph.snapshot.store.Constants.{_Edges, _Nodes}
+import com.expedia.www.haystack.service.graph.snapshot.store.Constants.{DotCsv, _Edges, _Nodes}
 import com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStore.createItemName
 
 import scala.collection.JavaConverters._
@@ -97,8 +97,8 @@ class S3SnapshotStore(val s3Client: AmazonS3,
       s3Client.createBucket(bucketName)
     }
     val nodesAndEdges = transformJsonToNodesAndEdges(content)
-    write(bucketName, instant, _Nodes, nodesAndEdges.nodes)
-    write(bucketName, instant, _Edges, nodesAndEdges.edges)
+    write(bucketName, instant, _Nodes + DotCsv, nodesAndEdges.nodes)
+    write(bucketName, instant, _Edges + DotCsv, nodesAndEdges.edges)
     val itemNameBase = createIso8601FileName(instant)
     (createItemName(folderName, itemNameBase + _Nodes), createItemName(folderName, itemNameBase + _Edges))
   }
