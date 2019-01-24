@@ -51,7 +51,9 @@ object S3SnapshotStore {
   *                             use less memory at the cost of more calls to S3. The best value would be the maximum
   *                             number of snapshots that will exist in S3 before being purged; for example, with a
   *                             one hour snapshot interval and a snapshot TTL of 1 year, 366 * 24 = 8784 would be a good
-  *                             value (perhaps rounded to 10,000)
+  *                             value (perhaps rounded to 10,000). Instances of S3SnapshotStore that only write to S3
+  *                             can specify a non-positive value (typically 0) because the read(Instant) method will
+  *                             never be called, and only this method uses listObjectsBatchSize.
   */
 class S3SnapshotStore(val s3Client: AmazonS3,
                       val bucketName: String,
@@ -66,15 +68,18 @@ class S3SnapshotStore(val s3Client: AmazonS3,
   /**
     * Builds an S3SnapshotStore implementation given arguments to pass to the constructor
     *
-    * @param constructorArguments [0] must be a String that specifies the bucket
-    *                             [1] must be a String that specifies the folder in the bucket
-    *                             [2] must be a String that specifies the batch count when listing items in the bucket
+    * @param constructorArguments
+    *  - '''constructorArguments[0]''' is unused by this method but will be the fully qualified name of the
+    *  S3SnapshotStore class, i.e. "com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStore"
+    *  - '''constructorArguments[1]''' must be a String that specifies the bucket
+    *  - '''constructorArguments[2]''' must be a String that specifies the folder in the bucket
+    *  - '''constructorArguments[3]''' must be a String that specifies the batch count when listing items in the bucket
     * @return the S3SnapshotStore to use
     */
   override def build(constructorArguments: Array[String]): SnapshotStore = {
     val bucketName = constructorArguments(1)
     val folderName = constructorArguments(2)
-    val listObjectsBatchSize = constructorArguments(3).toInt
+    val listObjectsBatchSize = if (constructorArguments.length > 3) constructorArguments(3).toInt else 0
     new S3SnapshotStore(s3Client, bucketName, folderName, listObjectsBatchSize)
   }
 
@@ -109,6 +114,7 @@ class S3SnapshotStore(val s3Client: AmazonS3,
     *
     * @param instant date/time of the read
     * @return the content of the youngest item whose ISO-8601-based name is earlier or equal to instant
+    * @throws IllegalArgumentException if listObjectsBatchSize <= 0
     */
   override def read(instant: Instant): Option[String] = {
     var optionString: Option[String] = None
@@ -125,28 +131,33 @@ class S3SnapshotStore(val s3Client: AmazonS3,
 
   private def getItemNameOfYoungestNodesItemBeforeInstant(instant: Instant): Option[String] = {
     var optionString: Option[String] = None
-    val listObjectsV2Request = new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(listObjectsBatchSize)
-    val instantAsItemName = createItemName(folderName, createIso8601FileName(instant))
-    var listObjectsV2Result: ListObjectsV2Result = null
-    do {
-      listObjectsV2Result = s3Client.listObjectsV2(bucketName)
-      val objectSummaries = listObjectsV2Result.getObjectSummaries.asScala
-        .filter(_.getKey.startsWith(itemNamePrefix))
-        .filter(_.getKey.endsWith(_Nodes))
-        .filter(_.getKey.substring(0, instantAsItemName.length) <= instantAsItemName)
-      val potentialMax = if (objectSummaries.nonEmpty) Some(objectSummaries.maxBy(_.getKey).getKey) else None
-      (optionString, potentialMax) match {
-        case (None, None) =>
-          optionString = None
-        case (None, Some(_)) =>
-          optionString = potentialMax
-        case (Some(_), None) =>
-        // optionString stays unchanged
-        case (Some(optionStringItemName), Some(potentialMaxItemName)) =>
-          optionString = Some(max(optionStringItemName, potentialMaxItemName))
-      }
-      listObjectsV2Request.setContinuationToken(listObjectsV2Result.getNextContinuationToken)
-    } while (listObjectsV2Result.isTruncated)
+    if (listObjectsBatchSize > 0) {
+      val listObjectsV2Request = new ListObjectsV2Request().withBucketName(bucketName).withMaxKeys(listObjectsBatchSize)
+      val instantAsItemName = createItemName(folderName, createIso8601FileName(instant))
+      var listObjectsV2Result: ListObjectsV2Result = null
+      do {
+        listObjectsV2Result = s3Client.listObjectsV2(bucketName)
+        val objectSummaries = listObjectsV2Result.getObjectSummaries.asScala
+          .filter(_.getKey.startsWith(itemNamePrefix))
+          .filter(_.getKey.endsWith(_Nodes))
+          .filter(_.getKey.substring(0, instantAsItemName.length) <= instantAsItemName)
+        val potentialMax = if (objectSummaries.nonEmpty) Some(objectSummaries.maxBy(_.getKey).getKey) else None
+        (optionString, potentialMax) match {
+          case (None, None) =>
+            optionString = None
+          case (None, Some(_)) =>
+            optionString = potentialMax
+          case (Some(_), None) =>
+          // optionString stays unchanged
+          case (Some(optionStringItemName), Some(potentialMaxItemName)) =>
+            optionString = Some(max(optionStringItemName, potentialMaxItemName))
+        }
+        listObjectsV2Request.setContinuationToken(listObjectsV2Result.getNextContinuationToken)
+      } while (listObjectsV2Result.isTruncated)
+    } else {
+      throw new IllegalArgumentException("S3SnapshotStore objects that read from S3 must be created with a positive "
+        + s"value of listObjectsBatchSize, not the [$listObjectsBatchSize] value that was provided")
+    }
     optionString
   }
 
