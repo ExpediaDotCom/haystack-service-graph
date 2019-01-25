@@ -16,4 +16,4 @@ if [[ -n "$SERVICE_DEBUG_ON" ]] && [[ "$SERVICE_DEBUG_ON" == true ]]; then
    JAVA_OPTS="$JAVA_OPTS -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y"
 fi
 
-exec java ${JAVA_OPTS} -jar "${APP_HOME}/${APP_NAME}.jar" ${MAIN_ARGS}
+exec java ${JAVA_OPTS} -jar "${APP_HOME}/${APP_NAME}.jar" "$@"
