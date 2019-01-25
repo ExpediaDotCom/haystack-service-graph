@@ -1,7 +1,7 @@
 .PHONY: release
 
 export DOCKER_ORG := expediadotcom
-export DOCKER_IMAGE_NAME := v
+export DOCKER_IMAGE_NAME := haystack-service-snapshotter
 PWD := $(shell pwd)
 
 docker-image:

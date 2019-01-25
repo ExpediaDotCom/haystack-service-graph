@@ -1,5 +1,11 @@
 # Release Notes
 
+## 2019-01-25 1.0.12
+  * Fix typo in Docker image name for snapshotter
+
+## 2019-01-25 1.0.11
+  * Publish snapshotter to Docker
+
 ## 2019-01-23 1.0.10
   * Names of S3 service graph snapshot items should terminate in ".csv"
 
