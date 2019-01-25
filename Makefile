@@ -1,4 +1,4 @@
-.PHONY: all clean build report-coverage node-finder graph-builder release
+.PHONY: all clean build report-coverage node-finder graph-builder snapshotter release
 
 PWD := $(shell pwd)
 
@@ -14,12 +14,16 @@ node-finder:
 graph-builder:
 	mvn verify -DfinalName=haystack-service-graph-graph-builder -pl graph-builder -am
 
-all: clean node-finder graph-builder
+snapshotter:
+	mvn verify -DfinalName=haystack-service-graph-snapshotter -pl snapshotter -am
+
+all: clean node-finder graph-builder snapshotter
 
 # build all and release
-release: clean node-finder graph-builder
+release: clean node-finder graph-builder snapshotter
 	cd node-finder && $(MAKE) release
 	cd graph-builder && $(MAKE) release
+	cd snapshotter && $(MAKE) release
 	./.travis/deploy.sh
 
 # run coverage tests
