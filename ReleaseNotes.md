@@ -1,5 +1,8 @@
 # Release Notes
 
+## 2019-01-28 1.0.13
+  * Fix Docker image name for snapshotter (was haystack-service-snapshotter, is now haystack-service-graph-snapshotter)
+
 ## 2019-01-25 1.0.12
   * Fix typo in Docker image name for snapshotter
 
