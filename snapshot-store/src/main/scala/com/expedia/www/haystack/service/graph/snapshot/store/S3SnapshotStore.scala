@@ -22,7 +22,7 @@ import java.time.Instant
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import com.amazonaws.services.s3.model.{ListObjectsV2Request, ListObjectsV2Result}
-import com.expedia.www.haystack.service.graph.snapshot.store.Constants.{DotCsv, _Edges, _Nodes}
+import com.expedia.www.haystack.service.graph.snapshot.store.Constants.{DotCsv, SlashEdges, SlashNodes}
 import com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStore.createItemName
 
 import scala.collection.JavaConverters._
@@ -89,7 +89,7 @@ class S3SnapshotStore(val s3Client: AmazonS3,
     * @param instant date/time of the write, used to create the name, which will later be used in read() and purge()
     * @param content String to write
     * @return the item names of the two objects written to S3 (does not include the bucket name): the first item name
-    *         returned will end in "_nodes" and the other will end in "_edges"
+    *         returned will end in "/nodes" and the other will end in "/edges"
     */
   override def write(instant: Instant,
                      content: String): (String, String) = {
@@ -97,10 +97,10 @@ class S3SnapshotStore(val s3Client: AmazonS3,
       s3Client.createBucket(bucketName)
     }
     val nodesAndEdges = transformJsonToNodesAndEdges(content)
-    write(bucketName, instant, _Nodes + DotCsv, nodesAndEdges.nodes)
-    write(bucketName, instant, _Edges + DotCsv, nodesAndEdges.edges)
+    write(bucketName, instant, SlashNodes + DotCsv, nodesAndEdges.nodes)
+    write(bucketName, instant, SlashEdges + DotCsv, nodesAndEdges.edges)
     val itemNameBase = createIso8601FileName(instant)
-    (createItemName(folderName, itemNameBase + _Nodes), createItemName(folderName, itemNameBase + _Edges))
+    (createItemName(folderName, itemNameBase + SlashNodes), createItemName(folderName, itemNameBase + SlashEdges))
   }
 
   private def write(bucketName: String, instant: Instant, suffix: String, content: String) = {
@@ -122,7 +122,7 @@ class S3SnapshotStore(val s3Client: AmazonS3,
     if (itemName.isDefined) {
       val nodesItemName = itemName.get
       val nodesRawData = s3Client.getObjectAsString(bucketName, nodesItemName)
-      val edgesItemName = nodesItemName.replace(_Nodes, _Edges)
+      val edgesItemName = nodesItemName.replace(SlashNodes, SlashEdges)
       val edgesRawData = s3Client.getObjectAsString(bucketName, edgesItemName)
       optionString = Some(transformNodesAndEdgesToJson(nodesRawData, edgesRawData))
     }
@@ -139,7 +139,7 @@ class S3SnapshotStore(val s3Client: AmazonS3,
         listObjectsV2Result = s3Client.listObjectsV2(bucketName)
         val objectSummaries = listObjectsV2Result.getObjectSummaries.asScala
           .filter(_.getKey.startsWith(itemNamePrefix))
-          .filter(_.getKey.endsWith(_Nodes))
+          .filter(_.getKey.endsWith(SlashNodes))
           .filter(_.getKey.substring(0, instantAsItemName.length) <= instantAsItemName)
         val potentialMax = if (objectSummaries.nonEmpty) Some(objectSummaries.maxBy(_.getKey).getKey) else None
         (optionString, potentialMax) match {

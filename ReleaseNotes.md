@@ -1,5 +1,8 @@
 # Release Notes
 
+## 2019-01-29 1.0.15
+  * Make S3 item name use / instead of _, to take advantage of S3 "folders"
+
 ## 2019-01-29 1.0.14
   * Handle command line args properly in the S3 store
 

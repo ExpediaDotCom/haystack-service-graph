@@ -21,6 +21,8 @@ object Constants {
   private val DotJson = ".json"
 
   val DotCsv = ".csv"
+  val SlashNodes = "/nodes"
+  val SlashEdges = "/edges"
   val _Nodes = "_nodes"
   val _Edges = "_edges"
   val SourceKey: String = "source"
