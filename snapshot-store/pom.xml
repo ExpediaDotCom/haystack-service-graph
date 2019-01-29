@@ -7,7 +7,7 @@
     <parent>
         <artifactId>haystack-service-graph</artifactId>
         <groupId>com.expedia.www</groupId>
-        <version>1.0.13-SNAPSHOT</version>
+        <version>1.0.14-SNAPSHOT</version>
     </parent>
 
     <artifactId>haystack-service-graph-snapshot-store</artifactId>
