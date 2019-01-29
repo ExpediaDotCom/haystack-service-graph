@@ -25,7 +25,7 @@ import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder.standard
 import com.amazonaws.services.s3.model.{ListObjectsV2Result, S3ObjectSummary}
-import com.expedia.www.haystack.service.graph.snapshot.store.Constants.{DotCsv, _Edges, _Nodes}
+import com.expedia.www.haystack.service.graph.snapshot.store.Constants.{DotCsv, SlashEdges, SlashNodes}
 import com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStoreSpec.itemNamesWrittenToS3
 import org.mockito.Matchers._
 import org.mockito.Mockito
@@ -93,8 +93,8 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       if (!useRealS3) {
         verify(s3Client).doesBucketExistV2(bucketName)
         verify(s3Client).createBucket(bucketName)
-        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondBeforeNow) + _Nodes + DotCsv, nodesCsv)
-        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondBeforeNow) + _Edges + DotCsv, edgesCsv)
+        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondBeforeNow) + SlashNodes + DotCsv, nodesCsv)
+        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondBeforeNow) + SlashEdges + DotCsv, edgesCsv)
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
@@ -106,10 +106,10 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       itemNamesWrittenToS3 += s3Store.write(twoMillisecondsAfterNow, serviceGraphJson)
       if (!useRealS3) {
         verify(s3Client, times(2)).doesBucketExistV2(bucketName)
-        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondAfterNow) + _Nodes + DotCsv, nodesCsv)
-        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondAfterNow) + _Edges + DotCsv, edgesCsv)
-        verify(s3Client).putObject(bucketName, createItemName(twoMillisecondsAfterNow) + _Nodes + DotCsv, nodesCsv)
-        verify(s3Client).putObject(bucketName, createItemName(twoMillisecondsAfterNow) + _Edges + DotCsv, edgesCsv)
+        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondAfterNow) + SlashNodes + DotCsv, nodesCsv)
+        verify(s3Client).putObject(bucketName, createItemName(oneMillisecondAfterNow) + SlashEdges + DotCsv, edgesCsv)
+        verify(s3Client).putObject(bucketName, createItemName(twoMillisecondsAfterNow) + SlashNodes + DotCsv, nodesCsv)
+        verify(s3Client).putObject(bucketName, createItemName(twoMillisecondsAfterNow) + SlashEdges + DotCsv, edgesCsv)
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
@@ -136,9 +136,9 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       if (!useRealS3) {
         verifiesForRead(1)
         verify(s3Client).getObjectAsString(anyString(),
-          org.mockito.Matchers.eq(createItemName(oneMillisecondBeforeNow) + _Nodes))
+          org.mockito.Matchers.eq(createItemName(oneMillisecondBeforeNow) + SlashNodes))
         verify(s3Client).getObjectAsString(anyString(),
-          org.mockito.Matchers.eq(createItemName(oneMillisecondBeforeNow) + _Edges))
+          org.mockito.Matchers.eq(createItemName(oneMillisecondBeforeNow) + SlashEdges))
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
@@ -155,9 +155,9 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       if (!useRealS3) {
         verifiesForRead(1)
         verify(s3Client).getObjectAsString(anyString(),
-          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + _Nodes))
+          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + SlashNodes))
         verify(s3Client).getObjectAsString(anyString(),
-          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + _Edges))
+          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + SlashEdges))
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
@@ -178,9 +178,9 @@ class S3SnapshotStoreSpec extends SnapshotStoreSpecBase with BeforeAndAfterAll w
       if (!useRealS3) {
         verifiesForRead(3)
         verify(s3Client).getObjectAsString(anyString(),
-          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + _Nodes))
+          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + SlashNodes))
         verify(s3Client).getObjectAsString(anyString(),
-          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + _Edges))
+          org.mockito.Matchers.eq(createItemName(twoMillisecondsAfterNow) + SlashEdges))
         verifyNoMoreInteractionsForAllMocksThenReset()
       }
     }
