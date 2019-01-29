@@ -24,10 +24,12 @@ import org.slf4j.{Logger, LoggerFactory}
 import scalaj.http.{Http, HttpRequest}
 
 object Main {
+  val ServiceGraphUrlRequiredMsg =
+    "The first argument must specify the service graph URL"
   val StringStoreClassRequiredMsg =
-    "The first argument must specify the fully qualified class name of a class that implements SnapshotStore"
+    "The second argument must specify the fully qualified class name of a class that implements SnapshotStore"
   val UrlBaseRequiredMsg =
-    "The second argument must specify the base of the service graph URL"
+    "The third argument must specify the base of the service graph URL"
   val ServiceGraphUrlSuffix: String = "?from=%d"
   val appConfiguration = new AppConfiguration()
 
@@ -61,8 +63,10 @@ object Main {
     */
   def main(args: Array[String]): Unit = {
     if (args.length == 0) {
-      logger.error(StringStoreClassRequiredMsg)
+      logger.error(ServiceGraphUrlRequiredMsg)
     } else if (args.length == 1) {
+      logger.error(StringStoreClassRequiredMsg)
+    } else if (args.length == 2) {
       logger.error(UrlBaseRequiredMsg)
     } else {
       val snapshotStore = instantiateSnapshotStore(args)

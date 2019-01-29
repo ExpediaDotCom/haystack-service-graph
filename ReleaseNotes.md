@@ -1,5 +1,8 @@
 # Release Notes
 
+## 2019-01-29 1.0.14
+  * Handle command line args properly in the S3 store
+
 ## 2019-01-28 1.0.13
   * Fix Docker image name for snapshotter (was haystack-service-snapshotter, is now haystack-service-graph-snapshotter)
 

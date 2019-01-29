@@ -26,7 +26,7 @@ import com.amazonaws.services.s3.AmazonS3
 import com.expedia.www.haystack.service.graph.snapshot.store.Constants.{DotCsv, _Edges, _Nodes}
 import com.expedia.www.haystack.service.graph.snapshot.store.S3SnapshotStore.createItemName
 import com.expedia.www.haystack.service.graph.snapshot.store.{FileSnapshotStore, S3SnapshotStore, SnapshotStore}
-import com.expedia.www.haystack.service.graph.snapshotter.Main.{StringStoreClassRequiredMsg, UrlBaseRequiredMsg}
+import com.expedia.www.haystack.service.graph.snapshotter.Main.{ServiceGraphUrlRequiredMsg, StringStoreClassRequiredMsg, UrlBaseRequiredMsg}
 import org.mockito.Matchers.any
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions, when}
 import org.scalatest.mockito.MockitoSugar
@@ -120,13 +120,22 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
   describe("Main.main() called with no arguments") {
     it("should log an error") {
       Main.main(Array())
-      verify(mockLogger).error(StringStoreClassRequiredMsg)
+      verify(mockLogger).error(ServiceGraphUrlRequiredMsg)
     }
   }
 
   describe("Main.main() called with one argument") {
     it("should log an error") {
-      Main.main(Array(new FileSnapshotStore().getClass.getCanonicalName))
+      Main.main(Array(serviceGraphUrlBase))
+      verify(mockLogger).error(StringStoreClassRequiredMsg)
+    }
+  }
+
+  private val fullyQualifiedFileSnaphotStoreClassName = new FileSnapshotStore().getClass.getCanonicalName
+
+  describe("Main.main() called with two arguments") {
+    it("should log an error") {
+      Main.main(Array(serviceGraphUrlBase, fullyQualifiedFileSnaphotStoreClassName))
       verify(mockLogger).error(UrlBaseRequiredMsg)
     }
   }
@@ -144,14 +153,14 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
       when(mockHttpRequest.asString).thenReturn(httpResponse)
       when(mockClock.instant()).thenReturn(now)
 
-      Main.main(Array(serviceGraphUrlBase, new FileSnapshotStore().getClass.getCanonicalName, tempDirectory.toString))
+      Main.main(Array(serviceGraphUrlBase, fullyQualifiedFileSnaphotStoreClassName, tempDirectory.toString))
 
       verifyDirectoryIsEmptyToProveThatPurgeWasCalled
       verifiesForCallToServiceGraphUrl(1)
     }
   }
 
-  describe("Main.main() called with S3SnapshotStore arguments") {
+  describe("Main.main() called with all S3SnapshotStore arguments") {
     it("should create an S3SnapshotStore, write to it, then call purge()") {
       val bucketName = "haystack-snapshots"
       val folderName = "hourly-snapshots"
@@ -160,8 +169,7 @@ class MainSpec extends FunSpec with Matchers with MockitoSugar with BeforeAndAft
       when(mockHttpRequest.asString).thenReturn(httpResponse)
       when(mockClock.instant()).thenReturn(now)
 
-      Main.main(Array(serviceGraphUrlBase,
-        new S3SnapshotStore().getClass.getCanonicalName, bucketName, folderName, "1000"))
+      Main.main(Array(serviceGraphUrlBase, new S3SnapshotStore().getClass.getCanonicalName, bucketName, folderName, "1000"))
 
       verifiesForCallToServiceGraphUrl(2)
       verify(mockAmazonS3).doesBucketExistV2(bucketName)
