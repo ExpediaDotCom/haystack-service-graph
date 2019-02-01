@@ -17,10 +17,12 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.model
 
+import com.expedia.metrics.{MetricData, MetricDefinition, TagCollection}
 import com.expedia.www.haystack.commons.entities._
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
+import scala.collection.JavaConverters._
 
 /**
   * An instance of SpanPair can contain data from both server and client spans.
@@ -121,15 +123,20 @@ class SpanPair {
     *
     * @return an instance of MetricPoint or None if the current spanPair instance is incomplete
     */
-  def getLatency: Option[MetricPoint] = {
+  def getLatency: Option[MetricData] = {
     if (isComplete) {
-      val tags = Map(
+      val tags = new TagCollection(Map(
         TagKeys.SERVICE_NAME_KEY -> clientSpan.serviceName,
-        TagKeys.OPERATION_NAME_KEY -> clientSpan.operationName
-      )
+        TagKeys.OPERATION_NAME_KEY -> clientSpan.operationName,
+        MetricDefinition.UNIT -> "ms",
+        MetricDefinition.MTYPE -> "gauge"
+      ).asJava)
+      val metricDefinition = new MetricDefinition("latency", tags, TagCollection.EMPTY)
+      val metricData = new MetricData(metricDefinition,
+        (clientSpan.duration - serverSpan.duration)/1000,
+        clientSpan.time / 1000)
 
-      Some(MetricPoint("latency", MetricType.Gauge, tags,
-        clientSpan.duration - serverSpan.duration, clientSpan.time / 1000))
+      Some(metricData)
     } else {
       None
     }

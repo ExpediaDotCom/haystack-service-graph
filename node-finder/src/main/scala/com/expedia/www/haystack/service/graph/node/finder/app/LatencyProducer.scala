@@ -17,24 +17,20 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.app
 
-import com.expedia.www.haystack.commons.entities.encoders.Encoder
 import com.expedia.www.haystack.commons.metrics.MetricsSupport
 import com.expedia.www.haystack.service.graph.node.finder.model.SpanPair
 import org.apache.kafka.streams.processor.{Processor, ProcessorContext, ProcessorSupplier}
 import org.slf4j.LoggerFactory
 
-class LatencyProducerSupplier(metricPointEncoder: Encoder) extends ProcessorSupplier[String, SpanPair] {
-  require(metricPointEncoder != null)
-  override def get(): Processor[String, SpanPair] = new LatencyProducer(metricPointEncoder)
+class LatencyProducerSupplier() extends ProcessorSupplier[String, SpanPair] {
+  override def get(): Processor[String, SpanPair] = new LatencyProducer()
 }
 
-class LatencyProducer(metricPointEncoder: Encoder) extends Processor[String, SpanPair] with MetricsSupport {
+class LatencyProducer() extends Processor[String, SpanPair] with MetricsSupport {
   private var context: ProcessorContext = _
   private val processMeter = metricRegistry.meter("latency.producer.process")
   private val forwardMeter = metricRegistry.meter("latency.producer.emit")
   private val LOGGER = LoggerFactory.getLogger(classOf[LatencyProducer])
-  require(metricPointEncoder != null)
-
 
   override def init(context: ProcessorContext): Unit = {
     this.context = context
@@ -48,11 +44,11 @@ class LatencyProducer(metricPointEncoder: Encoder) extends Processor[String, Spa
     }
 
     spanPair.getLatency match {
-      case Some(metricPoint) =>
-        context.forward(metricPoint.getMetricPointKey(encoder = metricPointEncoder), metricPoint)
+      case Some(metricData) =>
+        context.forward(metricData.getMetricDefinition.getKey, metricData)
         forwardMeter.mark()
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug(s"Latency Metric: (${metricPoint.metric}, $metricPoint")
+        if (LOGGER.isInfoEnabled()) {
+          LOGGER.info(s"Latency Metric: $metricData")
         }
       case None =>
     }

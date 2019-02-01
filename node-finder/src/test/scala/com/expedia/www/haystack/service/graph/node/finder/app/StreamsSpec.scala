@@ -19,10 +19,9 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 
 import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.commons.entities.GraphEdge
-import com.expedia.www.haystack.commons.entities.encoders.PeriodReplacementEncoder
 import com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor
 import com.expedia.www.haystack.commons.kstreams.serde.SpanDeserializer
-import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
+import com.expedia.www.haystack.commons.kstreams.serde.metricdata.MetricDataSerializer
 import com.expedia.www.haystack.service.graph.node.finder.app.metadata.{MetadataProducerSupplier, MetadataStoreUpdateProcessorSupplier}
 import com.expedia.www.haystack.service.graph.node.finder.config.{KafkaConfiguration, NodeMetadataConfiguration}
 import com.expedia.www.haystack.service.graph.node.finder.model.ServiceNodeMetadata
@@ -37,7 +36,7 @@ class StreamsSpec extends TestSpec {
       Given("a configuration object of type KafkaConfiguration")
       val streamsConfig = mock[StreamsConfig]
       val kafkaConfig = KafkaConfiguration(streamsConfig,
-        "metrics", new PeriodReplacementEncoder(), "service-call",
+        "metrics", "service-call",
         "proto-spans", Topology.AutoOffsetReset.LATEST,
         new SpanTimestampExtractor, 10000, 10000, NodeMetadataConfiguration(false, "mystore", 1, 1), List("tier"))
       val streams = new Streams(kafkaConfig)
@@ -54,7 +53,7 @@ class StreamsSpec extends TestSpec {
         topology.addProcessor(anyString(), isA(classOf[LatencyProducerSupplier]),
           anyString()).andReturn(topology).once()
         topology.addSink(anyString(), anyString(), isA(classOf[StringSerializer]),
-          isA(classOf[MetricPointSerializer]), anyString()).andReturn(topology).once()
+          isA(classOf[MetricDataSerializer]), anyString()).andReturn(topology).once()
         topology.addSink(anyString(), anyString(), isA(classOf[Serializer[GraphEdge]]),
           isA(classOf[Serializer[GraphEdge]]), anyString()).andReturn(topology).once()
 

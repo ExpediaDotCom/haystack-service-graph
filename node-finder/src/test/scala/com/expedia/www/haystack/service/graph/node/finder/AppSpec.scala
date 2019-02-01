@@ -24,7 +24,7 @@ import com.expedia.www.haystack.commons.health.HealthStatusController
 import com.expedia.www.haystack.commons.kafka.{InvalidStateException, KafkaController}
 import com.expedia.www.haystack.commons.kstreams.app.StateChangeListener
 import com.expedia.www.haystack.commons.kstreams.serde.SpanSerializer
-import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointDeserializer
+import com.expedia.www.haystack.commons.kstreams.serde.metricdata.MetricDataDeserializer
 import com.expedia.www.haystack.service.graph.node.finder.config.AppConfiguration
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanUtils
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
@@ -72,7 +72,7 @@ class AppSpec extends TestSpec with BeforeAndAfter {
       //read data from output topics
       LOGGER.info(s"Consuming topics ${appConfig.kafkaConfig.metricsTopic} and ${appConfig.kafkaConfig.serviceCallTopic}")
       val metricsConsumer = kafkaController.createConsumer(appConfig.kafkaConfig.metricsTopic,
-        classOf[StringDeserializer], classOf[MetricPointDeserializer])
+        classOf[StringDeserializer], classOf[MetricDataDeserializer])
       val metricRecords = metricsConsumer.poll(5000)
 
       val graphConsumer = kafkaController.createConsumer(appConfig.kafkaConfig.serviceCallTopic,

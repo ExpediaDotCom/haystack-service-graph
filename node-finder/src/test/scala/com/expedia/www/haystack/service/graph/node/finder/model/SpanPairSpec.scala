@@ -19,9 +19,12 @@ package com.expedia.www.haystack.service.graph.node.finder.model
 
 import java.util.UUID
 
+import com.expedia.metrics.{MetricDefinition, TagCollection}
 import com.expedia.www.haystack.TestSpec
 import com.expedia.www.haystack.commons.entities._
 import com.expedia.www.haystack.service.graph.node.finder.utils.SpanType
+
+import scala.collection.JavaConverters._
 
 class SpanPairSpec extends TestSpec {
   describe("a complete span") {
@@ -74,8 +77,18 @@ class SpanPairSpec extends TestSpec {
       val metricPoint = spanPair.getLatency.get
 
       Then("it should return a valid latency pairs")
+      val tags = new TagCollection(Map(
+        TagKeys.SERVICE_NAME_KEY -> "foo-service",
+        TagKeys.OPERATION_NAME_KEY -> "bar",
+        MetricDefinition.UNIT -> "µs",
+        MetricDefinition.MTYPE -> "gauge"
+      ).asJava)
+
       spanPair.isComplete should be(true)
-      metricPoint should be(MetricPoint("latency", MetricType.Gauge, Map(TagKeys.SERVICE_NAME_KEY -> "foo-service", TagKeys.OPERATION_NAME_KEY -> "bar"), 1000, clientSend / 1000))
+      metricPoint.getMetricDefinition.getKey should be ("latency")
+      metricPoint.getValue should be (1000)
+      metricPoint.getTimestamp should be (clientSend / 1000)
+      metricPoint.getMetricDefinition.getTags should equal (tags)
     }
   }
 

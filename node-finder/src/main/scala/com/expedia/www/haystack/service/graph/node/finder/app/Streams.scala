@@ -19,12 +19,11 @@ package com.expedia.www.haystack.service.graph.node.finder.app
 
 import java.util.function.Supplier
 
-import com.expedia.www.haystack.commons.entities.encoders.Encoder
 import com.expedia.www.haystack.commons.graph.GraphEdgeTagCollector
 import com.expedia.www.haystack.commons.kstreams.serde.SpanSerde
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeKeySerde
 import com.expedia.www.haystack.commons.kstreams.serde.graph.GraphEdgeValueSerde
-import com.expedia.www.haystack.commons.kstreams.serde.metricpoint.MetricPointSerializer
+import com.expedia.www.haystack.commons.kstreams.serde.metricdata.{MetricDataSerializer, MetricTankSerde}
 import com.expedia.www.haystack.service.graph.node.finder.app.metadata.MetadataProducerSupplier
 import com.expedia.www.haystack.service.graph.node.finder.app.metadata.MetadataStoreUpdateProcessorSupplier
 import com.expedia.www.haystack.service.graph.node.finder.config.KafkaConfiguration
@@ -118,8 +117,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
     addGraphNodeProducer(GRAPH_NODE_PRODUCER, topology, SPAN_ACCUMULATOR)
 
     //add sink for latency producer
-    addMetricSink(METRIC_SINK, kafkaConfiguration.metricsTopic, kafkaConfiguration.metricPointEncoder, topology,
-      LATENCY_PRODUCER)
+    addMetricSink(METRIC_SINK, kafkaConfiguration.metricsTopic, topology, LATENCY_PRODUCER)
 
     //add sink for graph node producer
     addGraphNodeSink(GRAPH_NODE_SINK, kafkaConfiguration.serviceCallTopic, topology, GRAPH_NODE_PRODUCER)
@@ -171,7 +169,7 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
                                  accumulatorName: String) : Unit = {
     topology.addProcessor(
       latencyProducerName,
-      new LatencyProducerSupplier(kafkaConfiguration.metricPointEncoder),
+      new LatencyProducerSupplier(),
       accumulatorName
     )
   }
@@ -188,14 +186,13 @@ class Streams(kafkaConfiguration: KafkaConfiguration) extends Supplier[Topology]
 
   private def addMetricSink(metricSinkName: String,
                             metricsTopic: String,
-                            metricPointEncoder: Encoder,
                             topology: Topology,
                             latencyProducerName: String): Unit = {
     topology.addSink(
       metricSinkName,
       metricsTopic,
       new StringSerializer,
-      new MetricPointSerializer(metricPointEncoder),
+      new MetricDataSerializer,
       latencyProducerName
     )
   }

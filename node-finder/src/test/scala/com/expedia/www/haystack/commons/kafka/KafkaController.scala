@@ -2,7 +2,6 @@ package com.expedia.www.haystack.commons.kafka
 
 import java.util.Properties
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 import kafka.server.RunningAsBroker
 import org.apache.kafka.clients.CommonClientConfigs
