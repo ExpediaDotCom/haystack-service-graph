@@ -17,9 +17,8 @@
  */
 package com.expedia.www.haystack.service.graph.node.finder.app
 
+import com.expedia.metrics.MetricData
 import com.expedia.www.haystack.TestSpec
-import com.expedia.www.haystack.commons.entities.MetricPoint
-import com.expedia.www.haystack.commons.entities.encoders.PeriodReplacementEncoder
 import org.apache.kafka.streams.processor.ProcessorContext
 import org.easymock.EasyMock._
 
@@ -29,10 +28,10 @@ class LatencyProducerSpec extends TestSpec {
       Given("a valid SpanPair instance")
       val spanPair = validSpanPair()
       val context = mock[ProcessorContext]
-      val latencyProducer = new LatencyProducer(new PeriodReplacementEncoder)
+      val latencyProducer = new LatencyProducer
       When("process is invoked with a complete SpanPair")
       expecting {
-        context.forward(anyString(), isA(classOf[MetricPoint])).once()
+        context.forward(anyString(), isA(classOf[MetricData])).once()
         context.commit().once()
       }
       replay(context)
@@ -45,7 +44,7 @@ class LatencyProducerSpec extends TestSpec {
       Given("an incomplete SpanPair instance")
       val spanPair = invalidSpanPair()
       val context = mock[ProcessorContext]
-      val latencyProducer = new LatencyProducer(new PeriodReplacementEncoder)
+      val latencyProducer = new LatencyProducer
       When("process is invoked with a complete SpanPair")
       expecting {
         context.commit().once()
@@ -60,7 +59,7 @@ class LatencyProducerSpec extends TestSpec {
   describe("latency producer supplier") {
     it("should supply a valid producer") {
       Given("a supplier instance")
-      val supplier = new LatencyProducerSupplier(new PeriodReplacementEncoder)
+      val supplier = new LatencyProducerSupplier
       When("a producer is request")
       val producer = supplier.get()
       Then("should yield a valid producer")

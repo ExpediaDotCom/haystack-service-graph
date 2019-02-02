@@ -67,7 +67,7 @@
         <commons-lang.version>3.4</commons-lang.version>
         <grpc.version>1.7.1</grpc.version>
         <kantan_csv.version>0.5.0</kantan_csv.version>
-        <haystack-commons.version>1.0.50</haystack-commons.version>
+        <haystack-commons.version>1.0.61</haystack-commons.version>
         <haystack.logback.metrics.appender.version>0.1.12</haystack.logback.metrics.appender.version>
         <haystack-service-graph-snapshot-store.version>${version}</haystack-service-graph-snapshot-store.version>
         <httpclient.version>4.5.3</httpclient.version>
