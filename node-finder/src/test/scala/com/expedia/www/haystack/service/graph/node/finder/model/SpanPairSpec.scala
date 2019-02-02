@@ -80,13 +80,13 @@ class SpanPairSpec extends TestSpec {
       val tags = new TagCollection(Map(
         TagKeys.SERVICE_NAME_KEY -> "foo-service",
         TagKeys.OPERATION_NAME_KEY -> "bar",
-        MetricDefinition.UNIT -> "µs",
+        MetricDefinition.UNIT -> "ms",
         MetricDefinition.MTYPE -> "gauge"
       ).asJava)
 
       spanPair.isComplete should be(true)
       metricPoint.getMetricDefinition.getKey should be ("latency")
-      metricPoint.getValue should be (1000)
+      metricPoint.getValue should be (1)
       metricPoint.getTimestamp should be (clientSend / 1000)
       metricPoint.getMetricDefinition.getTags should equal (tags)
     }

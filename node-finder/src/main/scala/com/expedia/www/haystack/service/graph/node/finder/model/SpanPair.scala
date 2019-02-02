@@ -133,7 +133,7 @@ class SpanPair {
       ).asJava)
       val metricDefinition = new MetricDefinition("latency", tags, TagCollection.EMPTY)
       val metricData = new MetricData(metricDefinition,
-        clientSpan.duration - serverSpan.duration,
+        (clientSpan.duration - serverSpan.duration)/1000,
         clientSpan.time / 1000)
 
       Some(metricData)
