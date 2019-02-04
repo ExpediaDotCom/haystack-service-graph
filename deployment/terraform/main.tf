@@ -5,6 +5,7 @@ module "node-finder" {
   namespace = "${var.namespace}"
   kafka_endpoint = "${var.kafka_hostname}:${var.kafka_port}"
 
+  graphite_enabled = "${var.graphite_enabled}"
   graphite_hostname = "${var.graphite_hostname}"
   graphite_port = "${var.graphite_port}"
   node_selecter_label = "${var.node_selector_label}"
@@ -19,6 +20,7 @@ module "node-finder" {
   env_vars = "${var.service-graph["node_finder_environment_overrides"]}"
   metricpoint_encoder_type = "${var.service-graph["metricpoint_encoder_type"]}"
   collect_tags = "${var.service-graph["collect_tags"]}"
+  kafka_replication_factor = "${var.service-graph["kafka_replication_factor"]}"
 }
 
 module "graph-builder" {
@@ -27,6 +29,8 @@ module "graph-builder" {
   replicas = "${var.service-graph["graph_builder_instances"]}"
   namespace = "${var.namespace}"
   kafka_endpoint = "${var.kafka_hostname}:${var.kafka_port}"
+
+  graphite_enabled = "${var.graphite_enabled}"
   graphite_hostname = "${var.graphite_hostname}"
   graphite_port = "${var.graphite_port}"
   node_selecter_label = "${var.node_selector_label}"
@@ -39,6 +43,8 @@ module "graph-builder" {
   memory_request = "${var.service-graph["graph_builder_memory_request"]}"
   jvm_memory_limit = "${var.service-graph["graph_builder_jvm_memory_limit"]}"
   env_vars = "${var.service-graph["graph_builder_environment_overrides"]}"
+  kafka_replication_factor = "${var.service-graph["kafka_replication_factor"]}"
+  metadata_topic_partition_count = "${var.service-graph["metadata_topic_partition_count"]}"
 }
 /*
 module "snapshotter" {

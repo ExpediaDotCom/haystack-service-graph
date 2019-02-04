@@ -2,7 +2,14 @@ variable "image" {}
 variable "replicas" {}
 variable "namespace" {}
 variable "kafka_endpoint" {}
+variable "kafka_replication_factor" {
+    default = 1
+}
+variable "metadata_topic_partition_count" {
+    default = 1
+}
 variable "metricpoint_encoder_type" {}
+variable "graphite_enabled" {}
 variable "graphite_hostname" {}
 variable "graphite_port" {}
 variable "enabled"{}

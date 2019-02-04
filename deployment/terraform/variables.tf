@@ -1,5 +1,6 @@
 variable "kafka_hostname" {}
 variable "kafka_port" {}
+variable "graphite_enabled" {}
 variable "graphite_hostname" {}
 variable "graphite_port" {}
 variable "kubectl_context_name" {}

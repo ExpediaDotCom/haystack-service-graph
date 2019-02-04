@@ -11,7 +11,7 @@ kafka {
     commit.interval.ms = 3000
     auto.offset.reset = latest
     timestamp.extractor = "org.apache.kafka.streams.processor.WallclockTimestampExtractor"
-    replication.factor = 1
+    replication.factor = ${kafka_replication_factor}
   }
 
   consumer {

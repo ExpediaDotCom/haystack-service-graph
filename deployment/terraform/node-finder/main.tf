@@ -23,6 +23,8 @@ data "template_file" "config_data" {
 
   vars {
     kafka_endpoint = "${var.kafka_endpoint}"
+    kafka_replication_factor = "${var.kafka_replication_factor}"
+    metadata_topic_partition_count = "${var.metadata_topic_partition_count}"
     metricpoint_encoder_type = "${var.metricpoint_encoder_type}"
     collect_tags = "${var.collect_tags}"
   }
@@ -33,6 +35,7 @@ data "template_file" "deployment_yaml" {
   vars {
     app_name = "${local.app_name}"
     namespace = "${var.namespace}"
+    graphite_enabled = "${var.graphite_enabled}"
     graphite_port = "${var.graphite_port}"
     graphite_host = "${var.graphite_hostname}"
     node_selecter_label = "${var.node_selecter_label}"

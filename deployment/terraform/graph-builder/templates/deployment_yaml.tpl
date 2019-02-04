@@ -35,6 +35,8 @@ spec:
         env:
         - name: "HAYSTACK_OVERRIDES_CONFIG_PATH"
           value: "/config/graph-builder.conf"
+        - name: "HAYSTACK_GRAPHITE_ENABLED"
+          value: "${graphite_enabled}"
         - name: "HAYSTACK_GRAPHITE_HOST"
           value: "${graphite_host}"
         - name: "HAYSTACK_GRAPHITE_PORT"

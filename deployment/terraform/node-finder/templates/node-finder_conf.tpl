@@ -10,6 +10,7 @@ kafka {
     request.timeout.ms = 60000
     commit.interval.ms = 3000
     auto.offset.reset = latest
+    replication.factor = ${kafka_replication_factor}
   }
 
   producer {
@@ -42,8 +43,8 @@ kafka {
     topic {
       autocreate = true
       name = "haystack-node-finder-metadata"
-      partition.count = 6
-      replication.factor = 2
+      partition.count = ${metadata_topic_partition_count}
+      replication.factor = ${kafka_replication_factor}
     }
   }
 }

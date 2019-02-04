@@ -2,6 +2,10 @@ variable "image" {}
 variable "replicas" {}
 variable "namespace" {}
 variable "kafka_endpoint" {}
+variable "kafka_replication_factor" {
+    default = 1
+}
+variable "graphite_enabled" {}
 variable "graphite_hostname" {}
 variable "graphite_port" {}
 variable "enabled"{}
@@ -14,6 +18,7 @@ variable "jvm_memory_limit"{}
 variable "cpu_request"{}
 variable "cpu_limit"{}
 variable "env_vars" {}
+
 variable "termination_grace_period" {
   default = 30
 }
