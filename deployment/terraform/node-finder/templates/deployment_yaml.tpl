@@ -37,6 +37,8 @@ spec:
           value: "/config/node-finder.conf"
         - name: "HAYSTACK_GRAPHITE_HOST"
           value: "${graphite_host}"
+        - name: "HAYSTACK_GRAPHITE_ENABLED"
+          value: "true"          
         - name: "HAYSTACK_GRAPHITE_PORT"
           value: "${graphite_port}"
         - name: "JAVA_XMS"
