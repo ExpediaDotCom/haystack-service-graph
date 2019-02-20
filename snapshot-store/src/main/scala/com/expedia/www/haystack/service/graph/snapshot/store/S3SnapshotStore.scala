@@ -51,9 +51,8 @@ object S3SnapshotStore {
   *                             use less memory at the cost of more calls to S3. The best value would be the maximum
   *                             number of snapshots that will exist in S3 before being purged; for example, with a
   *                             one hour snapshot interval and a snapshot TTL of 1 year, 366 * 24 = 8784 would be a good
-  *                             value (perhaps rounded to 10,000). Instances of S3SnapshotStore that only write to S3
-  *                             can specify a non-positive value (typically 0) because the read(Instant) method will
-  *                             never be called, and only this method uses listObjectsBatchSize.
+  *                             value (perhaps rounded to 10,000). Using a "good" value for listObjectsBatchSize
+  *                             improves the performance of calls to read from the S3SnapshotStore.
   */
 class S3SnapshotStore(val s3Client: AmazonS3,
                       val bucketName: String,
