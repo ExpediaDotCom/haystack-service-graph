@@ -71,7 +71,7 @@
         <haystack.logback.metrics.appender.version>0.1.12</haystack.logback.metrics.appender.version>
         <haystack-service-graph-snapshot-store.version>${version}</haystack-service-graph-snapshot-store.version>
         <httpclient.version>4.5.3</httpclient.version>
-        <jetty.version>9.4.11.v20180605</jetty.version>
+        <jetty.version>9.4.12.v20180830</jetty.version>
         <json4s.version>3.5.3</json4s.version>
         <json4s.version>3.6.0</json4s.version>
         <logback.version>1.2.3</logback.version>
