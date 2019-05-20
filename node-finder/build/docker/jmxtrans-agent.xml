@@ -63,6 +63,8 @@
         <query objectName="kafka.consumer:type=consumer-fetch-manager-metrics,client-id=*" attribute="records-lag-max" resultAlias="kafka-consumer-%client-id%.records-lag.max"/>
         <query objectName="kafka.consumer:type=consumer-fetch-manager-metrics,client-id=*" attribute="records-consumed-rate" resultAlias="kafka-consumer-%client-id%.records-consumed.rate"/>
 
+        <query objectName="metrics:name=kafka.iterator.age.ms" attributes="50thPercentile,99thPercentile" resultAlias="kafka.iterator.age.ms.#attribute#"/>
+
         <!-- service mbeans -->
         <query objectName="metrics:name=graph.node.producer.emit" attribute="OneMinuteRate" resultAlias="graph-node.producer.emit-rate"/>
         <query objectName="metrics:name=graph.node.producer.process" attribute="OneMinuteRate" resultAlias="graph-node.producer.process-rate"/>

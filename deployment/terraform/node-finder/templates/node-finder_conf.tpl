@@ -8,6 +8,7 @@ kafka {
     bootstrap.servers = "${kafka_endpoint}"
     num.stream.threads = 4
     request.timeout.ms = 60000
+    timestamp.extractor = "com.expedia.www.haystack.commons.kstreams.SpanTimestampExtractor"
     commit.interval.ms = 3000
     auto.offset.reset = latest
   }
