@@ -15,7 +15,7 @@
         </layout>
     </appender>
 
-    <root level="${HAYSTACK_LOG_LEVEL}">
-        <appender-ref ref="STDOUT"/>
+    <root level="${HAYSTACK_LOG_LEVEL:-WARN}">
+        <appender-ref ref="ASYNC"/>
     </root>
 </configuration>
