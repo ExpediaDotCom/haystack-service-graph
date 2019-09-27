@@ -38,7 +38,7 @@ spec:
         - name: "HAYSTACK_GRAPHITE_HOST"
           value: "${graphite_host}"
         - name: "HAYSTACK_GRAPHITE_ENABLED"
-          value: "true"          
+          value: "${graphite_enabled}"
         - name: "HAYSTACK_GRAPHITE_PORT"
           value: "${graphite_port}"
         - name: "JAVA_XMS"
