@@ -7,6 +7,7 @@ module "node-finder" {
 
   graphite_hostname = "${var.graphite_hostname}"
   graphite_port = "${var.graphite_port}"
+  graphite_enabled = "${var.graphite_enabled}"
   node_selecter_label = "${var.node_selector_label}"
   enabled = "${var.service-graph["enabled"]}"
   kubectl_executable_name = "${var.kubectl_executable_name}"
@@ -29,6 +30,7 @@ module "graph-builder" {
   kafka_endpoint = "${var.kafka_hostname}:${var.kafka_port}"
   graphite_hostname = "${var.graphite_hostname}"
   graphite_port = "${var.graphite_port}"
+  graphite_enabled = "${var.graphite_enabled}"
   node_selecter_label = "${var.node_selector_label}"
   enabled = "${var.service-graph["enabled"]}"
   kubectl_executable_name = "${var.kubectl_executable_name}"
