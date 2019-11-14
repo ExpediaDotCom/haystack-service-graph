@@ -15,7 +15,7 @@ kafka {
 
   producer {
     metrics {
-      topic = "metricpoints"
+      topic = "metric-data-points"
       // there are three types of encoders that are used on service and operation names:
       // 1) periodreplacement: replaces all periods with 3 underscores
       // 2) base64: base64 encodes the full name with a padding of _
