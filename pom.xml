@@ -80,7 +80,7 @@
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <mockito.version>1.9.5</mockito.version>
         <msgpack.version>0.8.13</msgpack.version>
-        <netty.handler.version>4.1.45.Final</netty.handler.version>
+        <netty.handler.version>4.1.46.Final</netty.handler.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <pegdown.version>1.6.0</pegdown.version>
         <project.jdk.version>1.8</project.jdk.version>
